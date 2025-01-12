@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+# Copyright (c) 2025 Marcin Zdun
+# This code is licensed under MIT license (see LICENSE for details)
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import List, Optional
+
+CXX_FLOW_VERSION = "{{__flow_version__}}"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+VER_REGEX = re.compile(r"((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))")
+
+
+@dataclass
+class Version:
+    major: int
+    minor: int
+    patch: int
+
+    def compatible_with(self: "Version", runtime: Optional["Version"]):
+        if runtime is None:
+            return False
+        return self.major == runtime.major and self.minor <= runtime.minor
+
+    @staticmethod
+    def parse(value: str):
+        chunks = value.split("-")[0].split("+")[0].split(".")
+        try:
+            int_chunks = list(map(int, chunks))[0:3]
+            while len(int_chunks) < 3:
+                int_chunks.append(0)
+            return Version(*int_chunks)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def proc_parse(process: subprocess.CompletedProcess[str]):
+        value = process.stdout.strip() if process.returncode == 0 else ""
+        m = VER_REGEX.search(value)
+        return Version.parse(m.group(0)) if m is not None else None
+
+
+CXX_FLOW = Version.parse(CXX_FLOW_VERSION)
+
+PYTHON_EXECUTABLE = sys.executable
+
+
+def python(
+    *args: List[str],
+    module: Optional[str] = None,
+    capture_output: Optional[bool] = True,
+) -> subprocess.CompletedProcess[bytes]:
+    if module is not None:
+        return subprocess.run(
+            [PYTHON_EXECUTABLE, "-m", module, *args],
+            shell=False,
+            capture_output=capture_output,
+        )
+    return subprocess.run(
+        [PYTHON_EXECUTABLE, *args], shell=False, capture_output=capture_output
+    )
+
+
+def pip(*args: List[str], capture_output: Optional[bool] = False):
+    return python(*args, module="pip", capture_output=capture_output)
+
+
+def venv(*args: List[str], capture_output: Optional[bool] = False):
+    return python(*args, module="venv", capture_output=capture_output)
+
+
+def cxx_flow_version(print_output=False):
+    proc = subprocess.run(
+        "cxx-flow --version", shell=True, encoding="UTF-8", capture_output=True
+    )
+    result = Version.proc_parse(proc)
+    if result is None and print_output:
+        if proc.stdout:
+            print(proc.stdout)
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr)
+    return result
+
+
+@contextmanager
+def cd(path: str):
+    prev = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev)
+
+
+def get_venv_path():
+    bindir = os.path.join(".venv", "bin")
+    scripts = os.path.join(".venv", "Scripts")
+
+    if os.path.isdir(bindir):
+        return bindir
+
+    if os.path.isdir(scripts):
+        return scripts
+
+    return None
+
+
+def activate_virtual_env():
+    global PYTHON_EXECUTABLE
+
+    with cd(os.path.dirname(__file__)):
+        exec_ext = ".exe" if sys.platform == "win32" else ""
+        python_exec = f"python{exec_ext}"
+        bindir = get_venv_path()
+        has_venv = bindir is not None and os.path.isfile(
+            os.path.join(bindir, python_exec)
+        )
+
+        if not has_venv:
+            venv("--upgrade-deps", ".venv")
+            bindir = get_venv_path()
+
+        os.environ["PATH"] = (
+            f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
+        )
+        PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
+
+
+def bootstrap_cxx_flow():
+    if CXX_FLOW.compatible_with(cxx_flow_version()):
+        return True
+
+    if sys.prefix == sys.base_prefix:
+        activate_virtual_env()
+
+        if CXX_FLOW.compatible_with(cxx_flow_version()):
+            return True
+
+    if pip("--version", capture_output=True).returncode != 0:
+        print("Cannot call pip as a module. Exiting.\n")
+        sys.exit(1)
+
+    version_major = CXX_FLOW.major
+    version_minor = CXX_FLOW.minor
+    version_range=f">={version_major}.{version_minor},<{version_major + 1}"
+
+    if pip("install", f"cxx-flow{version_range}").returncode != 0:
+        print("Cannot install cxx-flow with current pip. Exiting.\n")
+        sys.exit(1)
+
+    return CXX_FLOW.compatible_with(cxx_flow_version(print_output=True))
+
+
+def main():
+    if not bootstrap_cxx_flow():
+        print("Cannot find a working copy of cxx-flow", file=sys.stderr)
+        return 1
+
+    with cd(PROJECT_ROOT):
+        return subprocess.run(
+            [shutil.which("cxx-flow"), *sys.argv[1:]], shell=False
+        ).returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

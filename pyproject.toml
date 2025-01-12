@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "cxx_flow/__init__.py"
+
+[project]
+name = "cxx-flow"
+description = "C++ project maintenance, automated"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dynamic = ["version"]
+dependencies = ["chevron2021", "prompt_toolkit"]
+
+[project.scripts]
+cxx-flow = "cxx_flow.flow.cli:main"

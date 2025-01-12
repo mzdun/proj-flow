@@ -1,0 +1,38 @@
+// Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+// This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+{{#with_conan}}
+#include <fmt/format.h>
+#include <args/parser.hpp>
+{{/with_conan}}
+#include <{{INCLUDE_PREFIX}}/version{{EXT.hxx}}>
+
+int main(int argc, char* argv[]) {
+	std::string path;
+	bool verbose{false};
+	long counter{};
+
+	args::null_translator tr{};
+	args::parser parser{"{{PROJECT.DESCRIPTION}}",
+	                    args::from_main(argc, argv), &tr};
+
+	parser.arg(path, "path").meta("<file>").help("sets the path of foobar");
+	parser.set<std::true_type>(verbose, "v")
+	    .help("sets the output to be more verbose")
+	    .opt();
+	parser.arg(counter).meta("N").help(
+	    "sets the argument for the plural string");
+	parser.parse();
+
+{{#with_conan}}
+	auto msg = std::string_view{counter == 1 ? "you have one foobar"
+	                                         : "you have {0} foobars"};
+	fmt::print(fmt::runtime(msg), counter);
+{{/with_conan}}
+{{^with_conan}}
+	auto msg = std::string_view{counter == 1 ? "you have one foobar"
+	                                         : "you have %ld foobars"};
+	printf(msg.data(), counter);
+{{/with_conan}}
+	fputc('\n', stdout);
+}

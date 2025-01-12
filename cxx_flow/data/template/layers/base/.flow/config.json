@@ -1,0 +1,63 @@
+{
+    "entry": {
+        "config": {
+            "doc": "prepares build enviroment for current project",
+            "steps": [ "Conan", "CMake" ]
+        },
+        "build": {
+            "doc": "runs the build prepared by cxx-flow config steps",
+            "steps": [ "Build" ]
+        },
+        "verify": {
+            "steps": [
+                "Build",
+                "Test",
+                "Report",
+                "Sign",
+                "Pack",
+                "SignPackages",
+                "Store",
+                "BinInst",
+                "DevInst"
+            ]
+        },
+        "report": {
+            "steps": [ "Build", "Test", "Report" ]
+        }
+    },
+    "compiler": {
+        "names": {
+            "clang": [ "clang", "clang++" ],
+            "stdclang": [ "clang", "stdclang" ],
+            "gcc": [ "gcc", "g++" ]
+        },
+        "os-default": { "ubuntu": "gcc", "windows": "msvc" }
+    },
+    "lts": {
+        "ubuntu": [
+            "ubuntu-20.04",
+            "ubuntu-22.04",
+            "ubuntu-24.04"
+        ]
+    },
+    "postproc": {
+        "exclude": [
+            { "github_os": "ubuntu-20.04", "sanitizer": true },
+            { "github_os": "ubuntu-24.04", "sanitizer": true },
+            { "github_os": "ubuntu-20.04", "compiler": "clang" }
+        ]
+    },
+    "package": {
+        "ext": {
+            "ZIP": ".zip",
+            "TGZ": ".tar.gz",
+            "WIX": ".msi"
+        }
+    },
+    "shortcuts": {
+        "dbg": { "build_type": "Debug", "sanitizer": false },
+        "rel": { "build_type": "Release", "sanitizer": false },
+        "both": { "build_type": [ "Debug", "Release" ], "sanitizer": false },
+        "sane": { "build_type": "Debug", "sanitizer": true }
+    }
+}

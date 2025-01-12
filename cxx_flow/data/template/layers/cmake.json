@@ -1,0 +1,12 @@
+{
+    "when": "with_cmake",
+    "filelist": {
+        "src/main.cc.mustache": {
+            "path": "{{SRCDIR}}/main{{EXT.cxx}}",
+            "when": "cmake.application"
+        },
+        "src/version.hpp.in.mustache": {
+            "path": "{{SRCDIR}}/version{{EXT.hxx}}.in"
+        }
+    }
+}
