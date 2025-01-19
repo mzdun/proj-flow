@@ -15,6 +15,7 @@ class Argument:
     meta: Optional[str] = None
     action: Union[str, argparse.Action, None] = None
     default: Optional[Any] = None
+    choices: Optional[List[str]] = None
 
 
 class FlagArgument(Argument):

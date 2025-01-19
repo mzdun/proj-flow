@@ -4,6 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
+from ..flow import matrix
 from .config import Config, Runtime
 
 
@@ -27,6 +28,37 @@ class Step(ABC):
 
     @abstractmethod
     def run(self, config: Config, rt: Runtime) -> int: ...
+
+
+class SerialStep(Step):
+    children: List[Step] = []
+
+    @property
+    def runs_after(self):
+        return matrix.flatten([child.runs_after for child in self.children])
+
+    def platform_dependencies(self) -> List[str]:
+        return matrix.flatten(
+            [child.platform_dependencies() for child in self.children]
+        )
+
+    def is_active(self, config: Config, rt: Runtime) -> bool:
+        for child in self.children:
+            if not child.is_active(config, rt):
+                return False
+        return True
+
+    def directories_to_remove(self, config: Config) -> List[str]:
+        return matrix.flatten(
+            [child.directories_to_remove(config) for child in self.children]
+        )
+
+    def run(self, config: Config, rt: Runtime) -> int:
+        for child in self.children:
+            result = child.run(config, rt)
+            if result:
+                return result
+        return 0
 
 
 __steps: List[Step] = []

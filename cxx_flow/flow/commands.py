@@ -30,6 +30,7 @@ class EntryArg:
     meta: Optional[str]
     action: Union[str, argparse.Action, None]
     default: Optional[Any]
+    choices: Optional[List[str]] = None
 
     def visit(self, parser: argparse.ArgumentParser):
         kwargs = {}
@@ -43,6 +44,8 @@ class EntryArg:
             kwargs["default"] = self.default
         if self.action is not None:
             kwargs["action"] = self.action
+        if self.choices is not None:
+            kwargs["choices"] = self.choices
 
         names = (
             [self.name]
