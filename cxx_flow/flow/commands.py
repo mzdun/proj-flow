@@ -103,7 +103,7 @@ class BuiltinEntry:
                 lambda command: command.name == "run", command_list
             ).__next__()
             alias = filter(lambda alias: alias.name == args.command, aliases).__next__()
-            args.steps.append(",".join(alias.steps))
+            args.steps.append(alias.steps)
             return cast(BuiltinEntry, command).run(args, cfg)
 
         print("known commands:")

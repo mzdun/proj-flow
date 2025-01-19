@@ -28,7 +28,14 @@ def uname():
     if platform_arch == "amd64":
         platform_arch = "x86_64"
 
-    if platform_name == "linux":
+    system_nt = platform_name.split("_nt-", 1)
+
+    if len(system_nt) > 1:
+        platform_name = system_nt[0]
+        platform_version = None
+    elif platform_name == "windows":
+        platform_version = None
+    elif platform_name == "linux":
         try:
             os_release = platform.freedesktop_os_release()
         except AttributeError:

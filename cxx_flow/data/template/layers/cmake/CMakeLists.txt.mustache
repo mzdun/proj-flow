@@ -37,6 +37,7 @@ include(common)
 include(output_dirs_setup)
 
 set(CONAN_CMAKE_SILENT_OUTPUT ON)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_package(fmt REQUIRED)
 find_package(GTest REQUIRED)
 find_package(mbits-args REQUIRED)
@@ -143,6 +144,9 @@ else()
   endif()
 endif()
 
+include(${PROJECT_SOURCE_DIR}/packages/config.cmake)
+include(CPack)
+
 configure_file({{SRCDIR}}/version{{EXT.hxx}}.in {{INCLUDEDIR}}/version{{EXT.hxx}} @ONLY)
 
 set(SRCS
@@ -184,8 +188,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if ({{NAME_PREFIX}}_INSTALL)
   install(TARGETS ${PROJECT_NAME})
-  install(DIRECTORY {{INCLUDEDIR}} DESTINATION include)
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/{{INCLUDEDIR}}/version{{EXT.hxx}}" DESTINATION {{INCLUDEDIR}})
 endif()
 
 ##################################################################

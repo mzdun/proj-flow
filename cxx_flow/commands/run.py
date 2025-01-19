@@ -30,7 +30,7 @@ def command_run(
     """Runs automation steps for current project"""
 
     rt_steps = cast(List[Step], rt.steps)
-    steps = matrix.flatten(step.split(",") for step in steps)
+    steps = matrix.flatten(step.split(",") for step in matrix.flatten(steps))
     if not steps:
         steps = [step.name for step in rt_steps]
 
