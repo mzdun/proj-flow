@@ -8,6 +8,4 @@ function(add_project_test TARGET)
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/tests
       ${CMAKE_CURRENT_BINARY_DIR})
-  fix_vs_modules(${TARGET}-test)
-  set(VS_MODS ${VS_MODS} PARENT_SCOPE)
 endfunction()

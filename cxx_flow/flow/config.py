@@ -271,14 +271,17 @@ class Runtime(FlowConfig):
     def cmd(self, *args: str):
         if not self.silent:
             _print_cmd(*args, use_color=self.use_color, secrets=self.secrets)
-        if not self.dry_run:
-            result = subprocess.run(args)
-            if result.returncode != 0:
-                print(
-                    f"cxx-flow: error: {args[0]} ended in failure, exiting",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+        if self.dry_run:
+            return 0
+
+        result = subprocess.run(args)
+        if result.returncode != 0:
+            print(
+                f"cxx-flow: error: {args[0]} ended in failure, exiting",
+                file=sys.stderr,
+            )
+            return 1
+        return 0
 
 
 @dataclass

@@ -9,18 +9,18 @@ from cxx_flow.flow.step import Step, register_step
 from .__version__ import CMAKE_VERSION
 
 
-class CMakeBuild(Step):
-    name = "Build"
-    runs_after = ["Conan", "CMake"]
+class CMakeTest(Step):
+    name = "Test"
+    runs_after = ["Build"]
 
     def platform_dependencies(self):
-        return [f"cmake>={CMAKE_VERSION}"]
+        return [f"cmake>={CMAKE_VERSION}", f"ctest>={CMAKE_VERSION}"]
 
     def is_active(self, config: Config, rt: Runtime) -> int:
         return os.path.isfile("CMakeLists.txt") and os.path.isfile("CMakePresets.json")
 
     def run(self, config: Config, rt: Runtime) -> int:
-        return rt.cmd("cmake", "--build", "--preset", config.preset, "--parallel")
+        return rt.cmd("ctest", "--preset", config.preset)
 
 
-register_step(CMakeBuild())
+register_step(CMakeTest())

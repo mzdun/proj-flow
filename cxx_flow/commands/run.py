@@ -45,7 +45,7 @@ def command_run(
         return 1
 
     printed = refresh_directories(configs, rt, program)
-    run_steps(configs, rt, program, printed)
+    return run_steps(configs, rt, program, printed)
 
 
 def gather_dependencies_for_all_configs(
@@ -77,7 +77,7 @@ def refresh_directories(configs: Configs, rt: Runtime, steps: List[Step]):
     return printed
 
 
-def run_steps(configs: Configs, rt: Runtime, program: List[Step], printed: bool):
+def run_steps(configs: Configs, rt: Runtime, program: List[Step], printed: bool) -> int:
     for config in configs.usable:
         steps = [step for step in program if step.is_active(config, rt)]
         step_count = len(steps)

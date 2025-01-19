@@ -45,7 +45,7 @@ class CMakeConfig(Step):
 
             defines.append(f"-D{var}={value}")
 
-        rt.cmd(
+        return rt.cmd(
             "cmake",
             "--preset",
             f"{config.preset}-{config.build_generator}",

@@ -12,7 +12,6 @@
             "steps": [
                 "Build",
                 "Test",
-                "Report",
                 "Sign",
                 "Pack",
                 "SignPackages",
@@ -21,8 +20,8 @@
                 "DevInst"
             ]
         },
-        "report": {
-            "steps": [ "Build", "Test", "Report" ]
+        "test": {
+            "steps": [ "Build", "Test" ]
         }
     },
     "compiler": {

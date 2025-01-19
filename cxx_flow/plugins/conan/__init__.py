@@ -51,9 +51,11 @@ class ConanConfig(Step):
                 ]:
                     print(setting, file=profile)
 
-        api.config(rt, CONAN_DIR, f"./{CONAN_DIR}/{CONAN_PROFILE}", profile_gen)
+        if api.config(rt, CONAN_DIR, f"./{CONAN_DIR}/{CONAN_PROFILE}", profile_gen):
+            return 1
         if not rt.dry_run and os.path.exists("CMakeUserPresets.json"):
             os.remove("CMakeUserPresets.json")
+        return 0
 
 
 register_step(ConanConfig())

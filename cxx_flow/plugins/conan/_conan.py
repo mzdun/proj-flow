@@ -31,7 +31,7 @@ class conan(ABC):
         conan_output_dir: str,
         compiler_profile_name: str,
         build_type_profile_name: str,
-    ): ...
+    ) -> int: ...
 
 
 class conan_1(conan):
@@ -44,17 +44,18 @@ class conan_1(conan):
         conan_output_dir: str,
         compiler_profile_name: str,
         build_type_profile_name: str,
-    ):
-        rt.cmd(
+    ) -> int:
+        if rt.cmd(
             "conan",
             "profile",
             "new",
             "--detect",
             "--force",
             compiler_profile_name,
-        )
+        ):
+            return 1
 
-        rt.cmd(
+        return rt.cmd(
             "conan",
             "install",
             "-if",
@@ -81,17 +82,18 @@ class conan_2(conan):
         conan_output_dir: str,
         compiler_profile_name: str,
         build_type_profile_name: str,
-    ):
-        rt.cmd(
+    ) -> int:
+        if rt.cmd(
             "conan",
             "profile",
             "detect",
             "--force",
             "--name",
             compiler_profile_name,
-        )
+        ):
+            return 1
 
-        rt.cmd(
+        return rt.cmd(
             "conan",
             "install",
             "-of",

@@ -32,9 +32,10 @@ list(APPEND CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/conan")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 {{/with_conan}}
 
+include(common)
+{{#with_conan}}
 include(output_dirs_setup)
 
-{{#with_conan}}
 set(CONAN_CMAKE_SILENT_OUTPUT ON)
 find_package(fmt REQUIRED)
 find_package(GTest REQUIRED)
@@ -192,16 +193,16 @@ endif()
 ##################################################################
 
 if ({{NAME_PREFIX}}_TESTING)
+  file(GLOB EXCLUDES_TEST_SRCS_CC tests/*.cc)
+  file(GLOB EXCLUDES_TEST_SRCS_CPP tests/*.cpp)
+  file(GLOB EXCLUDES_TEST_SRCS_CXX tests/*.cxx)
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/tests FILES
+    ${EXCLUDES_TEST_SRCS_CC}
+    ${EXCLUDES_TEST_SRCS_CPP}
+    ${EXCLUDES_TEST_SRCS_CXX})
 
-{{#with_conan}}
-set(EXTERNAL_GTEST ON)
-{{/with_conan}}
-{{#use_tool_testing}}
-include( ${CMAKE_CURRENT_SOURCE_DIR}/tools/testing/googletest.cmake )
+  add_project_test(${PROJECT_NAME} ${EXCLUDES_TEST_SRCS_CC} ${EXCLUDES_TEST_SRCS_CPP} ${EXCLUDES_TEST_SRCS_CXX})
+  target_link_libraries(${PROJECT_NAME}-test PUBLIC GTest::gmock_main fmt::fmt)
 
-add_test_executable(${PROJECT_NAME}-test {{#use_lib_gtest}}CONAN_PKG {{/use_lib_gtest}}DATA_PATH data{{#cmake.library}} LIBRARIES ${PROJECT_NAME}{{/cmake.library}})
-target_compile_options(${PROJECT_NAME}-test PRIVATE {{${}}{{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS})
-{{/use_tool_testing}}
-
-add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME}-test --gtest_filter=*)
+  add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME}-test "--gtest_output=xml:${TEST_REPORT_DIR}/${PROJECT_NAME}/${TEST_REPORT_FILE}")
 endif()

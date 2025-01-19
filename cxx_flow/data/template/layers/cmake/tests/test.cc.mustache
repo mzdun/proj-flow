@@ -1,0 +1,17 @@
+// Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+// This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+{{#with_conan}}
+#include <fmt/format.h>
+#include <gtest/gtest.h>
+{{/with_conan}}
+
+namespace {{NAMESPACE}}::testing {
+
+{{#with_conan}}
+	TEST({{NAMESPACE}}, test) {
+		ASSERT_EQ(1, 1);
+	}
+{{/with_conan}}
+
+}  // namespace {{NAMESPACE}}::testing
