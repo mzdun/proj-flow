@@ -5,7 +5,9 @@
 import argparse
 import json
 import os
+import re
 import shlex
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -140,12 +142,13 @@ def _hide(arg: str, secrets: List[str]):
     return arg
 
 
-def _print_arg(arg: str, secrets: List[str]):
+def _print_arg(arg: str, secrets: List[str], raw: bool):
     color = ""
     arg = _hide(arg, secrets)
     if arg[:1] == "-":
         color = "\033[2;37m"
-    arg = shlex.join([arg])
+    if not raw:
+        arg = shlex.join([arg])
     if color == "" and arg[:1] in ["'", '"']:
         color = "\033[2;34m"
     if color == "":
@@ -153,14 +156,16 @@ def _print_arg(arg: str, secrets: List[str]):
     return f"{color}{arg}\033[m"
 
 
-def _print_cmd(*args: str, use_color: bool = True, secrets: List[str]):
+def _print_cmd(*args: str, use_color: bool = True, secrets: List[str], raw: bool):
+    cmd = args[0] if raw else shlex.join([args[0]])
     if not use_color:
-        cmd = shlex.join([args[0]])
-        print(cmd, shlex.join(_hide(arg) for arg in args[1:]))
+        if raw:
+            print(cmd, *(_hide(arg) for arg in args[1:]))
+        else:
+            print(cmd, shlex.join(_hide(arg) for arg in args[1:]))
         return
 
-    cmd = shlex.join([args[0]])
-    args = " ".join([_print_arg(arg, secrets) for arg in args[1:]])
+    args = " ".join([_print_arg(arg, secrets, raw) for arg in args[1:]])
     print(f"\033[33m{cmd}\033[m {args}", file=sys.stderr)
 
 
@@ -236,6 +241,38 @@ class FlowConfig:
         return self._cfg.get("shortcuts", {})
 
 
+def _mkdir(dirname: str):
+    os.makedirs(dirname, exist_ok=True)
+
+
+def _ls(dirname: str, shallow=True):
+    result = []
+    for root, dirnames, filenames in os.walk(dirname):
+        if shallow:
+            dirnames[:] = []
+
+        result.extend(
+            os.path.relpath(os.path.join(root, filename), start=dirname)
+            for filename in filenames
+        )
+    return result
+
+
+def _cp(src: str, dst: str) -> int:
+    try:
+        dst = os.path.abspath(dst)
+        if os.path.isdir(src):
+            _mkdir(dst)
+            shutil.copytree(src, dst, dirs_exist_ok=True, symlinks=True)
+        else:
+            if not os.path.isdir(dst):
+                _mkdir(os.path.dirname(dst))
+            shutil.copy(src, dst, follow_symlinks=False)
+    except FileNotFoundError as err:
+        print(err, file=sys.stderr)
+        return 1
+
+
 class Runtime(FlowConfig):
     dry_run: bool
     silent: bool
@@ -268,9 +305,12 @@ class Runtime(FlowConfig):
     def only_host(self):
         return not (self.dry_run or self.official)
 
-    def cmd(self, *args: str):
+    def print(self, *args: str, raw=False):
         if not self.silent:
-            _print_cmd(*args, use_color=self.use_color, secrets=self.secrets)
+            _print_cmd(*args, use_color=self.use_color, secrets=self.secrets, raw=raw)
+
+    def cmd(self, *args: str):
+        self.print(*args)
         if self.dry_run:
             return 0
 
@@ -281,6 +321,26 @@ class Runtime(FlowConfig):
                 file=sys.stderr,
             )
             return 1
+        return 0
+
+    def cp(self, src: str, dst: str, regex: Optional[str] = None):
+        args = ["cp"]
+        if os.path.isdir(src):
+            args.append("-r")
+        self.print(*args, src, dst)
+
+        if self.dry_run:
+            return 0
+
+        if regex is None:
+            return _cp(src, dst)
+
+        files = _ls(src)
+        files = (name for name in files if re.match(regex, name))
+        for name in files:
+            result = _cp(os.path.join(src, name), os.path.join(dst, name))
+            if result:
+                return result
         return 0
 
 
