@@ -24,11 +24,12 @@ class FileInfo:
     def from_json(cls, src: str, filelist: dict, context: ctx.SettingsType):
         basename, ext = os.path.splitext(src)
         is_mustache = ext == ".mustache"
-        json_file = cast(dict, filelist.get(src, {}))
+        key = src.replace(os.sep, "/")
+        json_file = cast(dict, filelist.get(key, {}))
         path = cast(Optional[str], json_file.get("path"))
         when = cast(Optional[str], json_file.get("when"))
         dst = (
-            chevron.render(path, context)
+            chevron.render(path, context).replace("/", os.sep)
             if path is not None
             else basename if is_mustache else src
         )
@@ -56,11 +57,11 @@ class FileInfo:
         os.makedirs(dirname, exist_ok=True)
 
         if self.is_mustache:
-            with open(src, "r", encoding="UTF-8") as inf:
-                content = inf.read()
+            with open(src, "rb") as inf:
+                content = inf.read().decode("UTF-8")
             content = chevron.render(content, context)
-            with open(dst, "w", encoding="UTF-8") as outf:
-                outf.write(content)
+            with open(dst, "wb") as outf:
+                outf.write(content.encode("UTF-8"))
         else:
             shutil.copy(src, dst, follow_symlinks=False)
 

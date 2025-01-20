@@ -60,5 +60,9 @@ def command_init(
     for layer in layers:
         layer.run(rt, context)
 
+    if save_context:
+        with open(".gitignore", "ab") as ignoref:
+            ignoref.write("\n/.context.json\n".encode("UTF-8"))
+
     for step in init.__steps:
         step.postprocess(rt, context)
