@@ -19,7 +19,7 @@ def command_system(
     ],
     _: Runtime,
 ):
-    """Produce system information for CI pipelines"""
+    """Produces system information for CI pipelines"""
 
     node = platform.node()
     system, version, arch = uname()
