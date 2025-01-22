@@ -11,7 +11,7 @@ from .__version__ import CMAKE_VERSION
 
 class PackStep(Step):
     name = "Pack"
-    runs_after = ["Build"]
+    runs_after = ["Build", "Sign"]
 
     def platform_dependencies(self):
         return [f"cmake>={CMAKE_VERSION}", f"cpack>={CMAKE_VERSION}"]

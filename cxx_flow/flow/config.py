@@ -362,6 +362,10 @@ class Config:
         return cast(any, ctx)
 
     @property
+    def os(self) -> str:
+        return self.items.get("os", "")
+
+    @property
     def build_type(self) -> str:
         return self.items.get("build_type", "")
 
