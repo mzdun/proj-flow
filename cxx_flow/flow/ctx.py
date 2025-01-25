@@ -37,7 +37,7 @@ class Setting:
 
 
 package_root = os.path.dirname(os.path.dirname(__file__))
-template_dir = os.path.join("data", "template")
+template_dir = "template"
 
 
 _fileext = {".cc": ".hh", ".cxx": ".hxx", ".cpp": ".hpp"}
