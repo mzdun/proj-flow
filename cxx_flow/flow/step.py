@@ -17,6 +17,10 @@ class Step(ABC):
     def runs_after(self) -> List[str]:
         return []
 
+    @property
+    def runs_before(self) -> List[str]:
+        return []
+
     def platform_dependencies(self) -> List[str]:
         return []
 

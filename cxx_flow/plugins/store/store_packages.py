@@ -25,7 +25,7 @@ def _package_name(config: Config, pkg: str, group: str):
 
 class StorePackages(Step):
     name = "StorePackages"
-    runs_after = ["Pack", "SignPackages"]
+    runs_after = ["Pack"]
 
     def run(self, config: Config, rt: Runtime) -> int:
         if not rt.dry_run:

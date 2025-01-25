@@ -16,12 +16,14 @@ class Sorted:
     plugin: step.Step
     name: str
     runs_after: List[str]
+    runs_before: List[str]
 
     @staticmethod
     def from_step(plugin: step.Step):
         name = plugin.name
         runs_after = [*plugin.runs_after]
-        return Sorted(plugin, name, runs_after)
+        runs_before = [*plugin.runs_before]
+        return Sorted(plugin, name, runs_after, runs_before)
 
 
 def _load_plugins(directory: str, package: Union[str, None]):
@@ -50,6 +52,13 @@ def _sort_steps():
     steps = step.__steps
     unsorted = [Sorted.from_step(step) for step in steps]
     known_names = [step.name for step in unsorted]
+
+    for plugin in unsorted:
+        for name in plugin.runs_before:
+            for successor in unsorted:
+                if successor.name != name:
+                    continue
+                successor.runs_after.append(plugin.name)
 
     for plugin in unsorted:
         runs_after: List[str] = []

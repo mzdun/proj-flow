@@ -62,6 +62,7 @@ class SignBase(step.Step):
 class SignFiles(SignBase):
     name = "Sign"
     runs_after = ["Build"]
+    runs_before = ["Pack"]
 
     def get_files(self, config: Config, rt: Runtime) -> List[str]:
         cfg = cast(dict, rt._cfg.get("binaries", {}))
@@ -87,6 +88,7 @@ class SignFiles(SignBase):
 class SignMsi(SignBase):
     name = "SignPackages"
     runs_after = ["Pack"]
+    runs_before = ["StorePackages", "Store"]
 
     def is_active(self, config: Config, rt: Runtime) -> int:
         return super().is_active(config, rt) and "WIX" in config.items.get(
