@@ -27,7 +27,7 @@
       "conan2_settings": [ "compiler.cppstd=23", "compiler.runtime=dynamic" ],
       "build_generator": "msbuild",
       "report_os": "Windows",
-      "cpack_generator": [ "ZIP" ],
+      "cpack_generator": [ "ZIP", "WIX" ],
       "windows": true,
       "home": "C:/Users/runneradmin"
     },

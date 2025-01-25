@@ -2,6 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 import re
+import uuid
 
 import chevron
 
@@ -55,6 +56,7 @@ ctx.register_init_setting(
 ctx.register_init_setting(
     ctx.Setting("cmake", fix="{PROJECT.TYPE$map:cmake}"),
     ctx.Setting("CMAKE_VERSION", value=CMAKE_VERSION),
+    ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
     is_hidden=True,
 )
 ctx.register_switch("with_cmake", "Use CMake", True)

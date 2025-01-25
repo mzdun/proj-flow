@@ -1,0 +1,10 @@
+<CPackWiXPatch>
+    <CPackWiXFragment Id="@PROJECT_WIX_BIN_DIR_COMP@">
+        <RegistryKey Root="HKLM" Key="Software\@PROJECT_REGISTRY_KEY@">
+            <RegistryValue Type="string" Name="Version" Value="@PROJECT_VERSION@@PROJECT_VERSION_STABILITY@" />
+            <RegistryValue Type="string" Value="[@PROJECT_WIX_BIN_DIR@]" />
+        </RegistryKey>
+        <Environment Id="@WIX_PATH_ID@" Name="PATH" Action="set" System="yes" Permanent="no" Part="last" Value="[@PROJECT_WIX_BIN_DIR@]" />
+    </CPackWiXFragment>
+    <CPackWiXFragment Id="#PRODUCTFEATURE" AllowAdvertise="no" />
+</CPackWiXPatch>
