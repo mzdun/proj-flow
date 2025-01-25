@@ -3,6 +3,7 @@
 
 import importlib
 import os
+import sys
 from dataclasses import dataclass
 from types import ModuleType
 from typing import List, Union
@@ -89,7 +90,18 @@ def _sort_steps():
 def load_steps(cfg: FlowConfig):
     std_plugins = importlib.import_module("cxx_flow.plugins")
     _load_module_plugins(cfg, std_plugins)
-    # TODO: use cfg.steps.plugins
+
+    local_plugins = os.path.abspath(os.path.join(".flow", "extensions"))
+    if os.path.isdir(local_plugins):
+        sys.path.append(local_plugins)
+    for root, dirnames, _ in os.walk(local_plugins):
+        for dirname in dirnames:
+            init = os.path.join(root, dirname, "__init__.py")
+            if not os.path.isfile(init):
+                continue
+            plugins = importlib.import_module(dirname)
+            _load_module_plugins(cfg, plugins)
+        dirnames[:] = []
 
     return _sort_steps()
 
