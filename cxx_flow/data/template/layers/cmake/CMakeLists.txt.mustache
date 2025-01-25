@@ -25,11 +25,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 {{#with_conan}}
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/conan" "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/conan" "${PROJECT_SOURCE_DIR}/.flow/cmake")
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/conan")
 {{/with_conan}}
 {{^with_conan}}
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/.flow/cmake")
 {{/with_conan}}
 
 include(common)
@@ -144,7 +144,7 @@ else()
   endif()
 endif()
 
-include(${PROJECT_SOURCE_DIR}/packages/config.cmake)
+include(${PROJECT_SOURCE_DIR}/.flow/packages/config.cmake)
 include(CPack)
 
 configure_file({{SRCDIR}}/version{{EXT.hxx}}.in {{INCLUDEDIR}}/version{{EXT.hxx}} @ONLY)
