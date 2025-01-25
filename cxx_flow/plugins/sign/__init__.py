@@ -7,7 +7,7 @@ import sys
 from abc import abstractmethod
 from typing import List, cast
 
-from cxx_flow.flow import step
+from cxx_flow.flow import init, step
 from cxx_flow.flow.config import Config, Runtime
 
 if sys.platform == "win32":
@@ -108,5 +108,13 @@ class SignMsi(SignBase):
         return result
 
 
+class SignInit(init.InitStep):
+    def postprocess(self, rt: Runtime, context: dict):
+        if sys.platform == "win32":
+            with open(".gitignore", "ab") as ignoref:
+                ignoref.write("\n/signature.key\n".encode("UTF-8"))
+
+
 step.register_step(SignFiles())
 step.register_step(SignMsi())
+init.register_init_step(SignInit())
