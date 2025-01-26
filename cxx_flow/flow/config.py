@@ -86,7 +86,6 @@ def _expand_one(config: dict, github_os: str, os_in_name: str):
     config["needs_gcc_ppa"] = (
         os_ver != "latest"
         and config["os"] == "ubuntu"
-        and int(os_ver.split(".")[0]) < 24
     )
     return config
 

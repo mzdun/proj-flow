@@ -54,7 +54,7 @@ PYTHON_EXECUTABLE = sys.executable
 def python(
     *args: List[str],
     module: Optional[str] = None,
-    capture_output: Optional[bool] = True,
+    capture_output: bool = True,
 ) -> subprocess.CompletedProcess[bytes]:
     if module is not None:
         return subprocess.run(
@@ -67,11 +67,11 @@ def python(
     )
 
 
-def pip(*args: List[str], capture_output: Optional[bool] = False):
+def pip(*args: List[str], capture_output: bool = False):
     return python(*args, module="pip", capture_output=capture_output)
 
 
-def venv(*args: List[str], capture_output: Optional[bool] = False):
+def venv(*args: List[str], capture_output: bool = False):
     return python(*args, module="venv", capture_output=capture_output)
 
 
@@ -123,7 +123,7 @@ def activate_virtual_env():
         )
 
         if not has_venv:
-            venv("--upgrade-deps", ".venv")
+            venv(".venv")
             bindir = get_venv_path()
 
         os.environ["PATH"] = (
@@ -161,6 +161,10 @@ def main():
     if not bootstrap_cxx_flow():
         print("Cannot find a working copy of cxx-flow", file=sys.stderr)
         return 1
+
+    bootstrap_only = "--bootstrap" in sys.argv[1:] and len(sys.argv) == 2
+    if bootstrap_only:
+        return 0
 
     with cd(PROJECT_ROOT):
         return subprocess.run(
