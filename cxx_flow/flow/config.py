@@ -83,10 +83,7 @@ def _expand_one(config: dict, github_os: str, os_in_name: str):
         build_name += " (and sanitizer)"
     config["github_os"] = github_os
     config["build_name"] = build_name
-    config["needs_gcc_ppa"] = (
-        os_ver != "latest"
-        and config["os"] == "ubuntu"
-    )
+    config["needs_gcc_ppa"] = os_ver != "latest" and config["os"] == "ubuntu"
     return config
 
 
@@ -332,13 +329,13 @@ class Runtime(FlowConfig):
             )
             return 1
         return 0
-    
+
     def mkdirs(self, dirname: str):
         self.print("mkdir", "-p", dirname)
 
         if self.dry_run:
             return 0
-        
+
         os.makedirs(dirname, exist_ok=True)
         return 0
 

@@ -72,7 +72,7 @@ def command_list(
                 continue
 
             name = f"{bold}{alias.name}{reset}"
-            print(f"- {name}: {", ".join(alias.steps)}")
+            print(f"- {name}: {', '.join(alias.steps)}")
 
         printed_something = True
 

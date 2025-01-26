@@ -57,7 +57,7 @@ class Eval:
             return [
                 ("", f"[{counter}/{size}] {self.ps} ["),
                 ("bold", default[0]),
-                ("", f"{"".join(f' / {x}' for x in default[1:])}]: "),
+                ("", f"{''.join(f' / {x}' for x in default[1:])}]: "),
             ]
         return f"[{counter}/{size}] {self.ps}: "
 

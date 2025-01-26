@@ -67,6 +67,7 @@ class FileInfo:
         else:
             shutil.copy2(src, dst, follow_symlinks=False)
 
+
 @dataclass
 class LayerInfo:
     root: str
