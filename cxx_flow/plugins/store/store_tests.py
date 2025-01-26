@@ -7,8 +7,8 @@ from cxx_flow.flow.config import Config, Runtime
 from cxx_flow.flow.step import Step, register_step
 
 
-class StoreTest(Step):
-    name = "StoreTest"
+class StoreTests(Step):
+    name = "StoreTests"
     runs_after = ["Test"]
 
     def run(self, config: Config, rt: Runtime) -> int:
@@ -17,4 +17,4 @@ class StoreTest(Step):
         )
 
 
-register_step(StoreTest())
+register_step(StoreTests())

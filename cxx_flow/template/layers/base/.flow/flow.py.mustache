@@ -10,7 +10,7 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, cast
 
 CXX_FLOW_VERSION = "{{__flow_version__}}"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -40,8 +40,8 @@ class Version:
             return None
 
     @staticmethod
-    def proc_parse(process: subprocess.CompletedProcess[str]):
-        value = process.stdout.strip() if process.returncode == 0 else ""
+    def proc_parse(process: subprocess.CompletedProcess):
+        value = cast(str, process.stdout).strip() if process.returncode == 0 else ""
         m = VER_REGEX.search(value)
         return Version.parse(m.group(0)) if m is not None else None
 
@@ -55,7 +55,7 @@ def python(
     *args: List[str],
     module: Optional[str] = None,
     capture_output: bool = True,
-) -> subprocess.CompletedProcess[bytes]:
+) -> subprocess.CompletedProcess:
     if module is not None:
         return subprocess.run(
             [PYTHON_EXECUTABLE, "-m", module, *args],
@@ -148,7 +148,7 @@ def bootstrap_cxx_flow():
 
     version_major = CXX_FLOW.major
     version_minor = CXX_FLOW.minor
-    version_range=f">={version_major}.{version_minor},<{version_major + 1}"
+    version_range = f">={version_major}.{version_minor},<{version_major + 1}"
 
     if pip("install", f"cxx-flow{version_range}").returncode != 0:
         print("Cannot install cxx-flow with current pip. Exiting.\n")

@@ -4,7 +4,7 @@
 from cxx_flow.flow.step import SerialStep, register_step
 
 from .store_packages import StorePackages
-from .store_test import StoreTest
+from .store_tests import StoreTests
 
 
 class StoreBoth(SerialStep):
@@ -12,7 +12,7 @@ class StoreBoth(SerialStep):
 
     def __init__(self):
         super().__init__()
-        self.children = [StoreTest(), StorePackages()]
+        self.children = [StoreTests(), StorePackages()]
 
 
 register_step(StoreBoth())

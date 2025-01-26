@@ -18,6 +18,11 @@ class SpecialArg:
     name: str
     ctor: callable
 
+    def create(self, rt: Runtime, args: argparse.Namespace):
+        if self.ctor == Runtime:
+            return rt
+        return self.ctor(rt, args)
+
 
 @dataclass
 class EntryArg:
@@ -71,19 +76,20 @@ class BuiltinEntry:
     additional: List[SpecialArg]
 
     def run(self, args: argparse.Namespace, cfg: FlowConfig):
+        rt = Runtime(args)
+        rt.steps = cfg.steps
+        rt.aliases = cfg.aliases
+        rt._cfg = cfg._cfg
+        if rt.only_host:
+            rt.only_host = self.name == "run"
+
         kwargs = {}
         for arg in self.args:
             kwargs[arg.name] = getattr(args, arg.name, None)
 
         for additional in self.additional:
-            ctor = additional.ctor
-            arg = ctor(args)
+            arg = additional.create(rt, args)
             kwargs[additional.name] = arg
-            if ctor == Runtime:
-                rt = cast(Runtime, arg)
-                rt.steps = cfg.steps
-                rt.aliases = cfg.aliases
-                rt._cfg = cfg._cfg
 
         result = self.entry(**kwargs)
         return 0 if result is None else result

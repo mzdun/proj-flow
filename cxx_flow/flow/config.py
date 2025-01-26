@@ -275,6 +275,7 @@ class Runtime(FlowConfig):
     official: bool
     no_coverage: bool
     use_color: bool
+    only_host: bool
     platform: str
     secrets: List[str] = []
 
@@ -298,6 +299,8 @@ class Runtime(FlowConfig):
 
             if "RELEASE" in os.environ and "GITHUB_ACTIONS" in os.environ:
                 self.official = not not json.loads(os.environ["RELEASE"])
+
+            self.only_host = not (self.dry_run or self.official)
         else:
             rt = argsOrRuntime
             self.dry_run = rt.dry_run
@@ -305,12 +308,9 @@ class Runtime(FlowConfig):
             self.official = rt.official
             self.no_coverage = rt.no_coverage
             self.use_color = rt.use_color
+            self.only_host = rt.only_host
             self.platform = rt.platform
             self.secrets = [*rt.secrets]
-
-    @property
-    def only_host(self):
-        return not (self.dry_run or self.official)
 
     def print(self, *args: str, raw=False):
         if not self.silent:
@@ -405,9 +405,8 @@ class Config:
 class Configs:
     usable: List[Config] = []
 
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, rt: Runtime, args: argparse.Namespace):
         super()
-        rt = Runtime(args)
         matrix, keys = _load_flow_data(rt)
 
         used_compilers: Dict[str, List[str]] = {}
