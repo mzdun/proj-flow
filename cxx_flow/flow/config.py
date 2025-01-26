@@ -374,6 +374,10 @@ class Config:
         return self.items.get("build_name", "")
 
     @property
+    def build_dir(self) -> str:
+        return os.path.join("build", self.preset)
+
+    @property
     def preset(self) -> str:
         return self.items.get("preset", "")
 

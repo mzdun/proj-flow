@@ -70,7 +70,7 @@ class SignFiles(SignBase):
         exclude = cfg.get("exclude", ["*-test"])
 
         result: List[str] = []
-        build_dir = os.path.join("build", config.preset)
+        build_dir = config.build_dir
         for root in roots:
             for curr_dir, _, filenames in os.walk(os.path.join(build_dir, root)):
                 for filename in filenames:
@@ -97,7 +97,7 @@ class SignMsi(SignBase):
 
     def get_files(self, config: Config, rt: Runtime) -> List[str]:
         result: List[str] = []
-        pkg_dir = os.path.join("build", config.preset, "packages")
+        pkg_dir = os.path.join(config.build_dir, "packages")
         for curr_dir, dirnames, filenames in os.walk(pkg_dir):
             dirnames[:] = []
             for filename in filenames:
