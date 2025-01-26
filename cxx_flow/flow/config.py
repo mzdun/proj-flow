@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional, Union, cast
 
 from .matrix import cartesian, find_compiler, flatten, load_matrix, matches_any
 from .uname import uname
@@ -282,24 +282,35 @@ class Runtime(FlowConfig):
     platform: str
     secrets: List[str] = []
 
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, argsOrRuntime: Union[argparse.Namespace, "Runtime"]):
         super().__init__()
 
-        self.dry_run = args.dry_run
-        self.silent = args.silent
-        try:
-            self.official = args.official
-        except AttributeError:
-            self.official = False
-        self.use_color = True
-        self.no_coverage = False
-        self.platform = platform
+        if isinstance(argsOrRuntime, argparse.Namespace):
+            args = argsOrRuntime
+            self.dry_run = args.dry_run
+            self.silent = args.silent
+            try:
+                self.official = args.official
+            except AttributeError:
+                self.official = False
+            self.use_color = True
+            self.no_coverage = False
+            self.platform = platform
 
-        if "NO_COVERAGE" in os.environ:
-            self.no_coverage = True
+            if "NO_COVERAGE" in os.environ:
+                self.no_coverage = True
 
-        if "RELEASE" in os.environ and "GITHUB_ACTIONS" in os.environ:
-            self.official = not not json.loads(os.environ["RELEASE"])
+            if "RELEASE" in os.environ and "GITHUB_ACTIONS" in os.environ:
+                self.official = not not json.loads(os.environ["RELEASE"])
+        else:
+            rt = argsOrRuntime
+            self.dry_run = rt.dry_run
+            self.silent = rt.silent
+            self.official = rt.official
+            self.no_coverage = rt.no_coverage
+            self.use_color = rt.use_color
+            self.platform = rt.platform
+            self.secrets = [*rt.secrets]
 
     @property
     def only_host(self):
@@ -321,6 +332,15 @@ class Runtime(FlowConfig):
                 file=sys.stderr,
             )
             return 1
+        return 0
+    
+    def mkdirs(self, dirname: str):
+        self.print("mkdir", "-p", dirname)
+
+        if self.dry_run:
+            return 0
+        
+        os.makedirs(dirname, exist_ok=True)
         return 0
 
     def cp(self, src: str, dst: str, regex: Optional[str] = None):

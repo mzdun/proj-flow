@@ -164,6 +164,9 @@ set(SRCS
 
 {{cmake.cmd}}(${PROJECT_NAME}{{cmake.type}} ${SRCS})
 
+{{#cmake.application}}
+add_win32_icon(${PROJECT_NAME} "appicon.ico")
+{{/cmake.application}}
 target_compile_options(${PROJECT_NAME} PRIVATE {{${}}{{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS})
 target_link_options(${PROJECT_NAME} PUBLIC {{${}}{{NAME_PREFIX}}_ADDITIONAL_LINK_FLAGS})
 target_include_directories(${PROJECT_NAME}

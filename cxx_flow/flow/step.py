@@ -90,12 +90,14 @@ class Statement:
 
     def _run_directly(self, rt: Runtime):
         if rt.dry_run:
-            return self.rule.run(self, rt, only_print=True)
+            copy = Runtime(rt)
+            copy.dry_run = True
+            return self.rule.run(self, copy)
 
         if not self._needed():
             return False
 
-        return self.rule.run(self, rt, only_print=False)
+        return self.rule.run(self, rt)
 
     def _needed(self):
         out_mtime = None
@@ -123,7 +125,7 @@ class Rule(ABC):
     @abstractmethod
     def command(self, statement: Statement) -> List[str]: ...
 
-    def run(self, statement: Statement, rt: Runtime, only_print=False):
+    def run(self, statement: Statement, rt: Runtime):
         return 1
 
     @classmethod

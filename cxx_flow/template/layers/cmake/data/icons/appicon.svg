@@ -1,0 +1,27 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='256px' height='256px' viewBox='0 0 48 48' version='1.1' fill="none">
+    <defs>
+        <radialGradient id="gradient-fill" cx="12" cy="15" r="48" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#fff" />
+            <stop offset="1" stop-color="#777" />
+        </radialGradient>
+    </defs>
+    <g>
+        <rect fill="url(#gradient-fill)" width="42" height="40" x="3" y="4" rx="2" />
+        <rect fill="#030d17" width="42" height="6" x="3" y="4" />
+        <rect fill="#eed" width="3" height="3" x="4.5" y="5" rx="1" />
+        <rect fill="#eed" width="3" height="3" x="10" y="5" rx="1" />
+        <rect fill="#eed" width="3" height="3" x="40" y="5" rx="1" />
+        <g stroke="#030d17" stroke-width="2">
+            <rect width="42" height="40" x="3" y="4" rx="2" />
+            <rect width="42" height="35" x="3" y="9" rx="2" />
+        </g>
+        <g stroke="#030d17" stroke-width="1" transform="translate(24,26.5)">
+            <rect x="-11" y="-11" width="10" height="10" rx="1" />
+            <rect x="-11" y="1" width="10" height="10" rx="1" />
+            <rect x="1" y="1" width="10" height="10" rx="1" />
+            <g transform="translate(7,-13)">
+                <rect width="9" height="9" rx="1" transform="rotate(45)" />
+            </g>
+        </g>
+    </g>
+</svg>
