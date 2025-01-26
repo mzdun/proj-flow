@@ -62,9 +62,10 @@ class FileInfo:
             content = chevron.render(content, context)
             with open(dst, "wb") as outf:
                 outf.write(content.encode("UTF-8"))
+            shutil.copymode(src, dst, follow_symlinks=False)
+            shutil.copystat(src, dst, follow_symlinks=False)
         else:
-            shutil.copy(src, dst, follow_symlinks=False)
-
+            shutil.copy2(src, dst, follow_symlinks=False)
 
 @dataclass
 class LayerInfo:
