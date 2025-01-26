@@ -19,6 +19,11 @@ def command_github(
 
     if matrix:
         usable = [usable.items for usable in configs.usable]
+        for config in usable:
+            if "--orig-compiler" in config:
+                orig_compiler = config["--orig-compiler"]
+                del config["--orig-compiler"]
+                config["compiler"] = orig_compiler
         if "GITHUB_ACTIONS" in os.environ:
             var = json.dumps({"include": usable})
             print(f"matrix={var}")
