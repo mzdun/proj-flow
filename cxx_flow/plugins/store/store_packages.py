@@ -57,6 +57,12 @@ class StorePackages(Step):
                     f"{packages_dir}/{src}{extension}",
                 )
 
+        GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
+        if GITHUB_OUTPUT is not None:
+            with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
+                generators = ",".join(config.get("cpack_generator", []))
+                print(f"CPACK_GENERATORS={generators}", file=github_output)
+
         return rt.cp(
             packages_dir,
             "build/artifacts/packages",
