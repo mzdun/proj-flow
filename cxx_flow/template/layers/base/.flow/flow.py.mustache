@@ -162,10 +162,6 @@ def main():
         print("Cannot find a working copy of cxx-flow", file=sys.stderr)
         return 1
 
-    bootstrap_only = "--bootstrap" in sys.argv[1:] and len(sys.argv) == 2
-    if bootstrap_only:
-        return 0
-
     with cd(PROJECT_ROOT):
         return subprocess.run(
             [shutil.which("cxx-flow"), *sys.argv[1:]], shell=False

@@ -26,7 +26,12 @@ def command_ci(
                 config["compiler"] = orig_compiler
         if "GITHUB_ACTIONS" in os.environ:
             var = json.dumps({"include": usable})
-            print(f"matrix={var}")
+            GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
+            if GITHUB_OUTPUT is not None:
+                with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
+                    print(f"matrix={var}", file=github_output)
+            else:
+                print(f"matrix={var}")
         else:
             json.dump(usable, sys.stdout)
         return
