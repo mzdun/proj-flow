@@ -54,13 +54,13 @@ class StorePackages(Step):
             for extension in extensions:
                 shutil.move(
                     f"{packages_dir}/{src}{extension}",
-                    f"{packages_dir}/{src}{extension}",
+                    f"{packages_dir}/{dst}{extension}",
                 )
 
         GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
         if GITHUB_OUTPUT is not None:
             with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
-                generators = ",".join(config.get("cpack_generator", []))
+                generators = ",".join(config.items.get("cpack_generator", []))
                 print(f"CPACK_GENERATORS={generators}", file=github_output)
 
         return rt.cp(
