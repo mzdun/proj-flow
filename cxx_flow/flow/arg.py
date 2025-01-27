@@ -21,3 +21,16 @@ class Argument:
 class FlagArgument(Argument):
     def __init__(self, help: str = "", names: List[str] = []):
         super().__init__(help=help, names=names, action="store_true", default=False)
+
+
+_known_subcommand: List[callable] = []
+
+
+def flow_subcommand(entry: callable):
+    global _known_subcommand
+    _known_subcommand.append(entry)
+
+
+def get_subcommands():
+    global _known_subcommand
+    return _known_subcommand

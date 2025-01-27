@@ -3,13 +3,14 @@
 
 import argparse
 import inspect
+import itertools
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import ModuleType
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union, cast
 
 from .. import commands
-from .arg import Argument
+from .arg import Argument, get_subcommands
 from .config import Configs, FlowConfig, Runtime, default_compiler, platform
 
 
@@ -74,14 +75,26 @@ class BuiltinEntry:
     entry: callable
     args: List[EntryArg]
     additional: List[SpecialArg]
+    children: List["BuiltinEntry"] = field(default_factory=list)
 
-    def run(self, args: argparse.Namespace, cfg: FlowConfig):
-        rt = Runtime(args)
-        rt.steps = cfg.steps
-        rt.aliases = cfg.aliases
-        rt._cfg = cfg._cfg
-        if rt.only_host:
+    def run(self, args: argparse.Namespace, rt: Runtime, level=0):
+        if level == 0 and rt.only_host:
             rt.only_host = self.name == "run"
+
+        if len(self.children):
+            subcommand_attribute = f"command_{level}"
+            if hasattr(args, subcommand_attribute):
+                subcommand_name = getattr(args, subcommand_attribute)
+                subcommand = cast(
+                    BuiltinEntry,
+                    next(
+                        filter(
+                            lambda command: command.name == subcommand_name,
+                            self.children,
+                        )
+                    ),
+                )
+                return subcommand.run(args, rt, level=level + 1)
 
         kwargs = {}
         for arg in self.args:
@@ -99,18 +112,21 @@ class BuiltinEntry:
         builtin_entries = {entry.name for entry in command_list}
         aliases = cfg.aliases
 
+        rt = Runtime(args)
+        rt.steps = cfg.steps
+        rt.aliases = cfg.aliases
+        rt._cfg = cfg._cfg
+
         if args.command in builtin_entries:
-            command = filter(
-                lambda command: command.name == args.command, command_list
-            ).__next__()
-            return cast(BuiltinEntry, command).run(args, cfg)
+            command = next(
+                filter(lambda command: command.name == args.command, command_list)
+            )
+            return cast(BuiltinEntry, command).run(args, rt)
         elif args.command in {alias.name for alias in aliases}:
-            command = filter(
-                lambda command: command.name == "run", command_list
-            ).__next__()
-            alias = filter(lambda alias: alias.name == args.command, aliases).__next__()
+            command = next(filter(lambda command: command.name == "run", command_list))
+            alias = next(filter(lambda alias: alias.name == args.command, aliases))
             args.steps.append(alias.steps)
-            return cast(BuiltinEntry, command).run(args, cfg)
+            return cast(BuiltinEntry, command).run(args, rt)
 
         print("known commands:")
         for command in command_list:
@@ -183,6 +199,7 @@ class BuiltinEntry:
         subparsers,
         alias: Optional[str] = None,
         doc: Optional[str] = None,
+        level=0,
     ):
         if not doc:
             doc = self.doc
@@ -255,6 +272,15 @@ class BuiltinEntry:
         for arg in self.args:
             arg.visit(parser)
 
+        if len(self.children):
+            subparsers = parser.add_subparsers(
+                dest=f"command_{level}",
+                metavar="{command}",
+                help="known command name, see below",
+            )
+            for entry in self.children:
+                entry.visit(shortcut_configs, subparsers, level=level + 1)
+
 
 def _shortcut_value(value) -> str:
     if isinstance(value, bool):
@@ -316,11 +342,61 @@ def _get_entry(modname: str, module: ModuleType):
         return BuiltinEntry(modname, doc, entry, entry_args, special_args)
 
 
+@dataclass
+class SubEntry:
+    command: str
+    name: str
+    doc: str
+    entry: callable
+
+    def expand(self):
+        args = _extract_args(self.entry)
+        special_args = [entry for entry in args if isinstance(entry, SpecialArg)]
+        entry_args = [entry for entry in args if isinstance(entry, EntryArg)]
+
+        has_rt = False
+        for additional in special_args:
+            if additional.ctor == Runtime:
+                has_rt = True
+                break
+
+        if not has_rt:
+            return None
+
+        return BuiltinEntry(self.name, self.doc, self.entry, entry_args, special_args)
+
+
+def _get_subentry(entry: callable):
+    module = inspect.getmodule(entry)
+    command = module.__name__.split(".")[2]
+    name = entry.__name__
+    doc = inspect.getdoc(entry)
+    return SubEntry(command=command, name=name, doc=doc, entry=entry)
+
+
 def _get_entries():
     submodules = inspect.getmembers(commands, inspect.ismodule)
+    subcommands = {
+        command: list(group)
+        for command, group in itertools.groupby(
+            map(_get_subentry, get_subcommands()), lambda subentry: subentry.command
+        )
+    }
     all_entries = map(lambda tup: _get_entry(*tup), submodules)
-    valid_entries = filter(lambda entry: entry is not None, all_entries)
-    return list(valid_entries)
+    valid_entries = cast(
+        List[BuiltinEntry], list(filter(lambda entry: entry is not None, all_entries))
+    )
+
+    for entry in valid_entries:
+        if entry.name not in subcommands:
+            continue
+        children = subcommands[entry.name]
+        all_children = map(lambda sub: sub.expand(), children)
+        entry.children = cast(
+            List[BuiltinEntry], list(filter(lambda sub: sub is not None, all_children))
+        )
+
+    return valid_entries
 
 
 command_list = _get_entries()

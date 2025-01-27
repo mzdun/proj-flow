@@ -6,10 +6,12 @@ import os
 
 top = os.path.dirname(__file__)
 for _, dirnames, filenames in os.walk(top):
-    dirnames[:] = []
+    for dirname in dirnames:
+        importlib.import_module(f".{dirname}", "cxx_flow.commands")
     for filename in filenames:
-        if filename.startswith("-"):
+        if filename == "__init__.py":
             continue
         importlib.import_module(
             f".{os.path.splitext(filename)[0]}", "cxx_flow.commands"
         )
+    dirnames[:] = []

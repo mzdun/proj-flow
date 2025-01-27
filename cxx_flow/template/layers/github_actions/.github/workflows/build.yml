@@ -21,13 +21,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Bootstrap Flow
-      run: |
-        python ./.flow/flow.py bootstrap
-
     - name: Find builds
       id: flow
-      run: python ./.flow/flow.py ci --matrix
+      run: python ./.flow/flow.py ci matrix
 
   build:
     needs: M
@@ -60,7 +56,8 @@ jobs:
 #     ##       ##  ####  ##   ##   ##  ##   ##   ##     ## ##  #### ##     ## ##       ##  ####    ##
 #     ##       ##   ###   ## ##    ##  ##    ##  ##     ## ##   ### ##     ## ##       ##   ###    ##
 #     ######## ##    ##    ###    #### ##     ##  #######  ##    ## ##     ## ######## ##    ##    ##
-    - uses: actions/setup-python@v5
+    - name: Python 3.10
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
@@ -241,4 +238,4 @@ jobs:
         path: ${{github.workspace}}/build/download/packages
     
     - name: Upload to release
-      run: python tools/release.py --upload ${{github.workspace}}/build/download/packages
+      run: python ./.flow/flow.py ci upload --ref "${{github.action_ref}}" "${{github.workspace}}/build/download/packages"
