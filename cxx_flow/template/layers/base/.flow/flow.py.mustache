@@ -143,7 +143,7 @@ def bootstrap_cxx_flow():
             return True
 
     if pip("--version", capture_output=True).returncode != 0:
-        print("Cannot call pip as a module. Exiting.\n")
+        print("Cannot call pip as a module. Exiting.\n", file=sys.stderr)
         sys.exit(1)
 
     version_major = CXX_FLOW.major
@@ -151,7 +151,7 @@ def bootstrap_cxx_flow():
     version_range = f">={version_major}.{version_minor},<{version_major + 1}"
 
     if pip("install", f"cxx-flow{version_range}").returncode != 0:
-        print("Cannot install cxx-flow with current pip. Exiting.\n")
+        print("Cannot install cxx-flow with current pip. Exiting.\n", file=sys.stderr)
         sys.exit(1)
 
     return CXX_FLOW.compatible_with(cxx_flow_version(print_output=True))

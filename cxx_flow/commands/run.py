@@ -70,7 +70,7 @@ def refresh_directories(configs: Configs, rt: Runtime, steps: List[Step]):
     for dirname in directories_to_refresh:
         if not rt.silent:
             printed = True
-            print(f"[-] {dirname}")
+            print(f"[-] {dirname}", file=sys.stderr)
         if not rt.dry_run:
             shutil.rmtree(dirname, ignore_errors=True)
 
@@ -78,20 +78,22 @@ def refresh_directories(configs: Configs, rt: Runtime, steps: List[Step]):
 
 
 def run_steps(configs: Configs, rt: Runtime, program: List[Step], printed: bool) -> int:
-    for config in configs.usable:
+    config_count = len(configs.usable)
+    for config_index in range(config_count):
+        config = configs.usable[config_index]
         steps = [step for step in program if step.is_active(config, rt)]
         step_count = len(steps)
         if step_count == 0:
             continue
 
         if printed:
-            print()
+            print(file=sys.stderr)
         printed = True
 
-        print("-", config.build_name)
+        print(f"- {config_index + 1}/{config_count}: {config.build_name}", file=sys.stderr)
         for index in range(step_count):
             step = steps[index]
-            print(f"-- step {index + 1}/{step_count}: {step.name}")
+            print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)
             ret = step.run(config, rt)
             if ret:
                 return 1

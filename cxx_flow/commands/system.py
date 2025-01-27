@@ -2,6 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 import platform
+import sys
 from typing import Annotated
 
 from ..flow.arg import Argument
@@ -46,11 +47,11 @@ def command_system(
             "system",
             "version",
         ]:
-            print(name, platform.__dict__[name]())
+            print(name, platform.__dict__[name](), file=sys.stderr)
 
-        print("-----")
-        print(f"node {node}")
-        print(f"os {system}")
+        print("-----", file=sys.stderr)
+        print(f"node {node}", file=sys.stderr)
+        print(f"os {system}", file=sys.stderr)
         if version is not None:
-            print(f"version {version}")
-        print(f"machine {arch}")
+            print(f"version {version}", file=sys.stderr)
+        print(f"machine {arch}", file=sys.stderr)

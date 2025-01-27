@@ -41,7 +41,7 @@ def should_exclude(filename: str, exclude: List[str], config_os: str):
 
 class SignBase(step.Step):
     def is_active(self, config: Config, rt: Runtime) -> int:
-        return win32.is_active(config.os, rt.verbose)
+        return win32.is_active(config.os, rt)
 
     @abstractmethod
     def get_files(self, config: Config, rt: Runtime) -> List[str]: ...
@@ -56,7 +56,7 @@ class SignBase(step.Step):
         if rt.dry_run:
             return 0
 
-        return win32.sign(files, rt.verbose)
+        return win32.sign(files, rt)
 
 
 class SignFiles(SignBase):

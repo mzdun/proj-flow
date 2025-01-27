@@ -188,7 +188,7 @@ class Makefile:
             if result:
                 return result
         if counter == len(self.statements):
-            print("-- Nothing to do")
+            print("-- Nothing to do", file=sys.stderr)
         return 0
 
 

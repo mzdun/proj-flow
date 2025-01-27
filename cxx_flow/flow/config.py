@@ -110,10 +110,10 @@ def default_compiler():
     try:
         return _flow_config_default_compiler[platform]
     except KeyError:
-        print(f"KeyError: {platform} in {_flow_config_default_compiler}")
+        print(f"-- KeyError: {platform} in {_flow_config_default_compiler}", file=sys.stderr)
         return "?"
     except TypeError:
-        print(f"TypeError: internal: flow config not ready yet")
+        print(f"-- TypeError: internal: flow config not ready yet", file=sys.stderr)
         return "?"
 
 
@@ -156,9 +156,9 @@ def _print_cmd(*args: str, use_color: bool = True, secrets: List[str], raw: bool
     cmd = args[0] if raw else shlex.join([args[0]])
     if not use_color:
         if raw:
-            print(cmd, *(_hide(arg) for arg in args[1:]))
+            print(cmd, *(_hide(arg) for arg in args[1:]), file=sys.stderr)
         else:
-            print(cmd, shlex.join(_hide(arg) for arg in args[1:]))
+            print(cmd, shlex.join(_hide(arg) for arg in args[1:]), file=sys.stderr)
         return
 
     args = " ".join([_print_arg(arg, secrets, raw) for arg in args[1:]])
@@ -314,6 +314,12 @@ class Runtime(FlowConfig):
             self.only_host = rt.only_host
             self.platform = rt.platform
             self.secrets = [*rt.secrets]
+
+    def message(self, *args: str, **kwargs):
+        if not self.verbose:
+            return
+
+        print("--", *args, **kwargs, file=sys.stderr)
 
     def print(self, *args: str, raw=False):
         if not self.silent:

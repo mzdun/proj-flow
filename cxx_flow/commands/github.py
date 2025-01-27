@@ -31,4 +31,4 @@ def command_github(
             json.dump(usable, sys.stdout)
         return
 
-    print("cxx-flow github", matrix, configs)
+    print("cxx-flow github", matrix, configs, file=sys.stderr)
