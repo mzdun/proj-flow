@@ -90,7 +90,13 @@ def run_steps(configs: Configs, rt: Runtime, program: List[Step], printed: bool)
             print(file=sys.stderr)
         printed = True
 
-        print(f"- {config_index + 1}/{config_count}: {config.build_name}", file=sys.stderr)
+        if config_count < 2:
+            print(f"- {config.build_name}", file=sys.stderr)
+        else:
+            print(
+                f"- {config_index + 1}/{config_count}: {config.build_name}",
+                file=sys.stderr,
+            )
         for index in range(step_count):
             step = steps[index]
             print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)

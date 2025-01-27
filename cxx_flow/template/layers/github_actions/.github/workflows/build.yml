@@ -30,7 +30,7 @@ jobs:
 
     - name: Find builds
       id: flow
-      run: python ./.flow/flow.py github --matrix >> $GITHUB_OUTPUT
+      run: python ./.flow/flow.py ci --matrix >> $GITHUB_OUTPUT
 
   build:
     needs: M
@@ -67,7 +67,7 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Enable venv (Ubuntu)
+    - name: Dependencies (Ubuntu)
       if: ${{ matrix.ubuntu }}
       run: |
         python --version
@@ -76,15 +76,21 @@ jobs:
         python ./.flow/flow.py --bootstrap
         echo PATH=$PATH >> $GITHUB_ENV
 
-    - name: Enable venv (Windows)
+    - name: Add msbuild to PATH
+      if: ${{ matrix.windows }}
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Dependencies (Windows)
       if: ${{ matrix.windows }}
       shell: cmd
       run: |
+        dotnet tool install --global wix --version 4.0.4
+        wix extension add -g WixToolset.UI.wixext/4.0.4
         python --version
         python -m venv .venv
         .venv\Scripts\activate.bat
         python ./.flow/flow.py --bootstrap
-        echo PATH=$PATH >> $GITHUB_ENV
+        echo PATH=%PATH% >> $GITHUB_ENV
 
     - name: Install Ninja
       if: ${{ matrix.ubuntu }}

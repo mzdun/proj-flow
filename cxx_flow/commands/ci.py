@@ -10,7 +10,7 @@ from ..flow.arg import FlagArgument
 from ..flow.config import Configs, Runtime
 
 
-def command_github(
+def command_ci(
     matrix: Annotated[Optional[bool], FlagArgument(help="print matrix json")],
     configs: Configs,
     rt: Runtime,
@@ -31,4 +31,4 @@ def command_github(
             json.dump(usable, sys.stdout)
         return
 
-    print("cxx-flow github", matrix, configs, file=sys.stderr)
+    print("cxx-flow ci", matrix, configs, file=sys.stderr)

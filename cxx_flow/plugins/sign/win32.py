@@ -44,7 +44,9 @@ def find_sign_tool(rt: Runtime) -> Optional[str]:
             pass
     versions.sort()
     versions.reverse()
-    rt.message("sign/win32: Regarding versions:", ', '.join(version[1] for version in versions))
+    rt.message(
+        "sign/win32: Regarding versions:", ", ".join(version[1] for version in versions)
+    )
     for _, version in versions:
         # C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe
         sign_tool = os.path.join(kits_root, "bin", version, machine, "signtool.exe")

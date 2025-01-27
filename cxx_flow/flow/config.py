@@ -110,7 +110,10 @@ def default_compiler():
     try:
         return _flow_config_default_compiler[platform]
     except KeyError:
-        print(f"-- KeyError: {platform} in {_flow_config_default_compiler}", file=sys.stderr)
+        print(
+            f"-- KeyError: {platform} in {_flow_config_default_compiler}",
+            file=sys.stderr,
+        )
         return "?"
     except TypeError:
         print(f"-- TypeError: internal: flow config not ready yet", file=sys.stderr)
