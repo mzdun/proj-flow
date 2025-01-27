@@ -272,6 +272,7 @@ def _cp(src: str, dst: str) -> int:
 class Runtime(FlowConfig):
     dry_run: bool
     silent: bool
+    verbose: bool
     official: bool
     no_coverage: bool
     use_color: bool
@@ -286,6 +287,7 @@ class Runtime(FlowConfig):
             args = argsOrRuntime
             self.dry_run = args.dry_run
             self.silent = args.silent
+            self.verbose = args.verbose
             try:
                 self.official = args.official
             except AttributeError:
@@ -305,6 +307,7 @@ class Runtime(FlowConfig):
             rt = argsOrRuntime
             self.dry_run = rt.dry_run
             self.silent = rt.silent
+            self.verbose = rt.verbose
             self.official = rt.official
             self.no_coverage = rt.no_coverage
             self.use_color = rt.use_color

@@ -20,13 +20,15 @@ machine = {"ARM64": "arm64", "AMD64": "x64", "X86": "x86"}.get(
 )
 
 
-def find_sign_tool() -> Optional[str]:
+def find_sign_tool(verbose: bool) -> Optional[str]:
     with winreg.OpenKeyEx(
         winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows Kits\Installed Roots"
     ) as kits:
         try:
             kits_root = winreg.QueryValueEx(kits, "KitsRoot10")[0]
         except FileNotFoundError:
+            if verbose:
+                print("-- sign/win32: No KitsRoot10 value", file=sys.stderr)
             return None
 
         versions: List[Tuple[Version, str]] = []
@@ -41,26 +43,38 @@ def find_sign_tool() -> Optional[str]:
             pass
     versions.sort()
     versions.reverse()
+    if verbose:
+        print(f"-- sign/win32: Regarding versions: {', '.join(version[1] for version in versions)}")
     for _, version in versions:
         # C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe
         sign_tool = os.path.join(kits_root, "bin", version, machine, "signtool.exe")
         if os.path.isfile(sign_tool):
+            if verbose:
+                print(f"-- sign/win32: using: {sign_tool}")
             return sign_tool
     return None
 
 
-def get_key_():
+def get_key_(verbose: bool):
+    if verbose:
+        print(f"-- sign/win32: trying ${ENV_KEY}")
     env = os.environ.get(ENV_KEY)
     if env is not None:
         return env
     filename = os.path.join(os.path.expanduser("~"), "signature.key")
+    if verbose:
+        print(f"-- sign/win32: trying {filename}")
     if os.path.isfile(filename):
         with open(filename, encoding="UTF-8") as file:
-            return file.read().strip()
+            result = file.read().strip()
+            return result
     filename = os.path.join(".", "signature.key")
+    if verbose:
+        print(f"-- sign/win32: trying {filename}")
     if os.path.isfile(filename):
         with open(filename, encoding="UTF-8") as file:
-            return file.read().strip()
+            result = file.read().strip()
+            return result
 
     return None
 
@@ -70,25 +84,38 @@ class Key(NamedTuple):
     secret: bytes
 
 
-def get_key() -> Optional[Key]:
-    key = get_key_()
+def get_key(verbose: bool) -> Optional[Key]:
+    key = get_key_(verbose)
     if key is None:
+        if verbose:
+            print(f"-- sign/win32: no key set up")
         return None
-    obj = json.loads(key)
-    token = obj.get("token")
-    secret = obj.get("secret")
+    if verbose:
+        print(f"-- sign/win32: key length is {len(key)}")
+    try:
+        obj = json.loads(key)
+    except json.decoder.JSONDecodeError:
+        if verbose:
+            print(f"-- sign/win32: the signature is not a valid JSON document")
+        obj = None
+    if isinstance(obj, dict):
+        token = obj.get("token")
+        secret = obj.get("secret")
+    else:
+        token = None
+        secret = None
     return Key(
         base64.b64decode(token).decode("UTF-8") if token is not None else None,
         base64.b64decode(secret) if secret is not None else None,
     )
 
 
-def is_active(os_name: str):
+def is_active(os_name: str, verbose: bool):
     if os_name != "windows":
         return False
-    key = get_key()
+    key = get_key(verbose)
     return (
-        find_sign_tool() is not None
+        find_sign_tool(verbose) is not None
         and key is not None
         and key.token is not None
         and key.secret is not None
@@ -122,14 +149,14 @@ def is_pe_exec(path: str):
         return signature == _PE
 
 
-def sign(files: Iterable[str]):
-    key = get_key()
+def sign(files: Iterable[str], verbose: bool):
+    key = get_key(verbose)
 
     if key is None or key.token is None or key.secret is None:
         print("cxx-flow: sign: the key is missing", file=sys.stderr)
         return 1
 
-    sign_tool = find_sign_tool()
+    sign_tool = find_sign_tool(verbose)
     if sign_tool is None:
         print("cxx-flow: sign: signtool.exe not found", file=sys.stderr)
         sys.exit(0)

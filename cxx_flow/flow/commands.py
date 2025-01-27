@@ -200,11 +200,18 @@ class BuiltinEntry:
             help="print steps and commands, do nothing",
         )
 
-        parser.add_argument(
+        verbosity = parser.add_mutually_exclusive_group()
+        verbosity.add_argument(
             "--silent",
             action="store_true",
             required=False,
             help="removes most of the output",
+        )
+        verbosity.add_argument(
+            "--verbose",
+            action="store_true",
+            required=False,
+            help="adds more output",
         )
 
         has_config = False
