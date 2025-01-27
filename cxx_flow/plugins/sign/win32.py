@@ -44,7 +44,9 @@ def find_sign_tool(verbose: bool) -> Optional[str]:
     versions.sort()
     versions.reverse()
     if verbose:
-        print(f"-- sign/win32: Regarding versions: {', '.join(version[1] for version in versions)}")
+        print(
+            f"-- sign/win32: Regarding versions: {', '.join(version[1] for version in versions)}"
+        )
     for _, version in versions:
         # C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe
         sign_tool = os.path.join(kits_root, "bin", version, machine, "signtool.exe")
@@ -55,59 +57,64 @@ def find_sign_tool(verbose: bool) -> Optional[str]:
     return None
 
 
-def get_key_(verbose: bool):
-    if verbose:
-        print(f"-- sign/win32: trying ${ENV_KEY}")
-    env = os.environ.get(ENV_KEY)
-    if env is not None:
-        return env
-    filename = os.path.join(os.path.expanduser("~"), "signature.key")
-    if verbose:
-        print(f"-- sign/win32: trying {filename}")
-    if os.path.isfile(filename):
-        with open(filename, encoding="UTF-8") as file:
-            result = file.read().strip()
-            return result
-    filename = os.path.join(".", "signature.key")
-    if verbose:
-        print(f"-- sign/win32: trying {filename}")
-    if os.path.isfile(filename):
-        with open(filename, encoding="UTF-8") as file:
-            result = file.read().strip()
-            return result
-
-    return None
-
-
 class Key(NamedTuple):
     token: str
     secret: bytes
 
 
-def get_key(verbose: bool) -> Optional[Key]:
-    key = get_key_(verbose)
-    if key is None:
-        if verbose:
-            print(f"-- sign/win32: no key set up")
-        return None
+def _get_key_from_contents(key: str, verbose: bool):
     if verbose:
         print(f"-- sign/win32: key length is {len(key)}")
+
     try:
         obj = json.loads(key)
     except json.decoder.JSONDecodeError:
         if verbose:
             print(f"-- sign/win32: the signature is not a valid JSON document")
-        obj = None
-    if isinstance(obj, dict):
-        token = obj.get("token")
-        secret = obj.get("secret")
-    else:
-        token = None
-        secret = None
+        return None
+
+    if not isinstance(obj, dict):
+        if verbose:
+            print(f"-- sign/win32: the signature is missing required fields")
+        return None
+
+    token = obj.get("token")
+    secret = obj.get("secret")
+    if not isinstance(token, str) or not isinstance(secret, str):
+        if verbose:
+            print(f"-- sign/win32: the signature is missing required fields")
+        return None
+
     return Key(
-        base64.b64decode(token).decode("UTF-8") if token is not None else None,
-        base64.b64decode(secret) if secret is not None else None,
+        base64.b64decode(token).decode("UTF-8"),
+        base64.b64decode(secret),
     )
+
+
+def get_key(verbose: bool) -> Optional[Key]:
+    if verbose:
+        print(f"-- sign/win32: trying ${ENV_KEY}")
+    env = os.environ.get(ENV_KEY)
+    if env is not None:
+        key = _get_key_from_contents(env, verbose)
+        if key is not None:
+            return key
+    local_signature = os.path.join(".", "signature.key")
+    home_signature = os.path.join(os.path.expanduser("~"), "signature.key")
+    for filename in [local_signature, home_signature]:
+        if verbose:
+            print(f"-- sign/win32: trying {filename}")
+        if os.path.isfile(filename):
+            with open(filename, encoding="UTF-8") as file:
+                result = file.read().strip()
+                key = _get_key_from_contents(result, verbose)
+                if key is not None:
+                    return key
+
+    if verbose:
+        print(f"-- sign/win32: no key set up")
+
+    return None
 
 
 def is_active(os_name: str, verbose: bool):
@@ -115,10 +122,10 @@ def is_active(os_name: str, verbose: bool):
         return False
     key = get_key(verbose)
     return (
-        find_sign_tool(verbose) is not None
-        and key is not None
+        key is not None
         and key.token is not None
         and key.secret is not None
+        and find_sign_tool(verbose) is not None
     )
 
 
