@@ -2,26 +2,30 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 import os
-from pprint import pprint
 from typing import Annotated, Dict, List, Optional, Set, cast
 
-from ..flow import commands, matrix, step
-from ..flow.arg import FlagArgument
-from ..flow.config import Runtime
+from cxx_flow import flow
+from cxx_flow.api import arg, env, step
+from cxx_flow.base import matrix
 
 
 def command_list(
-    builtin: Annotated[Optional[str], FlagArgument(help="show all builtin commands")],
-    alias: Annotated[Optional[str], FlagArgument(help="show all alias commands")],
-    steps: Annotated[Optional[str], FlagArgument(help="show all run steps")],
-    configs: Annotated[Optional[str], FlagArgument(help="show all known matrix keys")],
+    builtin: Annotated[
+        Optional[str], arg.FlagArgument(help="show all builtin commands")
+    ],
+    alias: Annotated[Optional[str], arg.FlagArgument(help="show all alias commands")],
+    steps: Annotated[Optional[str], arg.FlagArgument(help="show all run steps")],
+    configs: Annotated[
+        Optional[str], arg.FlagArgument(help="show all known matrix keys")
+    ],
     all: Annotated[
-        Optional[str], FlagArgument(help="show builtins, aliases, steps and configs")
+        Optional[str],
+        arg.FlagArgument(help="show builtins, aliases, steps and configs"),
     ],
     pipe: Annotated[
-        Optional[str], FlagArgument(help="do not show additional information")
+        Optional[str], arg.FlagArgument(help="do not show additional information")
     ],
-    rt: Runtime,
+    rt: env.Runtime,
 ):
     """List all the commands and/or steps for cxx-flow"""
 
@@ -37,7 +41,7 @@ def command_list(
 
     if builtin:
         builtin_entries = list(
-            sorted((entry.name, entry.doc) for entry in commands.command_list)
+            sorted((entry.name, entry.doc) for entry in flow.cli.cmds.command_list)
         )
         if not pipe and len(builtin_entries) > 0:
             print("Builtin commands")
@@ -153,7 +157,7 @@ def command_list(
         print(f"Use {bold}--help{reset} to see, which listings are available")
 
 
-def _load_flow_data(rt: "Runtime"):
+def _load_flow_data(rt: env.Runtime):
     paths = [os.path.join(".flow", "matrix.json")]
     m, keys = matrix.load_matrix(*paths)
 

@@ -9,9 +9,9 @@ from dataclasses import dataclass, field
 from types import ModuleType
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union, cast
 
-from .. import commands
-from .arg import Argument, get_subcommands
-from .config import Configs, FlowConfig, Runtime, default_compiler, platform
+from cxx_flow import commands
+from cxx_flow.api import arg, env
+from cxx_flow.flow.configs import Configs
 
 
 @dataclass
@@ -19,8 +19,8 @@ class SpecialArg:
     name: str
     ctor: callable
 
-    def create(self, rt: Runtime, args: argparse.Namespace):
-        if self.ctor == Runtime:
+    def create(self, rt: env.Runtime, args: argparse.Namespace):
+        if self.ctor == env.Runtime:
             return rt
         return self.ctor(rt, args)
 
@@ -77,7 +77,7 @@ class BuiltinEntry:
     additional: List[SpecialArg]
     children: List["BuiltinEntry"] = field(default_factory=list)
 
-    def run(self, args: argparse.Namespace, rt: Runtime, level=0):
+    def run(self, args: argparse.Namespace, rt: env.Runtime, level=0):
         if level == 0 and rt.only_host:
             rt.only_host = self.name == "run"
 
@@ -108,11 +108,11 @@ class BuiltinEntry:
         return 0 if result is None else result
 
     @staticmethod
-    def run_entry(args: argparse.Namespace, cfg: FlowConfig):
+    def run_entry(args: argparse.Namespace, cfg: env.FlowConfig):
         builtin_entries = {entry.name for entry in command_list}
         aliases = cfg.aliases
 
-        rt = Runtime(args)
+        rt = env.Runtime(args)
         rt.steps = cfg.steps
         rt.aliases = cfg.aliases
         rt._cfg = cfg._cfg
@@ -137,7 +137,7 @@ class BuiltinEntry:
 
     @staticmethod
     def visit_all(
-        parser: argparse.ArgumentParser, cfg: FlowConfig
+        parser: argparse.ArgumentParser, cfg: env.FlowConfig
     ) -> Dict[str, List[str]]:
         shortcut_configs = BuiltinEntry.build_shortcuts(cfg)
 
@@ -164,7 +164,7 @@ class BuiltinEntry:
         return shortcut_configs
 
     @staticmethod
-    def build_shortcuts(cfg: FlowConfig) -> Dict[str, List[str]]:
+    def build_shortcuts(cfg: env.FlowConfig) -> Dict[str, List[str]]:
         shortcut_configs: Dict[str, List[str]] = {}
         args: List[Tuple[str, List[str]]] = []
 
@@ -183,8 +183,8 @@ class BuiltinEntry:
                 args.append((shortcut_name, config))
 
         if len(args):
-            os_prefix = f"os={platform}"
-            compiler_prefix = f"compiler={default_compiler()}"
+            os_prefix = f"os={env.platform}"
+            compiler_prefix = f"compiler={env.default_compiler()}"
 
             for shortcut_name, config in args:
                 config.insert(0, compiler_prefix)
@@ -247,7 +247,7 @@ class BuiltinEntry:
                 default=[],
                 help="run only build matching the config; "
                 "each filter is a name of a matrix axis followed by comma-separated values to take; "
-                f'if "os" is missing, it will default to additional "-D os={platform}"',
+                f'if "os" is missing, it will default to additional "-D os={env.platform}"',
             )
 
             parser.add_argument(
@@ -288,20 +288,20 @@ def _shortcut_value(value) -> str:
     return str(value)
 
 
-def _extract_arg(name: str, arg: Any):
-    for ctor in [Configs, Runtime]:
-        if arg is ctor:
+def _extract_arg(name: str, argument: Any):
+    for ctor in [Configs, env.Runtime]:
+        if argument is ctor:
             return SpecialArg(name, ctor)
 
-    anno_type = typing.get_origin(arg)
+    anno_type = typing.get_origin(argument)
     if anno_type is not Annotated:
         return None
 
-    arg_dict = getattr(arg, "__dict__", {})
+    arg_dict = getattr(argument, "__dict__", {})
     origin = arg_dict.get("__origin__", None)
     (metadata,) = arg_dict.get("__metadata__", None)
 
-    if origin is None or not isinstance(metadata, Argument):
+    if origin is None or not isinstance(metadata, arg.Argument):
         return None
 
     optional = typing.get_origin(origin) is Union and type(None) in typing.get_args(
@@ -332,7 +332,7 @@ def _get_entry(modname: str, module: ModuleType):
 
         has_rt = False
         for additional in special_args:
-            if additional.ctor == Runtime:
+            if additional.ctor == env.Runtime:
                 has_rt = True
                 break
 
@@ -356,7 +356,7 @@ class SubEntry:
 
         has_rt = False
         for additional in special_args:
-            if additional.ctor == Runtime:
+            if additional.ctor == env.Runtime:
                 has_rt = True
                 break
 
@@ -379,7 +379,7 @@ def _get_entries():
     subcommands = {
         command: list(group)
         for command, group in itertools.groupby(
-            map(_get_subentry, get_subcommands()), lambda subentry: subentry.command
+            map(_get_subentry, arg.get_subcommands()), lambda subentry: subentry.command
         )
     }
     all_entries = map(lambda tup: _get_entry(*tup), submodules)

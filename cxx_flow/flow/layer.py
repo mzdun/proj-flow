@@ -9,8 +9,7 @@ from typing import List, Optional, cast
 
 import chevron
 
-from ..flow import ctx
-from ..flow.config import Runtime
+from cxx_flow.api import ctx, env
 
 
 @dataclass
@@ -42,7 +41,7 @@ class FileInfo:
             return f"{open_mstch}#{self.when}{close_mstch}\n{self.dst}\n{open_mstch}/{self.when}{close_mstch}\n"
         return f"{self.dst}\n"
 
-    def run(self, root: str, rt: Runtime, context: ctx.SettingsType):
+    def run(self, root: str, rt: env.Runtime, context: ctx.SettingsType):
         if not rt.silent:
             if rt.use_color:
                 print(f"\033[2;30m+\033[m {self.dst}")
@@ -134,7 +133,7 @@ class LayerInfo:
             result += f"{open_mstch}/{self.when}{close_mstch}\n"
         return result
 
-    def run(self, rt: Runtime, context: ctx.SettingsType):
+    def run(self, rt: env.Runtime, context: ctx.SettingsType):
         if not rt.silent:
             if rt.use_color:
                 print(f"\033[2;30m[{self.pkg}:{self.name}]\033[m")
@@ -146,7 +145,7 @@ class LayerInfo:
             print()
 
 
-def copy_license(rt: Runtime, context: ctx.SettingsType):
+def copy_license(rt: env.Runtime, context: ctx.SettingsType):
     license = context.get("COPY", {}).get("LICENSE")
     if not license:
         return

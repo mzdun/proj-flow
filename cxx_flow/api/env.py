@@ -13,89 +13,9 @@ import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union, cast
 
-from .matrix import cartesian, find_compiler, flatten, load_matrix, matches_any
-from .uname import uname
+from cxx_flow.base import uname
 
-platform = uname()[0]
-
-
-def _compiler_inner(
-    value: str, used_compilers: Dict[str, List[str]], config_names: Dict[str, List[str]]
-):
-    compiler, names = find_compiler(value, config_names)
-    if compiler not in used_compilers:
-        used_compilers[compiler] = []
-    used_compilers[compiler].append(names)
-    return compiler
-
-
-def _compiler(used_compilers: Dict[str, List[str]], config_names: Dict[str, List[str]]):
-    return lambda value: _compiler_inner(value, used_compilers, config_names)
-
-
-def _boolean_inner(value: str, with_name: str):
-    v = value.lower()
-    return v in _TRUE or v == with_name
-
-
-def _boolean(with_name: str):
-    return lambda value: _boolean_inner(value, with_name)
-
-
-_TRUE = {"true", "on", "yes", "1"}
-boolean_sanitizer = _boolean("with-sanitizer")
-
-
-def _types(used_compilers: Dict[str, List[str]], config_names: Dict[str, List[str]]):
-    return {
-        "compiler": _compiler(used_compilers, config_names),
-        "sanitizer": boolean_sanitizer,
-    }
-
-
-def _config(config: List[str], only_host: bool, types: Dict[str, callable]):
-    args = {}
-    for arg in config:
-        if arg[:1] == "-":
-            continue
-        _arg = arg.split("=", 1)
-        if len(_arg) == 1:
-            continue
-
-        name, vals = _arg
-        name = name.strip()
-        conv = types.get(name, lambda value: value)
-        values = {conv(val.strip()) for val in vals.split(",")}
-        if name in args:
-            values.update(args[name])
-        args[name] = list(values)
-
-    if only_host and "os" not in args:
-        args["os"] = [platform]
-
-    return args
-
-
-def _expand_one(config: dict, github_os: str, os_in_name: str):
-    os_ver = github_os.split("-")[1]
-    build_name = f"{config['build_type']} with {config['compiler']} on {os_in_name}"
-    if config["sanitizer"]:
-        build_name += " (and sanitizer)"
-    config["github_os"] = github_os
-    config["build_name"] = build_name
-    config["needs_gcc_ppa"] = os_ver != "latest" and config["os"] == "ubuntu"
-    return config
-
-
-def _expand_config(config: dict, spread_lts: bool, lts_list: Dict[str, List[str]]):
-    if spread_lts:
-        spread = lts_list.get(config["os"], [])
-        if len(spread):
-            return [
-                _expand_one({key: config[key] for key in config}, lts, lts)
-                for lts in spread
-            ]
-    return [_expand_one(config, f"{config['os']}-latest", config["os"])]
+platform = uname.uname()[0]
 
 
 _flow_config_default_compiler: Optional[Dict[str, str]] = None
@@ -120,52 +40,43 @@ def default_compiler():
         return "?"
 
 
-def _load_flow_data(rt: "Runtime"):
-    root = ".flow"
-    paths = [os.path.join(root, "matrix.json")]
-    if rt.official:
-        paths.append(os.path.join(root, "official.json"))
-    matrix, keys = load_matrix(*paths)
-
-    if rt.no_coverage:
-        for conf in matrix:
-            if "coverage" in conf:
-                del conf["coverage"]
-
-    return matrix, keys
-
-
-def _hide(arg: str, secrets: List[str]):
-    for secret in secrets:
-        arg = arg.replace(secret, "?" * max(15, len(secret)))
-    return arg
-
-
-def _print_arg(arg: str, secrets: List[str], raw: bool):
-    color = ""
-    arg = _hide(arg, secrets)
-    if arg[:1] == "-":
-        color = "\033[2;37m"
-    if not raw:
-        arg = shlex.join([arg])
-    if color == "" and arg[:1] in ["'", '"']:
-        color = "\033[2;34m"
-    if color == "":
+class Printer:
+    @staticmethod
+    def hide(arg: str, secrets: List[str]):
+        for secret in secrets:
+            arg = arg.replace(secret, "?" * max(15, len(secret)))
         return arg
-    return f"{color}{arg}\033[m"
 
+    @staticmethod
+    def print_arg(arg: str, secrets: List[str], raw: bool):
+        color = ""
+        arg = Printer.hide(arg, secrets)
+        if arg[:1] == "-":
+            color = "\033[2;37m"
+        if not raw:
+            arg = shlex.join([arg])
+        if color == "" and arg[:1] in ["'", '"']:
+            color = "\033[2;34m"
+        if color == "":
+            return arg
+        return f"{color}{arg}\033[m"
 
-def _print_cmd(*args: str, use_color: bool = True, secrets: List[str], raw: bool):
-    cmd = args[0] if raw else shlex.join([args[0]])
-    if not use_color:
-        if raw:
-            print(cmd, *(_hide(arg) for arg in args[1:]), file=sys.stderr)
-        else:
-            print(cmd, shlex.join(_hide(arg) for arg in args[1:]), file=sys.stderr)
-        return
+    @staticmethod
+    def print_cmd(*args: str, use_color: bool = True, secrets: List[str], raw: bool):
+        cmd = args[0] if raw else shlex.join([args[0]])
+        if not use_color:
+            if raw:
+                print(cmd, *(Printer.hide(arg) for arg in args[1:]), file=sys.stderr)
+            else:
+                print(
+                    cmd,
+                    shlex.join(Printer.hide(arg) for arg in args[1:]),
+                    file=sys.stderr,
+                )
+            return
 
-    args = " ".join([_print_arg(arg, secrets, raw) for arg in args[1:]])
-    print(f"\033[33m{cmd}\033[m {args}", file=sys.stderr)
+        args = " ".join([Printer.print_arg(arg, secrets, raw) for arg in args[1:]])
+        print(f"\033[33m{cmd}\033[m {args}", file=sys.stderr)
 
 
 @dataclass
@@ -326,7 +237,9 @@ class Runtime(FlowConfig):
 
     def print(self, *args: str, raw=False):
         if not self.silent:
-            _print_cmd(*args, use_color=self.use_color, secrets=self.secrets, raw=raw)
+            Printer.print_cmd(
+                *args, use_color=self.use_color, secrets=self.secrets, raw=raw
+            )
 
     def cmd(self, *args: str):
         self.print(*args)
@@ -412,55 +325,3 @@ class Config:
     @property
     def build_generator(self) -> str:
         return self.items.get("build_generator", "")
-
-
-class Configs:
-    usable: List[Config] = []
-
-    def __init__(self, rt: Runtime, args: argparse.Namespace):
-        super()
-        matrix, keys = _load_flow_data(rt)
-
-        used_compilers: Dict[str, List[str]] = {}
-
-        types = _types(used_compilers=used_compilers, config_names=rt.compiler_names)
-        arg_configs = cartesian(_config(flatten(args.configs), rt.only_host, types))
-
-        # from commands/github
-        spread_lts = hasattr(args, "matrix") and not not args.matrix
-
-        turned = flatten(
-            [
-                _expand_config(config, spread_lts, rt.lts_list)
-                for config in matrix
-                if len(arg_configs) == 0 or matches_any(config, arg_configs)
-            ]
-        )
-
-        postproc_exclude = rt.postproc_exclude
-        usable = [
-            config
-            for config in turned
-            if len(postproc_exclude) == 0 or not matches_any(config, postproc_exclude)
-        ]
-
-        self.usable = []
-        for conf in usable:
-            try:
-                compilers = used_compilers[conf["compiler"]]
-            except KeyError:
-                fallback_compiler = find_compiler(
-                    conf["compiler"], config_names=rt.compiler_names
-                )
-                compilers = [fallback_compiler[1]]
-            for compiler in compilers:
-                self.usable.append(
-                    Config(
-                        {
-                            **conf,
-                            "compiler": compiler,
-                            "--orig-compiler": conf["compiler"],
-                        },
-                        keys,
-                    )
-                )

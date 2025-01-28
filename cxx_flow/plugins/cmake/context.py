@@ -6,7 +6,7 @@ import uuid
 
 import chevron
 
-from cxx_flow.flow import config, ctx, init
+from cxx_flow import api, flow
 
 from .__version__ import CMAKE_VERSION
 
@@ -23,8 +23,8 @@ config_json_mustache = """
 """
 
 
-class CMakeInit(init.InitStep):
-    def postprocess(self, rt: config.Runtime, context: dict):
+class CMakeInit(api.init.InitStep):
+    def postprocess(self, rt: api.env.Runtime, context: dict):
         patch = chevron.render(config_json_mustache, context).rstrip()
         if not patch:
             return
@@ -43,24 +43,24 @@ class CMakeInit(init.InitStep):
 
 
 def _list_cmake_types():
-    return ctx.move_to_front(
+    return api.ctx.move_to_front(
         "console-application",
-        sorted(key for key in ctx.get_internal("cmake").keys() if key),
+        sorted(key for key in flow.init.get_internal("cmake").keys() if key),
     )
 
 
-init.register_init_step(CMakeInit())
-ctx.register_init_setting(
-    ctx.Setting("PROJECT.TYPE", "CMake project type", _list_cmake_types)
+api.init.register_init_step(CMakeInit())
+api.ctx.register_init_setting(
+    api.ctx.Setting("PROJECT.TYPE", "CMake project type", _list_cmake_types)
 )
-ctx.register_init_setting(
-    ctx.Setting("cmake", fix="{PROJECT.TYPE$map:cmake}"),
-    ctx.Setting("CMAKE_VERSION", value=CMAKE_VERSION),
-    ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
+api.ctx.register_init_setting(
+    api.ctx.Setting("cmake", fix="{PROJECT.TYPE$map:cmake}"),
+    api.ctx.Setting("CMAKE_VERSION", value=CMAKE_VERSION),
+    api.ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
     is_hidden=True,
 )
-ctx.register_switch("with_cmake", "Use CMake", True)
-ctx.register_internal(
+api.ctx.register_switch("with_cmake", "Use CMake", True)
+api.ctx.register_internal(
     "cmake",
     {
         "": {"cmd": "add_executable", "type": ""},

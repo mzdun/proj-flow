@@ -3,7 +3,7 @@
 
 import os
 
-from ..flow.config import Runtime
+from cxx_flow.api.env import Runtime
 
 
 def command_bootstrap(rt: Runtime):

@@ -5,25 +5,24 @@ import platform
 import sys
 from typing import Annotated
 
-from ..flow.arg import Argument
-from ..flow.config import Runtime
-from ..flow.uname import uname
+from cxx_flow.api import arg, env
+from cxx_flow.base import uname
 
 
 def command_system(
     format: Annotated[
         str,
-        Argument(
+        arg.Argument(
             help="select, what format should be returned",
             choices=["props", "platform", "debug"],
         ),
     ],
-    _: Runtime,
+    _: env.Runtime,
 ):
     """Produces system information for CI pipelines"""
 
     node = platform.node()
-    system, version, arch = uname()
+    system, version, arch = uname.uname()
 
     if format == "props":
         print(f"-phost.name='{node}'")

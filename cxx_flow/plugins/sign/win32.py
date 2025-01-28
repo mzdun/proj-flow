@@ -11,7 +11,7 @@ import sys
 import winreg
 from typing import Iterable, List, NamedTuple, Optional, Tuple
 
-from cxx_flow.flow.config import Runtime
+from cxx_flow.api.env import Runtime
 
 ENV_KEY = "SIGN_TOKEN"
 

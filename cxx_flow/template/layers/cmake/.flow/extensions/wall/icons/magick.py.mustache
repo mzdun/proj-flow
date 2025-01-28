@@ -5,8 +5,8 @@ import os
 import sys
 from typing import List
 
-from cxx_flow.flow.config import Runtime
-from cxx_flow.flow.step import Rule, Statement
+from cxx_flow.api.env import Runtime
+from cxx_flow.api.makefile import Rule, Statement
 
 tool = "magick" if sys.platform == "win32" else "convert"
 

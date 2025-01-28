@@ -5,8 +5,8 @@ import shutil
 from abc import ABC, abstractmethod
 from typing import Callable, List, cast
 
-from cxx_flow.flow import cmd
-from cxx_flow.flow.config import Config, Runtime
+from cxx_flow.api.env import Config, Runtime
+from cxx_flow.base import cmd
 from cxx_flow.flow.dependency import VER_REGEX
 
 

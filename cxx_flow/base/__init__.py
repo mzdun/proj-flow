@@ -1,4 +1,6 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
-__version__ = "0.6.0"
+from . import cmd, matrix, uname
+
+__all__ = ["cmd", "matrix", "uname"]

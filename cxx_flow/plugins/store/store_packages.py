@@ -5,9 +5,8 @@ import os
 import shutil
 from typing import List, cast
 
-from cxx_flow.flow.config import Config, Runtime
-from cxx_flow.flow.step import Step, register_step
-from cxx_flow.flow.uname import uname
+from cxx_flow.api import env, step
+from cxx_flow.base.uname import uname
 
 from ..cmake.parser import get_project
 
@@ -16,18 +15,18 @@ _version = "" if _version is None else f"-{_version}"
 _project_pkg = None
 
 
-def _package_name(config: Config, pkg: str, group: str):
+def _package_name(config: env.Config, pkg: str, group: str):
     debug = "-dbg" if config.build_type.lower() == "debug" else ""
     suffix = group and f"-{group}" or ""
 
     return f"{pkg}-{_system}{_version}-{_arch}{debug}{suffix}"
 
 
-class StorePackages(Step):
+class StorePackages(step.Step):
     name = "StorePackages"
     runs_after = ["Pack"]
 
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> int:
         if not rt.dry_run:
             os.makedirs("build/artifacts", exist_ok=True)
 
@@ -70,4 +69,4 @@ class StorePackages(Step):
         )
 
 
-register_step(StorePackages())
+step.register_step(StorePackages())

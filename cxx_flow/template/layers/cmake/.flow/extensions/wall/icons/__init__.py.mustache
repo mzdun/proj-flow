@@ -2,11 +2,9 @@
 # This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
 
 import os
-import sys
-from typing import List
 
-from cxx_flow.flow.config import Config, Runtime
-from cxx_flow.flow.step import Makefile, Step, register_step
+from cxx_flow.api import env, step
+from cxx_flow.api.makefile import Makefile
 
 from . import magick
 
@@ -44,15 +42,13 @@ makefile = Makefile(
 )
 
 
-class IconsStep(Step):
+@step.register
+class IconsStep:
     name = "Icons"
     runs_before = ["Build"]
 
     def platform_dependencies(self):
         return [f"{magick.tool}>=6"]
 
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> int:
         return makefile.run(rt)
-
-
-register_step(IconsStep())

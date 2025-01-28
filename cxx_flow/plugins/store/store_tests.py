@@ -3,18 +3,17 @@
 
 import os
 
-from cxx_flow.flow.config import Config, Runtime
-from cxx_flow.flow.step import Step, register_step
+from cxx_flow.api import env, step
 
 
-class StoreTests(Step):
+class StoreTests(step.Step):
     name = "StoreTests"
     runs_after = ["Test"]
 
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> int:
         return rt.cp(
             f"build/{config.preset}/test-results", "build/artifacts/test-results"
         )
 
 
-register_step(StoreTests())
+step.register_step(StoreTests())

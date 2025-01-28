@@ -6,16 +6,16 @@ import shutil
 import sys
 from typing import Annotated, List, Optional, Set, cast
 
-from ..flow import dependency, matrix
-from ..flow.arg import Argument
-from ..flow.config import Configs, Runtime
-from ..flow.step import Step
+from cxx_flow import api
+from cxx_flow.base import matrix
+from cxx_flow.flow import dependency
+from cxx_flow.flow.configs import Configs
 
 
 def command_run(
     steps: Annotated[
         Optional[List[str]],
-        Argument(
+        api.arg.Argument(
             help="run only listed steps; if missing, run all the steps",
             names=["-s", "--steps"],
             nargs="*",
@@ -25,11 +25,11 @@ def command_run(
         ),
     ],
     configs: Configs,
-    rt: Runtime,
+    rt: api.env.Runtime,
 ):
     """Runs automation steps for current project"""
 
-    rt_steps = cast(List[Step], rt.steps)
+    rt_steps = cast(List[api.step.Step], rt.steps)
     steps = matrix.flatten(step.split(",") for step in matrix.flatten(steps))
     if not steps:
         steps = [step.name for step in rt_steps]
@@ -49,7 +49,7 @@ def command_run(
 
 
 def gather_dependencies_for_all_configs(
-    configs: Configs, rt: Runtime, steps: List[Step]
+    configs: Configs, rt: api.env.Runtime, steps: List[api.step.Step]
 ):
     deps: List[dependency.Dependency] = []
     for config in configs.usable:
@@ -58,7 +58,9 @@ def gather_dependencies_for_all_configs(
     return dependency.verify(deps)
 
 
-def refresh_directories(configs: Configs, rt: Runtime, steps: List[Step]):
+def refresh_directories(
+    configs: Configs, rt: api.env.Runtime, steps: List[api.step.Step]
+):
     directories_to_refresh: Set[str] = set()
     for config in configs.usable:
         for step in steps:
@@ -77,7 +79,9 @@ def refresh_directories(configs: Configs, rt: Runtime, steps: List[Step]):
     return printed
 
 
-def run_steps(configs: Configs, rt: Runtime, program: List[Step], printed: bool) -> int:
+def run_steps(
+    configs: Configs, rt: api.env.Runtime, program: List[api.step.Step], printed: bool
+) -> int:
     config_count = len(configs.usable)
     for config_index in range(config_count):
         config = configs.usable[config_index]

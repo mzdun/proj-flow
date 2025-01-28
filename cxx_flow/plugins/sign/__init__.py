@@ -7,8 +7,7 @@ import sys
 from abc import abstractmethod
 from typing import List, cast
 
-from cxx_flow.flow import init, step
-from cxx_flow.flow.config import Config, Runtime
+from cxx_flow.api import env, init, step
 
 if sys.platform == "win32":
     from . import win32
@@ -40,13 +39,13 @@ def should_exclude(filename: str, exclude: List[str], config_os: str):
 
 
 class SignBase(step.Step):
-    def is_active(self, config: Config, rt: Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
         return win32.is_active(config.os, rt)
 
     @abstractmethod
-    def get_files(self, config: Config, rt: Runtime) -> List[str]: ...
+    def get_files(self, config: env.Config, rt: env.Runtime) -> List[str]: ...
 
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> int:
         files = [file.replace(os.sep, "/") for file in self.get_files(config, rt)]
         if len(files) == 0:
             return 0
@@ -64,7 +63,7 @@ class SignFiles(SignBase):
     runs_after = ["Build"]
     runs_before = ["Pack"]
 
-    def get_files(self, config: Config, rt: Runtime) -> List[str]:
+    def get_files(self, config: env.Config, rt: env.Runtime) -> List[str]:
         cfg = cast(dict, rt._cfg.get("binaries", {}))
         roots = cfg.get("directories", ["bin", "lib", "libexec", "share"])
         exclude = cfg.get("exclude", ["*-test"])
@@ -90,12 +89,12 @@ class SignMsi(SignBase):
     runs_after = ["Pack"]
     runs_before = ["StorePackages", "Store"]
 
-    def is_active(self, config: Config, rt: Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
         return super().is_active(config, rt) and "WIX" in config.items.get(
             "cpack_generator", []
         )
 
-    def get_files(self, config: Config, rt: Runtime) -> List[str]:
+    def get_files(self, config: env.Config, rt: env.Runtime) -> List[str]:
         result: List[str] = []
         pkg_dir = os.path.join(config.build_dir, "packages")
         for curr_dir, dirnames, filenames in os.walk(pkg_dir):
@@ -111,7 +110,7 @@ class SignMsi(SignBase):
 
 
 class SignInit(init.InitStep):
-    def postprocess(self, rt: Runtime, context: dict):
+    def postprocess(self, rt: env.Runtime, context: dict):
         if sys.platform == "win32":
             with open(".gitignore", "ab") as ignoref:
                 ignoref.write("\n/signature.key\n".encode("UTF-8"))

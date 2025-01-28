@@ -8,7 +8,7 @@ from enum import Enum
 from importlib.metadata import version as package_version
 from typing import Callable, List, Set, Tuple
 
-from . import cmd
+from cxx_flow.base import cmd
 
 VER_REGEX = re.compile(r"((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))")
 Version = Tuple[int, int, int]

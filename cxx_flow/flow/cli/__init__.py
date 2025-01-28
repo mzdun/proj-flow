@@ -6,10 +6,9 @@ import os
 import sys
 from typing import List, cast
 
-from .. import __version__
-from .commands import BuiltinEntry
-from .config import FlowConfig
-from .steps import clean_aliases, load_steps
+from cxx_flow import __version__, api
+from cxx_flow.flow.cli import cmds
+from cxx_flow.flow.steps import clean_aliases, load_steps
 
 
 def _change_dir():
@@ -28,7 +27,7 @@ def _change_dir():
 def __main():
     _change_dir()
 
-    flow_cfg = FlowConfig()
+    flow_cfg = api.env.FlowConfig()
     valid_steps = load_steps(flow_cfg)
     clean_aliases(flow_cfg, valid_steps)
 
@@ -46,7 +45,7 @@ def __main():
         help="runs as if cxx-flow was started in <dir> instead of the current working directory",
     )
 
-    shortcut_configs = BuiltinEntry.visit_all(root, flow_cfg)
+    shortcut_configs = cmds.BuiltinEntry.visit_all(root, flow_cfg)
     args = root.parse_args()
 
     args_kwargs = dict(args._get_kwargs())
@@ -59,7 +58,7 @@ def __main():
         except KeyError:
             continue
 
-    sys.exit(BuiltinEntry.run_entry(args, flow_cfg))
+    sys.exit(cmds.BuiltinEntry.run_entry(args, flow_cfg))
 
 
 def main():

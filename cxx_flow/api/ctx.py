@@ -1,14 +1,18 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+
 import datetime
 import inspect
 import os
 from dataclasses import dataclass
-from pprint import pprint
 from typing import Callable, Dict, Iterable, List, Optional, Union
 
-from . import cmd
+from cxx_flow.base import cmd
+
+package_root = os.path.dirname(os.path.dirname(__file__))
+template_dir = "template"
+
 
 StrOrBool = Union[str, bool]
 Values = Union[StrOrBool, List[str]]
@@ -36,11 +40,16 @@ class Setting:
         return self.value
 
 
-package_root = os.path.dirname(os.path.dirname(__file__))
-template_dir = "template"
+def register_init_setting(*setting: Setting, is_hidden=False):
+    (hidden if is_hidden else defaults).extend(setting)
 
 
-_fileext = {".cc": ".hh", ".cxx": ".hxx", ".cpp": ".hpp"}
+def register_switch(key: str, prompt: str, enabled: bool):
+    switches.append(Setting(key, prompt, value=enabled))
+
+
+def register_internal(key: str, value: any):
+    internals[key] = value
 
 
 def _git_config(name: str):
@@ -88,7 +97,8 @@ def _enum_licenses():
 
 
 def _filter(
-    src: Callable[[SettingsType], StrOrBool], flt: Callable[[StrOrBool], StrOrBool]
+    src: Callable[[SettingsType], StrOrBool],
+    flt: Callable[[StrOrBool], StrOrBool],
 ):
     def impl(settings: SettingsType):
         return flt(src(settings))
@@ -115,14 +125,6 @@ def _get_key(key: str):
         return settings.get(key, "")
 
     return impl
-
-
-_filters: Dict[str, Callable[[StrOrBool], StrOrBool]] = {
-    "safe": lambda value: value.replace("-", "_"),
-    "upper": lambda value: value.upper(),
-    "lower": lambda value: value.lower(),
-    "header": lambda cxx_ext: _fileext.get(cxx_ext, ".hpp"),
-}
 
 
 def _build_fixup(settings: SettingsType, fixup: str):
@@ -157,80 +159,11 @@ def _build_fixup(settings: SettingsType, fixup: str):
     return result
 
 
-def _fixup(settings: SettingsType, key: str, fixup: str, force=False):
-    value = settings.get(key, "")
-    if value != "" and not force:
-        return
-
-    value = _build_fixup(settings, fixup)
-    settings[key] = value
-
-
 def _fixed(fixup: str):
     def wrap(settings: SettingsType):
         return _build_fixup(settings, fixup)
 
     return wrap
-
-
-def _get_default(setting: Setting, settings: SettingsType):
-    value = setting.calc_value(settings)
-    if isinstance(value, list):
-        return value[0]
-    return value
-
-
-def all_default():
-    settings: SettingsType = {}
-
-    for setting in defaults:
-        value = _get_default(setting, settings)
-        settings[setting.json_key] = value
-
-    for setting in switches:
-        value = _get_default(setting, settings)
-        settings[setting.json_key] = value
-
-    return settings
-
-
-def fixup(settings: SettingsType):
-    for setting in hidden:
-        value = _get_default(setting, settings)
-        if isinstance(value, bool) or value != "":
-            settings[setting.json_key] = value
-
-    for coll in [defaults, hidden]:
-        for setting in coll:
-            _fixup(settings, setting.json_key, setting.fix or "", setting.force_fix)
-    del settings["EXT"]
-
-    result = {}
-    for key in settings:
-        path = key.split(".")
-        ctx = result
-        for step in path[:-1]:
-            if step not in ctx or not isinstance(ctx[step], dict):
-                ctx[step] = {}
-            ctx = ctx[step]
-        ctx[path[-1]] = settings[key]
-    return result
-
-
-def register_init_setting(*setting: Setting, is_hidden=False):
-    (hidden if is_hidden else defaults).extend(setting)
-
-
-def register_switch(key: str, prompt: str, enabled: bool):
-    switches.append(Setting(key, prompt, value=enabled))
-
-
-def register_internal(key: str, value: any):
-    internals[key] = value
-
-
-def get_internal(key: str, value: any = None):
-    return internals.get(key, value)
 
 
 internals = {}
@@ -290,3 +223,13 @@ hidden: List[Setting] = [
     Setting("EXT.cxx", fix="{EXT}"),
     Setting("EXT.hxx", fix="{EXT.cxx$header}"),
 ]
+
+_fileext = {".cc": ".hh", ".cxx": ".hxx", ".cpp": ".hpp"}
+
+
+_filters: Dict[str, Callable[[StrOrBool], StrOrBool]] = {
+    "safe": lambda value: value.replace("-", "_"),
+    "upper": lambda value: value.upper(),
+    "lower": lambda value: value.lower(),
+    "header": lambda cxx_ext: _fileext.get(cxx_ext, ".hpp"),
+}

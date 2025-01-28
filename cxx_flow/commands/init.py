@@ -6,16 +6,14 @@ import os
 import sys
 from typing import Annotated, Optional
 
-from ..flow import config, ctx, dependency, init
-from ..flow.arg import Argument, FlagArgument
-from ..flow.interact import prompt
-from ..flow.layer import copy_license, gather_package_layers
+from cxx_flow import flow
+from cxx_flow.api import arg, ctx, env, init
 
 
 def command_init(
     path: Annotated[
         Optional[str],
-        Argument(
+        arg.Argument(
             help="location of initialized project; defaults to current directory",
             pos=True,
             default=".",
@@ -23,13 +21,13 @@ def command_init(
     ],
     non_interactive: Annotated[
         Optional[bool],
-        FlagArgument(help="selects all the default answers", names=["-y", "--yes"]),
+        arg.FlagArgument(help="selects all the default answers", names=["-y", "--yes"]),
     ],
     save_context: Annotated[
         Optional[bool],
-        FlagArgument(help="save the mustache context json", names=["--ctx"]),
+        arg.FlagArgument(help="save the mustache context json", names=["--ctx"]),
     ],
-    rt: config.Runtime,
+    rt: env.Runtime,
 ):
     """Initializes a new project"""
 
@@ -37,14 +35,16 @@ def command_init(
         os.makedirs(path, exist_ok=True)
         os.chdir(path)
 
-    errors = dependency.verify(dependency.gather(init.__steps))
+    errors = flow.dependency.verify(flow.dependency.gather(init.__steps))
     if len(errors) > 0:
         if not rt.silent:
             for error in errors:
                 print(f"cxx-flow: {error}", file=sys.stderr)
         return 1
 
-    context = ctx.fixup(ctx.all_default() if non_interactive else prompt())
+    context = flow.init.fixup(
+        flow.init.all_default() if non_interactive else flow.interact.prompt()
+    )
     if not non_interactive and not rt.silent:
         print()
 
@@ -52,13 +52,13 @@ def command_init(
         with open(".context.json", "w", encoding="UTF-8") as jsonf:
             json.dump(context, jsonf, ensure_ascii=False, indent=4)
 
-    copy_license(rt, context)
+    flow.layer.copy_license(rt, context)
     if not rt.silent:
         print()
 
-    layers = gather_package_layers(ctx.package_root, context)
-    for layer in layers:
-        layer.run(rt, context)
+    layers = flow.layer.gather_package_layers(ctx.package_root, context)
+    for fs_layer in layers:
+        fs_layer.run(rt, context)
 
     if save_context:
         with open(".gitignore", "ab") as ignoref:

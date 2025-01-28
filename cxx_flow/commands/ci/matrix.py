@@ -7,16 +7,16 @@ import os
 import sys
 from typing import Annotated, Optional
 
-from cxx_flow.flow.arg import FlagArgument, flow_subcommand
-from cxx_flow.flow.config import Configs, Runtime
+from cxx_flow.api import arg, env
+from cxx_flow.flow.configs import Configs
 
 
-@flow_subcommand
+@arg.flow_subcommand
 def matrix(
     official: Annotated[
-        Optional[bool], FlagArgument(help="cut matrix to minimal set of builds")
+        Optional[bool], arg.FlagArgument(help="cut matrix to minimal set of builds")
     ],
-    rt: Runtime,
+    rt: env.Runtime,
 ):
     """Supplies data for github actions"""
 

@@ -9,7 +9,7 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.validation import Validator
 
-from . import ctx
+from cxx_flow.api import ctx
 
 
 @dataclass

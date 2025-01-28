@@ -5,9 +5,7 @@ import os
 import textwrap
 from typing import List
 
-from cxx_flow.flow import ctx
-from cxx_flow.flow.config import Config, Runtime
-from cxx_flow.flow.step import Step, register_step
+from cxx_flow.api import ctx, env, step
 
 from ._conan import conan_api
 
@@ -16,19 +14,20 @@ CONAN_PROFILE = "_profile-compiler"
 CONAN_PROFILE_GEN = "_profile-build_type"
 
 
-class ConanConfig(Step):
+@step.register
+class ConanConfig:
     name = "Conan"
 
     def platform_dependencies(self):
         return ["conan"]
 
-    def is_active(self, config: Config, rt: Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
         return os.path.isfile("conanfile.txt") or os.path.isfile("conanfile.py")
 
-    def directories_to_remove(self, _: Config) -> List[str]:
+    def directories_to_remove(self, _: env.Config) -> List[str]:
         return [CONAN_DIR]
 
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> int:
         api = conan_api()
 
         profile_gen = f"{CONAN_DIR}/{CONAN_PROFILE_GEN}-{config.preset}"
@@ -58,5 +57,4 @@ class ConanConfig(Step):
         return 0
 
 
-register_step(ConanConfig())
 ctx.register_switch("with_conan", "Use Conan for dependency manager", True)
