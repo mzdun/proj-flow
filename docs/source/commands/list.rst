@@ -27,17 +27,21 @@ or aliases.
     Print all ``./flow run`` aliases taken from flow config file from
     ``"entry"`` object. In a freshly-initialized project it is something like
 
-    .. code-block:: json
+    .. code-block:: yaml
 
-        {
-            "config": [ "Conan", "CMake" ],
-            "build": [ "Build" ],
-            "verify": [
-                "Build", "Test", "Sign", "Pack", "SignPackages",
-                "Store", "BinInst", "DevInst"
-            ],
-            "test": [ "Build", "Test" ]
-        }
+        entry:
+          config: [ Conan, CMake ]
+          build: [ Build ]
+          test: [ Build, Test ]
+          verify:
+            - Build
+            - Test
+            - Sign
+            - Pack
+            - SignPackages
+            - Store
+            - BinInst
+            - DevInst
 
     Each key in this object can be used as a command replacing ``run``. For
     instance, calling
@@ -53,7 +57,7 @@ or aliases.
         $ ./flow run --step Conan,CMake [args...]
 
 ``--configs``
-    Print all key names from ``.flow/matrix.json``. This information can be used
+    Print all key names from ``.flow/matrix.yml``. This information can be used
     to decide, which ``-D`` parameters to ``./flow run`` make sense in
     current project.
 

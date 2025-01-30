@@ -158,7 +158,7 @@ def command_list(
 
 
 def _load_flow_data(rt: env.Runtime):
-    paths = [os.path.join(".flow", "matrix.json")]
+    paths = [os.path.join(".flow", "matrix.yml")]
     m, keys = matrix.load_matrix(*paths)
 
     if rt.no_coverage:

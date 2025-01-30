@@ -13,6 +13,8 @@ import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union, cast
 
+import yaml
+
 from cxx_flow.base import uname
 
 platform = uname.uname()[0]
@@ -109,10 +111,10 @@ class FlowConfig:
 
         try:
             with open(
-                os.path.join(".flow", "config.json"),
+                os.path.join(".flow", "config.yml"),
                 encoding="UTF-8",
             ) as f:
-                self._cfg = json.load(f)
+                self._cfg = yaml.load(f, Loader=yaml.Loader)
         except FileNotFoundError:
             self._cfg = {}
 

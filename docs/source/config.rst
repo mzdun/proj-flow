@@ -1,7 +1,7 @@
 Flow config
 ===========
 
-Flow config file is a JSON file saved as ``.flow/config.json``. It is used by
+Flow config file is a YAML file saved as ``.flow/config.yml``. It is used by
 various parts of *C++ flow* to negotiate some details with the project
 maintainer.
 
@@ -25,13 +25,13 @@ used to retrieve the value. Finally, if that start was ``runtime:``, the
 
 Currently the default value is passed through Mustache engine:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "vars": {
-        "{{NAME_PREFIX}}_COVERAGE": "?config:coverage",
-        "{{NAME_PREFIX}}_SANITIZE": "?config:sanitizer",
-        "{{NAME_PREFIX}}_CUTDOWN_OS": "?runtime:cutdown_os"
-    }
+    cmake:
+      vars:
+        {{NAME_PREFIX}}_COVERAGE: "?config:coverage"
+        {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer"
+        {{NAME_PREFIX}}_CUTDOWN_OS: "?runtime:cutdown_os"
 
 ``compiler``
 ------------
@@ -44,12 +44,11 @@ An object containing knowledge about compilers used.
 Names of the compilers to use, when configuring Conan and CMake with any
 given compiler in the configuration from config matrix.
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-        "clang": [ "clang", "clang++" ],
-        "gcc": [ "gcc", "g++" ]
-    }
+    names:
+      clang: [ clang, clang++ ]
+      gcc: [ gcc, g++ ]
 
 ``compiler.names.<compiler>``
 -----------------------------
@@ -57,13 +56,13 @@ given compiler in the configuration from config matrix.
 A list of two items. First one will be used for ``$CC`` environment
 variable, the other for ``$CXX`` variable.
 
-.. code-block:: json
+.. code-block:: yaml
 
-    [ "clang", "clang++" ]
+    [ clang, clang++ ]
 
-.. code-block:: json
+.. code-block:: yaml
 
-    [ "gcc", "g++" ]
+    [ gcc, g++ ]
 
 .. warning::
 
@@ -75,9 +74,9 @@ variable, the other for ``$CXX`` variable.
 A map of default compilers for given platform, used, when ``$DEV_CXX``
 environment variable is missing. Currently
 
-.. code-block:: json
+.. code-block:: yaml
 
-    { "ubuntu": "gcc", "windows": "msvc" }
+    { ubuntu: gcc, windows: msvc }
 
 ``entry``
 ---------
@@ -101,13 +100,13 @@ current LTS variants.
 
 A list of Ubuntu LTS systems. Currently
 
-.. code-block:: json
+.. code-block:: yaml
 
-    [
-        "ubuntu-20.04",
-        "ubuntu-22.04",
-        "ubuntu-24.04"
-    ]
+    lts:
+      ubuntu:
+        - ubuntu-20.04
+        - ubuntu-22.04
+        - ubuntu-24.04
 
 ``package``
 -----------
@@ -134,13 +133,13 @@ A list of matrix excludes to be applied after other matrix operations in
 order to further limit the number of usable configurations. Currently, used
 to limit configurations created by exploding the LTS platforms:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    [
-        { "github_os": "ubuntu-20.04", "sanitizer": true },
-        { "github_os": "ubuntu-24.04", "sanitizer": true },
-        { "github_os": "ubuntu-20.04", "compiler": "clang" }
-    ]
+    postproc:
+      exclude:
+        - { github_os: ubuntu-20.04, sanitizer: true }
+        - { github_os: ubuntu-24.04, sanitizer: true }
+        - { github_os: ubuntu-20.04, compiler: clang }
 
 ``shortcuts``
 -------------
@@ -148,14 +147,13 @@ to limit configurations created by exploding the LTS platforms:
 An object, whose keys represent flags in ``./flow run`` and whose values are
 mapped to additional ``-D`` params.
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-        "dbg": { "build_type": "Debug", "sanitizer": false },
-        "rel": { "build_type": "Release", "sanitizer": false },
-        "both": { "build_type": [ "Debug", "Release" ], "sanitizer": false },
-        "sane": { "build_type": "Debug", "sanitizer": true }
-    }
+    shortcuts:
+      dbg: { build_type: Debug, sanitizer: false }
+      rel: { build_type: Release, sanitizer: false }
+      both: { build_type: [ Debug, Release ], sanitizer: false }
+      sane: { build_type: Debug, sanitizer: true }
 
 .. _config-sign:
 
@@ -173,7 +171,7 @@ the build directory, so if there is a ``"bin"`` directory and current config
 works inside ``build/debug``, then the binaries should be located in
 ``build/debug/bin``. If missing, will default to
 
-.. code-block:: json
+.. code-block:: python
 
     ["bin", "lib", "libexec", "share"]
 
@@ -183,6 +181,6 @@ works inside ``build/debug``, then the binaries should be located in
 When browsing through ``sig.directories``, which binaries should *not* be
 signed. When missing, defaults to
 
-.. code-block:: json
+.. code-block:: python
 
     ["*-test"]

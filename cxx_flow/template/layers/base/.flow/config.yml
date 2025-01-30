@@ -1,0 +1,38 @@
+entry:
+  config: [ Conan, CMake ]
+  build: [ Build ]
+  test: [ Build, Test ]
+  verify:
+    - Build
+    - Test
+    - Sign
+    - Pack
+    - SignPackages
+    - Store
+    - BinInst
+    - DevInst
+
+compiler:
+  names:
+    clang: [ clang, clang++ ]
+    gcc: [ gcc, g++ ]
+  os-default: { ubuntu: gcc, windows: msvc }
+
+lts:
+  ubuntu:
+    - ubuntu-20.04
+    - ubuntu-22.04
+    - ubuntu-24.04
+
+postproc:
+  exclude:
+    - { github_os: ubuntu-20.04, sanitizer: true }
+    - { github_os: ubuntu-24.04, sanitizer: true }
+    - { github_os: ubuntu-20.04, compiler: clang }
+
+
+shortcuts:
+  dbg: { build_type: Debug, sanitizer: false }
+  rel: { build_type: Release, sanitizer: false }
+  both: { build_type: [ Debug, Release ], sanitizer: false }
+  sane: { build_type: Debug, sanitizer: true }

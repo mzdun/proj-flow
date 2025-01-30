@@ -91,9 +91,9 @@ def _expand_config(config: dict, spread_lts: bool, lts_list: Dict[str, List[str]
 
 def _load_flow_data(rt: env.Runtime):
     root = ".flow"
-    paths = [os.path.join(root, "matrix.json")]
+    paths = [os.path.join(root, "matrix.yml")]
     if rt.official:
-        paths.append(os.path.join(root, "official.json"))
+        paths.append(os.path.join(root, "official.yml"))
     configs, keys = matrix.load_matrix(*paths)
 
     if rt.no_coverage:

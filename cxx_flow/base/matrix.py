@@ -2,10 +2,11 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 
-import json
 import os
 import sys
 from typing import Dict, List, Tuple, TypeVar
+
+import yaml
 
 T = TypeVar("T")
 
@@ -86,12 +87,12 @@ def _split_keys(includes: List[dict], keys: List[str]) -> List[Tuple[dict, dict]
     return result
 
 
-def load_matrix(*json_paths: str) -> Tuple[List[dict], List[str]]:
+def load_matrix(*matrix_paths: str) -> Tuple[List[dict], List[str]]:
     setups: List[dict] = []
-    for json_path in json_paths:
+    for matrix_path in matrix_paths:
         try:
-            with open(json_path, encoding="UTF-8") as f:
-                setups.append(json.load(f))
+            with open(matrix_path, encoding="UTF-8") as f:
+                setups.append(yaml.load(f, Loader=yaml.Loader))
         except FileNotFoundError:
             pass
 

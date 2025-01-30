@@ -12,13 +12,12 @@ from .__version__ import CMAKE_VERSION
 
 config_json_mustache = """
 {{#with_cmake}}
-    "cmake": {
-        "vars": {
-            "{{NAME_PREFIX}}_COVERAGE": "?config:coverage",
-            "{{NAME_PREFIX}}_SANITIZE": "?config:sanitizer",
-            "{{NAME_PREFIX}}_CUTDOWN_OS": "?runtime:cutdown_os"
-        }
-    },
+cmake:
+  vars:
+    {{NAME_PREFIX}}_COVERAGE: "?config:coverage"
+    {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer"
+    {{NAME_PREFIX}}_CUTDOWN_OS: "?runtime:cutdown_os"
+
 {{/with_cmake}}
 """
 
@@ -29,8 +28,8 @@ class CMakeInit(api.init.InitStep):
         if not patch:
             return
 
-        with open(".flow/config.json", encoding="UTF-8") as config_file:
-            patched = re.split(r'(\s*"shortcuts":\s*{)', config_file.read())
+        with open(".flow/config.yml", encoding="UTF-8") as config_file:
+            patched = re.split(r'(\nshortcuts:\n)', config_file.read())
 
         if len(patched) != 3:
             return
@@ -38,7 +37,7 @@ class CMakeInit(api.init.InitStep):
         patched.insert(1, patch)
         content = "".join(patched)
 
-        with open(".flow/config.json", "w", encoding="UTF-8") as config_file:
+        with open(".flow/config.yml", "w", encoding="UTF-8") as config_file:
             config_file.write(content)
 
 
