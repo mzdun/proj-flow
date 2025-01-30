@@ -86,9 +86,13 @@ class RunAlias:
     steps: List[str]
 
     @staticmethod
-    def from_json(name: str, alias: dict):
-        doc: str = alias.get("doc", "")
-        steps: List[str] = alias.get("steps", [])
+    def from_json(name: str, alias: Union[dict, list]):
+        if isinstance(alias, dict):
+            doc: str = alias.get("doc", "")
+            steps: List[str] = alias.get("steps", [])
+        else:
+            doc = ""
+            steps = alias
         if not doc:
             doc = f'shortcut for "run -s {",".join(steps)}"'
 
@@ -141,10 +145,6 @@ class FlowConfig:
     @property
     def postproc_exclude(self) -> List[dict]:
         return self.postproc.get("exclude", [])
-
-    @property
-    def compiler_names(self) -> Dict[str, List[str]]:
-        return self.compiler.get("names", {})
 
     @property
     def shortcuts(self) -> Dict[str, dict]:

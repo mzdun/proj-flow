@@ -1,28 +1,12 @@
 {
     "entry": {
-        "config": {
-            "doc": "prepares build enviroment for current project",
-            "steps": [ "Conan", "CMake" ]
-        },
-        "build": {
-            "doc": "runs the build prepared by cxx-flow config steps",
-            "steps": [ "Build" ]
-        },
-        "verify": {
-            "steps": [
-                "Build",
-                "Test",
-                "Sign",
-                "Pack",
-                "SignPackages",
-                "Store",
-                "BinInst",
-                "DevInst"
-            ]
-        },
-        "test": {
-            "steps": [ "Build", "Test" ]
-        }
+        "config": [ "Conan", "CMake" ],
+        "build": [ "Build" ],
+        "verify": [
+            "Build", "Test", "Sign", "Pack", "SignPackages",
+            "Store", "BinInst", "DevInst"
+        ],
+        "test": [ "Build", "Test" ]
     },
     "compiler": {
         "names": {

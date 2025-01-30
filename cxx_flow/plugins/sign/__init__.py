@@ -64,7 +64,7 @@ class SignFiles(SignBase):
     runs_before = ["Pack"]
 
     def get_files(self, config: env.Config, rt: env.Runtime) -> List[str]:
-        cfg = cast(dict, rt._cfg.get("binaries", {}))
+        cfg = cast(dict, rt._cfg.get("sign", {}))
         roots = cfg.get("directories", ["bin", "lib", "libexec", "share"])
         exclude = cfg.get("exclude", ["*-test"])
 

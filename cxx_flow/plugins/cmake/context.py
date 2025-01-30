@@ -80,15 +80,6 @@ api.ctx.register_internal(
             "application": True,
             "link_access": "PRIVATE",
         },
-        "macos-application": {
-            "cmd": "add_executable",
-            "type": " MACOSX_BUNDLE",
-            "macos-application": True,
-            "macos": True,
-            "bundle": True,
-            "application": True,
-            "link_access": "PRIVATE",
-        },
         "static-library": {
             "cmd": "add_library",
             "type": " STATIC",

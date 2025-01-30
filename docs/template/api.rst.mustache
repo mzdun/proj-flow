@@ -1,0 +1,15 @@
+{{name}}
+{{underline}}
+
+.. automodule:: {{name}}
+    :members:
+    :undoc-members:
+
+{{#has_children}}
+.. toctree::
+   :maxdepth: 1
+ 
+{{#children}}
+   {{name}}
+{{/children}}
+{{/has_children}}

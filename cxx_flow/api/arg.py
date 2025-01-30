@@ -29,6 +29,7 @@ _known_subcommand: List[callable] = []
 def flow_subcommand(entry: callable):
     global _known_subcommand
     _known_subcommand.append(entry)
+    return entry
 
 
 def get_subcommands():

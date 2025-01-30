@@ -6,7 +6,7 @@ import os
 import sys
 from dataclasses import dataclass
 from types import ModuleType
-from typing import List, Union
+from typing import List, Union, cast
 
 from cxx_flow.api import env, step
 
@@ -114,7 +114,7 @@ def load_steps(cfg: env.FlowConfig):
 
 
 def clean_aliases(cfg: env.FlowConfig, valid_steps: List[step.Step]):
-    entries = cfg._cfg.get("entry")
+    entries = cfg.entry
     if not entries:
         return
 
@@ -123,8 +123,11 @@ def clean_aliases(cfg: env.FlowConfig, valid_steps: List[step.Step]):
     keys_to_remove: List[str] = []
     for key in entries:
         entry = entries[key]
-        steps = entry.get("steps")
-        if not steps:
+        if isinstance(entry, dict):
+            steps = cast(List[str], entry.get("steps", []))
+        else:
+            steps = cast(List[str], entry)
+        if len(steps) == 0:
             keys_to_remove.append(key)
             continue
         rewritten: List[str] = []

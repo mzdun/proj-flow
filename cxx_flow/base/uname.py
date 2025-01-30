@@ -1,25 +1,39 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.base.uname** provides platform information usable in packaging.
+"""
+
 import platform
-import shlex
+from typing import Optional, Tuple
+
+NameStr = str
+VersionStr = Optional[str]
+ArchStr = str
 
 
-def _os_release_fallback():
-    result = {}
-    with open("/etc/os-release", encoding="UTF-8") as os_rel:
-        for line in os_rel:
-            line = line.strip()
-            if line[:1] == "#":
-                line = ""
-            if line == "":
-                continue
-            name, value = line.split("=", 1)
-            result[name] = " ".join(shlex.split(value))
-    return result
+def uname() -> Tuple[NameStr, VersionStr, ArchStr]:
+    """
+    Return normalized information from :py:mod:`platform` module.
 
+    Specifically, the machine architecture is swapped from "amd64" to "x86_64",
+    which is more common in package filenames.
 
-def uname():
+    On Windows system, with OS not easily returning current version and with
+    high level of backward compatibility, system version is removed
+    all-together.
+
+    On Linux systems, true name of the system is retrieved, using
+    :py:func:`platform.freedesktop_os_release`. On systems, where Python is
+    missing this function, a fallback is made to "linux" and version returned
+    by :py:func:`platform.uname`.
+
+    :returns: a tuple consisting of system name, version and
+       machine architecture
+
+    :see: :ref:`command-system` command
+    """
     _platform = platform.uname()
     platform_name = _platform.system.lower()
     platform_version = _platform.version
@@ -39,7 +53,7 @@ def uname():
         try:
             os_release = platform.freedesktop_os_release()
         except AttributeError:
-            os_release = _os_release_fallback()
+            os_release = {"ID": "linux", "NAME": "Linux"}
 
         platform_id = os_release.get("ID", os_release.get("NAME"))
         version_id = os_release.get("VERSION_ID", platform_version)

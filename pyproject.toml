@@ -5,6 +5,12 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "cxx_flow/__init__.py"
 
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/docs"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["cxx_flow"]
+
 [project]
 name = "cxx-flow"
 description = "C++ project maintenance, automated"
@@ -14,6 +20,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 readme = "README.md"
+authors = [{name = "Marcin Zdun", email = "marcin.zdun@gmail.com"}]
 requires-python = ">=3.10"
 dynamic = ["version"]
 dependencies = ["chevron2021", "prompt_toolkit"]
