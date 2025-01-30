@@ -14,16 +14,26 @@ packages = ["cxx_flow"]
 [project]
 name = "cxx-flow"
 description = "C++ project maintenance, automated"
+authors = [{name = "Marcin Zdun", email = "marcin.zdun@gmail.com"}]
 classifiers = [
-  "Programming Language :: Python :: 3",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
 ]
+keywords = ['C/C++', 'developer', 'manager', 'dependency', 'tool', 'ci', 'c++', 'cpp']
 readme = "README.md"
-authors = [{name = "Marcin Zdun", email = "marcin.zdun@gmail.com"}]
 requires-python = ">=3.10"
 dynamic = ["version"]
 dependencies = ["chevron2021", "prompt_toolkit"]
+
+[project.urls]
+homepage = "https://pypi.org/project/cxx-flow/"
+source = "https://github.com/mzdun/cxx-flow"
+documentation = "https://readthedocs.org"
 
 [project.scripts]
 cxx-flow = "cxx_flow.flow.cli:main"

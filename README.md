@@ -50,4 +50,4 @@ cxx-flow init
 ```
 
 This command will ask multiple questions to build Mustache context for the
-project template. For more information, see the documentation.
+project template. For more information, see [the documentation](https://cxx-flow.readthedocs.io/en/latest/).
