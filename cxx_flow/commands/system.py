@@ -13,13 +13,13 @@ def command_system(
     format: Annotated[
         str,
         arg.Argument(
-            help="select, what format should be returned",
+            help="Select, what format should be returned",
             choices=["props", "platform", "debug"],
         ),
     ],
     _: env.Runtime,
 ):
-    """Produces system information for CI pipelines"""
+    """Produce system information for CI pipelines"""
 
     node = platform.node()
     system, version, arch = uname.uname()

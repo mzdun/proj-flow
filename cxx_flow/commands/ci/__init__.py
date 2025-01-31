@@ -9,4 +9,4 @@ __all__ = ["matrix", "command_ci"]
 
 
 def command_ci(rt: Runtime):
-    """Supplies data for github actions"""
+    """Perform various CI tasks"""

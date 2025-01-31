@@ -8,7 +8,7 @@ Synopsis
 
 .. code-block::
 
-   $ ./flow run [--dry-run] [-D [config ...]] [--official] [-s [step ...]]
+   $ ./flow run [--dry-run] [-D [key=value ...]] [--official] [-s [step ...]]
 
 Description
 -----------
@@ -71,24 +71,19 @@ Similarly, to build Debug binaries, the ``./flow run`` incantation would be
     The ``clang`` selection is not yet ported from original project, but it is
     planned.
 
-``-D config``
-    Adds a positive filter to the cartesian product of all possible
-    configurations. The ``config`` has a form of ``key=value``, where the key
-    is one of the keys into ``"matrix"`` object in ``.flow/matrix.yml``
-    definition and the value is one of the possible values for that key. In case
-    of boolean flags, such as ``sanitizer``, the true value is one of "true",
-    "on", "yes", "1" and "with-<key>", i.e. "with-sanitizer" for sanitizer.
+``-D key=value``
+    Run only builds on matching configs. The key is one of the keys into
+    ``"matrix"`` object in ``.flow/matrix.yml`` definition and the value is one
+    of the possible values for that key. In case of boolean flags, such as
+    ``sanitizer``, the true value is one of "true", "on", "yes", "1" and
+    "with-<key>", i.e. "with-sanitizer" for sanitizer.
 
-    When building a cartesian product stretched over all matrix keys of all
-    usable configs, by default all the possible values for this key are taken.
-    But as soon as, for a given key, it will appear in one of the ``-D`` params,
-    that axis will only contain the values from ``-D`` params and not the matrix
-    definition.
+    If given key is never used, all values from ``.flow/matrix.yaml`` for that
+    key are used. Otherwise, only values from command line are used.
 
 ``--official``
-    If preset, it will further reduce the size of cartesian product of usable
-    configs by merging matrix definition in ``.flow/matrix.yml`` with
-    ``.flow/official.yml``.
+    Cut matrix to release builds only by merging matrix definition in
+    ``.flow/matrix.yml`` with ``.flow/official.yml``.
 
 ``-s step`` / ``--step step``
     List any number of steps to perform during this run.

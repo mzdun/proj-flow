@@ -23,9 +23,8 @@ Description
    Show cxx-flow's version and exit.
 
 ``-C dir``
-   Change the directory to given directory before continuing with the {command}.
-   This is useful for commands, that rely on flow config file inside any given
-   project.
+   Run as if cxx-flow was started in <dir> instead of the current working
+   directory. This directory must exist.
 
 ``{command}``
    Name of the command or ``run`` alias to call.

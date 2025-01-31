@@ -14,22 +14,24 @@ def command_init(
     path: Annotated[
         Optional[str],
         arg.Argument(
-            help="location of initialized project; defaults to current directory",
+            help="Location of initialized project. "
+            "The directory will be created, if it does not exist yet. "
+            "Defaults to current directory.",
             pos=True,
             default=".",
         ),
     ],
     non_interactive: Annotated[
         Optional[bool],
-        arg.FlagArgument(help="selects all the default answers", names=["-y", "--yes"]),
+        arg.FlagArgument(help="Selects all the default answers", names=["-y", "--yes"]),
     ],
     save_context: Annotated[
         Optional[bool],
-        arg.FlagArgument(help="save the mustache context json", names=["--ctx"]),
+        arg.FlagArgument(help="Save the mustache context as JSON", names=["--ctx"]),
     ],
     rt: env.Runtime,
 ):
-    """Initializes a new project"""
+    """Initialize new project"""
 
     if path is not None:
         os.makedirs(path, exist_ok=True)

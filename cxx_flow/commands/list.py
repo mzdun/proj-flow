@@ -11,19 +11,19 @@ from cxx_flow.base import matrix
 
 def command_list(
     builtin: Annotated[
-        Optional[str], arg.FlagArgument(help="show all builtin commands")
+        Optional[str], arg.FlagArgument(help="Show all builtin commands")
     ],
-    alias: Annotated[Optional[str], arg.FlagArgument(help="show all alias commands")],
-    steps: Annotated[Optional[str], arg.FlagArgument(help="show all run steps")],
+    alias: Annotated[Optional[str], arg.FlagArgument(help="Show all alias commands")],
+    steps: Annotated[Optional[str], arg.FlagArgument(help="Show all run steps")],
     configs: Annotated[
-        Optional[str], arg.FlagArgument(help="show all known matrix keys")
+        Optional[str], arg.FlagArgument(help="Show all known matrix keys")
     ],
     all: Annotated[
         Optional[str],
-        arg.FlagArgument(help="show builtins, aliases, steps and configs"),
+        arg.FlagArgument(help="Show builtins, aliases, steps and configs"),
     ],
     pipe: Annotated[
-        Optional[str], arg.FlagArgument(help="do not show additional information")
+        Optional[str], arg.FlagArgument(help="Do not show additional information")
     ],
     rt: env.Runtime,
 ):

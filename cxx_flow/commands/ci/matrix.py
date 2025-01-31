@@ -14,11 +14,11 @@ from cxx_flow.flow.configs import Configs
 @arg.flow_subcommand
 def matrix(
     official: Annotated[
-        Optional[bool], arg.FlagArgument(help="cut matrix to minimal set of builds")
+        Optional[bool], arg.FlagArgument(help="Cut matrix to release builds only")
     ],
     rt: env.Runtime,
 ):
-    """Supplies data for github actions"""
+    """Supply data for github actions"""
 
     configs = Configs(
         rt, argparse.Namespace(configs=[], matrix=True, official=official)

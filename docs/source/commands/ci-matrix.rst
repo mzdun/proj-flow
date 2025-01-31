@@ -30,9 +30,9 @@ project the config contains Ubuntu LTS versions from 2020 till 2024:
        - ubuntu-24.04
 
 ``--official``
-   Optional flag, which also adds contents of ``.flow/official.yml`` to the
-   matrix produced by this command. In case of freshly generated version of this
-   file, this means the matrix is built over
+   Cut matrix to release builds only by merging matrix definition in
+   ``.flow/matrix.yml`` with ``.flow/official.yml``. In case of freshly
+   generated version of this file, this means the matrix is built over
 
    .. code-block:: yaml
 

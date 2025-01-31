@@ -16,7 +16,7 @@ def command_run(
     steps: Annotated[
         Optional[List[str]],
         api.arg.Argument(
-            help="run only listed steps; if missing, run all the steps",
+            help="Run only listed steps; if missing, run all the steps",
             names=["-s", "--steps"],
             nargs="*",
             meta="step",
@@ -27,7 +27,7 @@ def command_run(
     configs: Configs,
     rt: api.env.Runtime,
 ):
-    """Runs automation steps for current project"""
+    """Run automation steps for current project"""
 
     rt_steps = cast(List[api.step.Step], rt.steps)
     steps = matrix.flatten(step.split(",") for step in matrix.flatten(steps))

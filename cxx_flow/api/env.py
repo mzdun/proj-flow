@@ -96,7 +96,7 @@ class RunAlias:
             doc = ""
             steps = alias
         if not doc:
-            doc = f'shortcut for "run -s {",".join(steps)}"'
+            doc = f'Shortcut for "run -s {",".join(steps)}"'
 
         return RunAlias(name, doc, steps)
 

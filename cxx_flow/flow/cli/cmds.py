@@ -142,7 +142,7 @@ class BuiltinEntry:
         shortcut_configs = BuiltinEntry.build_shortcuts(cfg)
 
         subparsers = parser.add_subparsers(
-            dest="command", metavar="{command}", help="known command name, see below"
+            dest="command", metavar="{command}", help="Known command name, see below"
         )
 
         run: BuiltinEntry = None
@@ -207,14 +207,22 @@ class BuiltinEntry:
             alias = self.name
 
         parser: argparse.ArgumentParser = subparsers.add_parser(
-            alias, help=doc, description=doc
+            alias, help=doc, description=doc, add_help=False
+        )
+
+        parser.add_argument(
+            "-h",
+            "--help",
+            action="help",
+            default=argparse.SUPPRESS,
+            help="Show this help message and exit",
         )
 
         parser.add_argument(
             "--dry-run",
             action="store_true",
             required=False,
-            help="print steps and commands, do nothing",
+            help="Print steps and commands, do nothing",
         )
 
         verbosity = parser.add_mutually_exclusive_group()
@@ -222,13 +230,13 @@ class BuiltinEntry:
             "--silent",
             action="store_true",
             required=False,
-            help="removes most of the output",
+            help="Remove most of the output",
         )
         verbosity.add_argument(
             "--verbose",
             action="store_true",
             required=False,
-            help="adds more output",
+            help="Add even more output",
         )
 
         has_config = False
@@ -241,20 +249,27 @@ class BuiltinEntry:
             parser.add_argument(
                 "-D",
                 dest="configs",
-                metavar="config",
+                metavar="key=value",
                 nargs="*",
                 action="append",
                 default=[],
-                help="run only build matching the config; "
-                "each filter is a name of a matrix axis followed by comma-separated values to take; "
-                f'if "os" is missing, it will default to additional "-D os={env.platform}"',
+                help="Run only builds on matching configs. The key is one of "
+                'the keys into "matrix" object in .flow/matrix.yml definition '
+                "and the value is one of the possible values for that key. In "
+                "case of boolean flags, such as sanitizer, the true value is "
+                'one of "true", "on", "yes", "1" and "with-<key>", '
+                'i.e. "with-sanitizer" for sanitizer.'
+                " "
+                "If given key is never used, all values from .flow/matrix.yaml "
+                "for that key are used. Otherwise, only values from command "
+                "line are used.",
             )
 
             parser.add_argument(
                 "--official",
                 action="store_true",
                 required=False,
-                help="cut matrix to minimal set of builds",
+                help="Cut matrix to release builds only",
             )
 
             if len(shortcut_configs):
@@ -266,7 +281,7 @@ class BuiltinEntry:
                         f"--{shortcut_name}",
                         required=False,
                         action="store_true",
-                        help=f'shortcut for "-D {" ".join(config)}"',
+                        help=f'Shortcut for "-D {" ".join(config)}"',
                     )
 
         for arg in self.args:
@@ -276,7 +291,7 @@ class BuiltinEntry:
             subparsers = parser.add_subparsers(
                 dest=f"command_{level}",
                 metavar="{command}",
-                help="known command name, see below",
+                help="Known command name, see below",
             )
             for entry in self.children:
                 entry.visit(shortcut_configs, subparsers, level=level + 1)

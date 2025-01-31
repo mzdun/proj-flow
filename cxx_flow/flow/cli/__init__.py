@@ -32,17 +32,28 @@ def __main():
     clean_aliases(flow_cfg, valid_steps)
 
     root = argparse.ArgumentParser(
-        prog="cxx-flow", description="C++ project maintenance, automated"
+        prog="cxx-flow",
+        description="C++ project maintenance, automated",
+        add_help=False,
     )
     root.add_argument(
-        "-v", "--version", action="version", version=f"%(prog)s version {__version__}"
+        "-h", "--help", action="help", help="Show this help message and exit"
+    )
+    root.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        default=argparse.SUPPRESS,
+        version=f"%(prog)s version {__version__}",
+        help="Show cxx-flow's version and exit",
     )
     root.add_argument(
         "-C",
         dest="cd",
         metavar="dir",
         nargs="?",
-        help="runs as if cxx-flow was started in <dir> instead of the current working directory",
+        help="Run as if cxx-flow was started in <dir> instead of the current "
+        "working directory. This directory must exist.",
     )
 
     shortcut_configs = cmds.BuiltinEntry.visit_all(root, flow_cfg)

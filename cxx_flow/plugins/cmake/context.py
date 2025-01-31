@@ -29,7 +29,7 @@ class CMakeInit(api.init.InitStep):
             return
 
         with open(".flow/config.yml", encoding="UTF-8") as config_file:
-            patched = re.split(r'(\nshortcuts:\n)', config_file.read())
+            patched = re.split(r"(\nshortcuts:\n)", config_file.read())
 
         if len(patched) != 3:
             return
