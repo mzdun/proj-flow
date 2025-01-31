@@ -31,9 +31,9 @@ dynamic = ["version"]
 dependencies = ["chevron2021", "prompt_toolkit", "PyYAML"]
 
 [project.urls]
-homepage = "https://pypi.org/project/cxx-flow/"
-source = "https://github.com/mzdun/cxx-flow"
-documentation = "https://readthedocs.org"
+Homepage = "https://pypi.org/project/cxx-flow/"
+"Source Code" = "https://github.com/mzdun/cxx-flow"
+Documentation = "https://readthedocs.org"
 
 [project.scripts]
 cxx-flow = "cxx_flow.flow.cli:main"
