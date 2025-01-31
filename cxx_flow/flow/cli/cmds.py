@@ -166,13 +166,17 @@ class BuiltinEntry:
     @staticmethod
     def build_shortcuts(cfg: env.FlowConfig) -> Dict[str, List[str]]:
         shortcut_configs: Dict[str, List[str]] = {}
-        args: List[Tuple[str, List[str]]] = []
-
+        args: List[Tuple[str, List[str], bool, bool]] = []
+        
         shortcuts = cfg.shortcuts
         for shortcut_name in sorted(shortcuts.keys()):
+            has_os = False
+            has_compiler = False
             shortcut = shortcuts[shortcut_name]
             config: List[str] = []
             for key in sorted(shortcut.keys()):
+                has_os = has_os or key == "os"
+                has_compiler = has_compiler or key == "os"
                 value = shortcut[key]
                 if isinstance(value, list):
                     for v in value:
@@ -180,15 +184,17 @@ class BuiltinEntry:
                 else:
                     config.append(f"{key}={_shortcut_value(value)}")
             if len(config) > 0:
-                args.append((shortcut_name, config))
+                args.append((shortcut_name, config, has_os, has_compiler))
 
         if len(args):
             os_prefix = f"os={env.platform}"
             compiler_prefix = f"compiler={env.default_compiler()}"
 
-            for shortcut_name, config in args:
-                config.insert(0, compiler_prefix)
-                config.insert(0, os_prefix)
+            for shortcut_name, config, has_os, has_compiler in args:
+                if not has_compiler:
+                    config.insert(0, compiler_prefix)
+                if not has_os:
+                    config.insert(0, os_prefix)
                 shortcut_configs[shortcut_name] = config
 
         return shortcut_configs

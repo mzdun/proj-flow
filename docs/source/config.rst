@@ -64,9 +64,6 @@ variable, the other for ``$CXX`` variable.
 
     [ gcc, g++ ]
 
-.. warning::
-
-    The environment modifications are not yet ported.
 
 ``compiler.os-default``
 -----------------------

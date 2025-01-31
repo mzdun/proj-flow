@@ -309,6 +309,10 @@ class Config:
         return self.items.get("os", "")
 
     @property
+    def compiler(self) -> List[str]:
+        return self.items.get("compiler", [])
+
+    @property
     def build_type(self) -> str:
         return self.items.get("build_type", "")
 

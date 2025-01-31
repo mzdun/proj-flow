@@ -2,6 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 
+from contextlib import contextmanager
+import os
 import shutil
 import sys
 from typing import Annotated, List, Optional, Set, cast
@@ -78,6 +80,29 @@ def refresh_directories(
 
     return printed
 
+COMPILER_ENV = ["CC", "CXX"]
+
+@contextmanager
+def compilers_env_setup(compiler: List[str], rt: api.env.Runtime):
+    orig_env = {}
+    if sys.platform != "win32":
+        for var, value in zip(COMPILER_ENV, compiler):
+            if var in os.environ:
+                orig_env[var] = os.environ[var]
+            os.environ[var] = value
+            rt.message(f"set {var}={value}")
+    try:
+        yield
+    finally:
+        for var in COMPILER_ENV:
+            if var in os.environ:
+                del os.environ[var]
+            if var not in orig_env:
+                rt.message(f"unset {var}")
+        for var, value in orig_env.items():
+            os.environ[var] = value
+            rt.message(f"set {var}={value}")
+
 
 def run_steps(
     configs: Configs, rt: api.env.Runtime, program: List[api.step.Step], printed: bool
@@ -101,11 +126,13 @@ def run_steps(
                 f"- {config_index + 1}/{config_count}: {config.build_name}",
                 file=sys.stderr,
             )
-        for index in range(step_count):
-            step = steps[index]
-            print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)
-            ret = step.run(config, rt)
-            if ret:
-                return 1
+
+        with compilers_env_setup(config.compiler, rt):
+            for index in range(step_count):
+                step = steps[index]
+                print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)
+                ret = step.run(config, rt)
+                if ret:
+                    return 1
 
     return 0

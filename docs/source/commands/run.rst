@@ -9,6 +9,7 @@ Synopsis
 .. code-block::
 
    $ ./flow run [--dry-run] [-D [key=value ...]] [--official] [-s [step ...]]
+   $ DEV_CXX=compiler ./flow run [--dry-run] [-D [key=value ...]] [--official] [-s [step ...]]
 
 Description
 -----------
@@ -66,11 +67,6 @@ Similarly, to build Debug binaries, the ``./flow run`` incantation would be
 
     $ ./flow config --dev
 
-.. note::
-
-    The ``clang`` selection is not yet ported from original project, but it is
-    planned.
-
 ``-D key=value``
     Run only builds on matching configs. The key is one of the keys into
     ``"matrix"`` object in ``.flow/matrix.yml`` definition and the value is one
@@ -87,3 +83,12 @@ Similarly, to build Debug binaries, the ``./flow run`` incantation would be
 
 ``-s step`` / ``--step step``
     List any number of steps to perform during this run.
+
+``$DEV_CXX``
+    Override compiler selection from ``compiler.os-default`` flow project
+    configuration. For example, on Ubuntu the default compiler is GCC. To get
+    Clang instead:
+
+    .. code-block::
+
+        $ DEV_CXX=clang ./flow run ...
