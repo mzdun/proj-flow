@@ -9,9 +9,38 @@ from dataclasses import dataclass, field
 from types import ModuleType
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union, cast
 
-from cxx_flow import commands
-from cxx_flow.api import arg, env
+from cxx_flow import __version__, commands
+from cxx_flow.api import arg, completers, env
 from cxx_flow.flow.configs import Configs
+
+
+def build_argparser(flow_cfg: env.FlowConfig):
+    parser = argparse.ArgumentParser(
+        prog="cxx-flow",
+        description="C++ project maintenance, automated",
+        add_help=False,
+    )
+    parser.add_argument(
+        "-h", "--help", action="help", help="Show this help message and exit"
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        default=argparse.SUPPRESS,
+        version=f"%(prog)s version {__version__}",
+        help="Show cxx-flow's version and exit",
+    )
+    parser.add_argument(
+        "-C",
+        metavar="dir",
+        nargs="?",
+        help="Run as if cxx-flow was started in <dir> instead of the current "
+        "working directory. This directory must exist.",
+    ).completer = completers.cd_completer
+
+    BuiltinEntry.visit_all(parser, flow_cfg)
+    return parser
 
 
 @dataclass
@@ -37,6 +66,7 @@ class EntryArg:
     action: Union[str, argparse.Action, None]
     default: Optional[Any]
     choices: Optional[List[str]] = None
+    completer: Optional[callable] = None
 
     def visit(self, parser: argparse.ArgumentParser):
         kwargs = {}
@@ -65,7 +95,9 @@ class EntryArg:
             kwargs["dest"] = self.name
             kwargs["required"] = not self.opt
 
-        parser.add_argument(*names, **kwargs)
+        action = parser.add_argument(*names, **kwargs)
+        if self.completer:
+            action.completer = self.completer
 
 
 @dataclass
@@ -141,13 +173,18 @@ class BuiltinEntry:
     ) -> Dict[str, List[str]]:
         shortcut_configs = BuiltinEntry.build_shortcuts(cfg)
 
+        parser.flow = cfg
+        parser.shortcuts = shortcut_configs
+
         subparsers = parser.add_subparsers(
             dest="command", metavar="{command}", help="Known command name, see below"
         )
 
+        subparsers.parent = parser
+
         run: BuiltinEntry = None
         for entry in command_list:
-            entry.visit(shortcut_configs, subparsers)
+            entry.visit(subparsers)
             if entry.name == "run":
                 run = entry
 
@@ -157,17 +194,15 @@ class BuiltinEntry:
                 alias for alias in cfg.aliases if alias.name not in builtin_entries
             ]
             for alias in cfg.aliases:
-                run.visit(shortcut_configs, subparsers, alias=alias.name, doc=alias.doc)
+                run.visit(subparsers, alias=alias.name, doc=alias.doc)
         else:
             cfg.aliases = []
-
-        return shortcut_configs
 
     @staticmethod
     def build_shortcuts(cfg: env.FlowConfig) -> Dict[str, List[str]]:
         shortcut_configs: Dict[str, List[str]] = {}
         args: List[Tuple[str, List[str], bool, bool]] = []
-        
+
         shortcuts = cfg.shortcuts
         for shortcut_name in sorted(shortcuts.keys()):
             has_os = False
@@ -201,7 +236,6 @@ class BuiltinEntry:
 
     def visit(
         self,
-        shortcut_configs: Dict[str, List[str]],
         subparsers,
         alias: Optional[str] = None,
         doc: Optional[str] = None,
@@ -213,8 +247,15 @@ class BuiltinEntry:
             alias = self.name
 
         parser: argparse.ArgumentParser = subparsers.add_parser(
-            alias, help=doc, description=doc, add_help=False
+            alias, help=doc.split("\n\n")[0], description=doc, add_help=False
         )
+
+        parent = getattr(subparsers, "parent")
+        parser.flow = getattr(parent, "flow")
+        parser.shortcuts = getattr(parent, "shortcuts")
+
+        assert parent.flow is not None
+        assert parent.shortcuts is not None
 
         parser.add_argument(
             "-h",
@@ -269,7 +310,7 @@ class BuiltinEntry:
                 "If given key is never used, all values from .flow/matrix.yaml "
                 "for that key are used. Otherwise, only values from command "
                 "line are used.",
-            )
+            ).completer = completers.matrix_completer
 
             parser.add_argument(
                 "--official",
@@ -278,11 +319,11 @@ class BuiltinEntry:
                 help="Cut matrix to release builds only",
             )
 
-            if len(shortcut_configs):
+            if len(parser.shortcuts):
                 group = parser.add_mutually_exclusive_group()
 
-                for shortcut_name in sorted(shortcut_configs.keys()):
-                    config = shortcut_configs[shortcut_name]
+                for shortcut_name in sorted(parser.shortcuts.keys()):
+                    config = parser.shortcuts[shortcut_name]
                     group.add_argument(
                         f"--{shortcut_name}",
                         required=False,
@@ -299,8 +340,10 @@ class BuiltinEntry:
                 metavar="{command}",
                 help="Known command name, see below",
             )
+            subparsers.parent = parser
+
             for entry in self.children:
-                entry.visit(shortcut_configs, subparsers, level=level + 1)
+                entry.visit(subparsers, level=level + 1)
 
 
 def _shortcut_value(value) -> str:

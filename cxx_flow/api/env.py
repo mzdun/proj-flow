@@ -106,18 +106,19 @@ class FlowConfig:
     steps: list = []
     aliases: List[RunAlias] = []
 
-    def __init__(self):
-        global _flow_config_default_compiler
-
+    def __init__(self, root: str = "."):
+        self.root = os.path.abspath(root)
         try:
             with open(
-                os.path.join(".flow", "config.yml"),
+                os.path.join(self.root, ".flow", "config.yml"),
                 encoding="UTF-8",
             ) as f:
                 self._cfg = yaml.load(f, Loader=yaml.Loader)
         except FileNotFoundError:
             self._cfg = {}
 
+    def propagate_compilers(self):
+        global _flow_config_default_compiler
         _flow_config_default_compiler = self.compiler_os_default
 
     @property
@@ -201,13 +202,10 @@ class Runtime(FlowConfig):
 
         if isinstance(argsOrRuntime, argparse.Namespace):
             args = argsOrRuntime
-            self.dry_run = args.dry_run
-            self.silent = args.silent
-            self.verbose = args.verbose
-            try:
-                self.official = args.official
-            except AttributeError:
-                self.official = False
+            self.dry_run = getattr(args, "dry_run", False)
+            self.silent = getattr(args, "silent", False)
+            self.verbose = getattr(args, "verbose", False)
+            self.official = getattr(args, "official", False)
             self.use_color = True
             self.no_coverage = False
             self.platform = platform

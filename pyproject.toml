@@ -28,7 +28,12 @@ keywords = ['C/C++', 'developer', 'manager', 'dependency', 'tool', 'ci', 'c++', 
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ["version"]
-dependencies = ["chevron2021", "prompt_toolkit", "PyYAML"]
+dependencies = [
+  "argcomplete",
+  "chevron2021",
+  "prompt_toolkit",
+  "PyYAML",
+]
 
 [project.urls]
 Homepage = "https://pypi.org/project/cxx-flow/"

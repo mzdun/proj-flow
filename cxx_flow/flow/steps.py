@@ -144,3 +144,13 @@ def clean_aliases(cfg: env.FlowConfig, valid_steps: List[step.Step]):
 
     cfg.steps = valid_steps
     cfg.aliases = [env.RunAlias.from_json(key, entries[key]) for key in entries]
+
+
+def get_flow_config(root=".", propagate_compilers=True):
+    flow_cfg = env.FlowConfig(root=root)
+    if propagate_compilers:
+        flow_cfg.propagate_compilers()
+    valid_steps = load_steps(flow_cfg)
+    clean_aliases(flow_cfg, valid_steps)
+
+    return flow_cfg

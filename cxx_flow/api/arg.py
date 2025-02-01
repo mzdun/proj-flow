@@ -16,6 +16,7 @@ class Argument:
     action: Union[str, argparse.Action, None] = None
     default: Optional[Any] = None
     choices: Optional[List[str]] = None
+    completer: Optional[callable] = None
 
 
 class FlagArgument(Argument):

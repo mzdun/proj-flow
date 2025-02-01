@@ -1,3 +1,5 @@
+# PYTHON_ARGCOMPLETE_OK
+
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
@@ -6,9 +8,9 @@ import os
 import sys
 from typing import List, cast
 
-from cxx_flow import __version__, api
-from cxx_flow.flow.cli import cmds
-from cxx_flow.flow.steps import clean_aliases, load_steps
+from cxx_flow import __version__
+from cxx_flow.flow.cli import cmds, finder
+from cxx_flow.flow.steps import get_flow_config
 
 
 def _change_dir():
@@ -24,50 +26,27 @@ def _change_dir():
         os.chdir(args.cd)
 
 
-def __main():
-    _change_dir()
-
-    flow_cfg = api.env.FlowConfig()
-    valid_steps = load_steps(flow_cfg)
-    clean_aliases(flow_cfg, valid_steps)
-
-    root = argparse.ArgumentParser(
-        prog="cxx-flow",
-        description="C++ project maintenance, automated",
-        add_help=False,
-    )
-    root.add_argument(
-        "-h", "--help", action="help", help="Show this help message and exit"
-    )
-    root.add_argument(
-        "-v",
-        "--version",
-        action="version",
-        default=argparse.SUPPRESS,
-        version=f"%(prog)s version {__version__}",
-        help="Show cxx-flow's version and exit",
-    )
-    root.add_argument(
-        "-C",
-        dest="cd",
-        metavar="dir",
-        nargs="?",
-        help="Run as if cxx-flow was started in <dir> instead of the current "
-        "working directory. This directory must exist.",
-    )
-
-    shortcut_configs = cmds.BuiltinEntry.visit_all(root, flow_cfg)
-    args = root.parse_args()
-
+def _expand_shortcuts(parser: argparse.ArgumentParser, args: argparse.Namespace):
     args_kwargs = dict(args._get_kwargs())
-    for key in shortcut_configs:
+    for key in parser.shortcuts:
         try:
             if not args_kwargs[key]:
                 continue
-            cast(List[List[str]], args.configs).append(shortcut_configs[key])
+            cast(List[List[str]], args.configs).append(parser.shortcuts[key])
             break
         except KeyError:
             continue
+
+
+def __main():
+    _change_dir()
+
+    flow_cfg = get_flow_config(finder.autocomplete.find_project())
+    parser = cmds.build_argparser(flow_cfg)
+
+    finder.autocomplete(parser)
+    args = parser.parse_args()
+    _expand_shortcuts(parser, args)
 
     sys.exit(cmds.BuiltinEntry.run_entry(args, flow_cfg))
 

@@ -2,10 +2,10 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 
-from contextlib import contextmanager
 import os
 import shutil
 import sys
+from contextlib import contextmanager
 from typing import Annotated, List, Optional, Set, cast
 
 from cxx_flow import api
@@ -24,6 +24,7 @@ def command_run(
             meta="step",
             action="append",
             default=[],
+            completer=api.completers.step_completer,
         ),
     ],
     configs: Configs,
@@ -35,9 +36,10 @@ def command_run(
     steps = matrix.flatten(step.split(",") for step in matrix.flatten(steps))
     if not steps:
         steps = [step.name for step in rt_steps]
+    steps = list(map(lambda s: s.lower(), steps))
 
     step_names = set(steps)
-    program = [step for step in rt_steps if step.name in step_names]
+    program = [step for step in rt_steps if step.name.lower() in step_names]
 
     errors = gather_dependencies_for_all_configs(configs, rt, program)
     if len(errors) > 0:
@@ -80,7 +82,9 @@ def refresh_directories(
 
     return printed
 
+
 COMPILER_ENV = ["CC", "CXX"]
+
 
 @contextmanager
 def compilers_env_setup(compiler: List[str], rt: api.env.Runtime):
