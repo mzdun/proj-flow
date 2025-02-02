@@ -38,7 +38,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://pypi.org/project/cxx-flow/"
 "Source Code" = "https://github.com/mzdun/cxx-flow"
-Documentation = "https://readthedocs.org"
+Documentation = "https://cxx-flow.readthedocs.io/en/latest/"
 
 [project.scripts]
 cxx-flow = "cxx_flow.flow.cli:main"
