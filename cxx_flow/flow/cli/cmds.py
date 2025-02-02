@@ -403,10 +403,15 @@ def _extract_arg(name: str, argument: Any):
     if origin is None or not isinstance(metadata, arg.Argument):
         return None
 
-    optional = typing.get_origin(origin) is Union and type(None) in typing.get_args(
-        origin
-    )
-    return EntryArg(name, optional, **metadata.__dict__)
+    optional = metadata.opt
+    if optional is None:
+        optional = typing.get_origin(origin) is Union and type(None) in typing.get_args(
+            origin
+        )
+
+    kwargs = metadata.__dict__.copy()
+    del kwargs["opt"]
+    return EntryArg(name, optional, **kwargs)
 
 
 def _extract_args(entry: callable) -> List[Union[EntryArg, SpecialArg]]:

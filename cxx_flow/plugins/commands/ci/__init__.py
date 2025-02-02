@@ -13,5 +13,5 @@ __all__ = ["matrix", "command_ci"]
 
 
 @arg.command("ci")
-def command_ci(rt: env.Runtime):
+def main():
     """Perform various CI tasks"""

@@ -15,7 +15,7 @@ from cxx_flow.api import arg, ctx, env, init
 
 
 @arg.command("init")
-def command_init(
+def main(
     path: Annotated[
         Optional[str],
         arg.Argument(
@@ -27,11 +27,11 @@ def command_init(
         ),
     ],
     non_interactive: Annotated[
-        Optional[bool],
+        bool,
         arg.FlagArgument(help="Selects all the default answers", names=["-y", "--yes"]),
     ],
     save_context: Annotated[
-        Optional[bool],
+        bool,
         arg.FlagArgument(help="Save the mustache context as JSON", names=["--ctx"]),
     ],
     rt: env.Runtime,

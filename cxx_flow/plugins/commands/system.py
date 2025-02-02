@@ -14,15 +14,14 @@ from cxx_flow.base import uname
 
 
 @arg.command("system")
-def command_system(
+def main(
     format: Annotated[
         str,
         arg.Argument(
             help="Select, what format should be returned",
             choices=["props", "platform", "debug"],
         ),
-    ],
-    _: env.Runtime,
+    ]
 ):
     """Produce system information for CI pipelines"""
 

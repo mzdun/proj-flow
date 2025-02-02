@@ -14,22 +14,15 @@ from cxx_flow.base import matrix
 
 
 @arg.command("list")
-def command_list(
-    builtin: Annotated[
-        Optional[str], arg.FlagArgument(help="Show all builtin commands")
-    ],
-    alias: Annotated[Optional[str], arg.FlagArgument(help="Show all alias commands")],
-    steps: Annotated[Optional[str], arg.FlagArgument(help="Show all run steps")],
-    configs: Annotated[
-        Optional[str], arg.FlagArgument(help="Show all known matrix keys")
-    ],
+def main(
+    builtin: Annotated[bool, arg.FlagArgument(help="Show all builtin commands")],
+    alias: Annotated[bool, arg.FlagArgument(help="Show all alias commands")],
+    steps: Annotated[bool, arg.FlagArgument(help="Show all run steps")],
+    configs: Annotated[bool, arg.FlagArgument(help="Show all known matrix keys")],
     all: Annotated[
-        Optional[str],
-        arg.FlagArgument(help="Show builtins, aliases, steps and configs"),
+        bool, arg.FlagArgument(help="Show builtins, aliases, steps and configs")
     ],
-    pipe: Annotated[
-        Optional[str], arg.FlagArgument(help="Do not show additional information")
-    ],
+    pipe: Annotated[bool, arg.FlagArgument(help="Do not show additional information")],
     rt: env.Runtime,
 ):
     """List all the commands and/or steps for cxx-flow"""

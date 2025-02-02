@@ -18,7 +18,7 @@ from cxx_flow.flow.configs import Configs
 
 
 @api.arg.command("run")
-def command_run(
+def main(
     steps: Annotated[
         Optional[List[str]],
         api.arg.Argument(

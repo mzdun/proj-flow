@@ -11,7 +11,7 @@ from cxx_flow.api import arg, env
 
 
 @arg.command("bootstrap")
-def command_bootstrap(rt: env.Runtime):
+def main():
     """Finish bootstrapping on behalf of flow.py"""
 
     GITHUB_ENV = os.environ.get("GITHUB_ENV")
