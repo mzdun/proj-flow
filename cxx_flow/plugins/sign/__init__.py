@@ -63,7 +63,10 @@ class SignBase(step.Step):
         return win32.sign(files, rt)
 
 
+@step.register
 class SignFiles(SignBase):
+    """*(Windows)* Signs executable files in build directory"""
+
     name = "Sign"
     runs_after = ["Build"]
     runs_before = ["Pack"]
@@ -89,7 +92,10 @@ class SignFiles(SignBase):
         return result
 
 
+@step.register
 class SignMsi(SignBase):
+    """*(Windows)* Signs MSI installers in build directory"""
+
     name = "SignPackages"
     runs_after = ["Pack"]
     runs_before = ["StorePackages", "Store"]
@@ -121,6 +127,4 @@ class SignInit(init.InitStep):
                 ignoref.write("\n/signature.key\n".encode("UTF-8"))
 
 
-step.register_step(SignFiles())
-step.register_step(SignMsi())
 init.register_init_step(SignInit())

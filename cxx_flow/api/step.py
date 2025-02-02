@@ -6,7 +6,7 @@ The **cxx_flow.api.step** exposes APIs used by run extensions.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, cast
 
 from cxx_flow.api.env import Config, Runtime
 from cxx_flow.base import matrix
@@ -72,7 +72,7 @@ class SerialStep(Step):
 __steps: List[Step] = []
 
 
-def register_step(step: Step):
+def _register_step(step: Step):
     global __steps
 
     name = step.name
@@ -82,10 +82,19 @@ def register_step(step: Step):
     __steps.append(step)
 
 
-def __add_base(existing_class, base):
+def _inherits_from(base, existing_class):
     bases = list(existing_class.__bases__)
-    if base is bases[0]:
-        return
+    for b in bases:
+        if b == base or _inherits_from(base, b):
+            return True
+    return False
+
+
+def _extend(existing_class, base):
+    if _inherits_from(base, existing_class):
+        return existing_class
+
+    bases = list(existing_class.__bases__)
     bases.insert(0, base)
 
     new_class_namespace = existing_class.__dict__.copy()
@@ -95,10 +104,65 @@ def __add_base(existing_class, base):
     return metaclass(existing_class.__name__, tuple(bases), new_class_namespace)
 
 
+def _name_list(label: str, names: List[str], template="`{}`") -> str:
+    if len(names) == 0:
+        return ""
+
+    em = [template.format(name) for name in names]
+    prefix = ", ".join(em[:-1])
+    if prefix:
+        prefix += " and "
+    return f"\n:{label}: {prefix}{em[-1]}"
+
+
+def _make_private(f: callable):
+    if f.__doc__:
+        f.__doc__ += "\n\n:meta private:\n"
+    else:
+        f.__doc__ = ":meta private:\n"
+
+
+_dummy_config = Config(
+    {
+        "os": "${os}",
+        "build_type": "${build_type}",
+        "build_name": "${build_name}",
+        "preset": "${preset}",
+        "build_generator": "${build_generator}",
+    },
+    [],
+)
+
+def _extend_docstring(conv, step: Step):
+    info = "".join(
+        (
+            f"\n:Name: `{step.name}`",
+            _name_list("Runs after", step.runs_after),
+            _name_list("Runs before", step.runs_before),
+            _name_list("Requires", step.platform_dependencies(), template="``{}``"),
+            _name_list(
+                "Removes",
+                step.directories_to_remove(_dummy_config),
+                template="``{}``",
+            ),
+        )
+    )
+
+    doc = conv.__doc__ or "*Docstring is missing!*"
+    conv.__doc__ = f"{doc}\n{info}"
+
+    _make_private(conv.is_active)
+    _make_private(conv.run)
+    _make_private(conv.platform_dependencies)
+    _make_private(conv.directories_to_remove)
+
 def register(cls=None):
     def impl(cls):
-        conv = __add_base(cls, Step)
-        register_step(conv())
+        conv = _extend(cls, Step)
+        step = cast(Step, conv())
+        _register_step(step)
+        _extend_docstring(conv, step)
+
         return conv
 
     if cls is None:

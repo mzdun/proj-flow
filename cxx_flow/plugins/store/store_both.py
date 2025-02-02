@@ -5,18 +5,18 @@
 The **cxx_flow.plugins.store** provides ``"Store"`` step.
 """
 
-from cxx_flow.api.step import SerialStep, register_step
+from cxx_flow.api import step
 
 from .store_packages import StorePackages
 from .store_tests import StoreTests
 
 
-class StoreBoth(SerialStep):
+@step.register
+class StoreBoth(step.SerialStep):
+    """Stores all artifacts created for ``preset`` config value."""
+
     name = "Store"
 
     def __init__(self):
         super().__init__()
         self.children = [StoreTests(), StorePackages()]
-
-
-register_step(StoreBoth())

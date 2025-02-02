@@ -26,7 +26,10 @@ def _package_name(config: env.Config, pkg: str, group: str):
     return f"{pkg}-{_system}{_version}-{_arch}{debug}{suffix}"
 
 
-class StorePackages(step.Step):
+@step.register
+class StorePackages:
+    """Stores archives and installers build for ``preset`` config value."""
+
     name = "StorePackages"
     runs_after = ["Pack"]
 
@@ -71,6 +74,3 @@ class StorePackages(step.Step):
             "build/artifacts/packages",
             f"^{_project_pkg}-.*$",
         )
-
-
-step.register_step(StorePackages())

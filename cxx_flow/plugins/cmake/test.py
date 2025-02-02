@@ -12,7 +12,10 @@ from cxx_flow.api import env, step
 from .__version__ import CMAKE_VERSION
 
 
-class CMakeTest(step.Step):
+@step.register
+class CMakeTest:
+    """Runs tests in the project using ``preset`` config."""
+
     name = "Test"
     runs_after = ["Build"]
 
@@ -24,6 +27,3 @@ class CMakeTest(step.Step):
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         return rt.cmd("ctest", "--preset", config.preset)
-
-
-step.register_step(CMakeTest())

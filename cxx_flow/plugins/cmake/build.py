@@ -14,6 +14,8 @@ from .__version__ import CMAKE_VERSION
 
 @step.register()
 class CMakeBuild:
+    """Builds the project using ``preset`` config."""
+
     name = "Build"
     runs_after = ["Conan", "CMake"]
 

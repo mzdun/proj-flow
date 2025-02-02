@@ -14,6 +14,11 @@ from .__version__ import CMAKE_VERSION
 
 @step.register
 class PackStep:
+    """
+    Packs archives and installers from ``cpack_generator`` config, using
+    ``preset`` config.
+    """
+
     name = "Pack"
     runs_after = ["Build"]
 

@@ -20,6 +20,8 @@ CONAN_PROFILE_GEN = "_profile-build_type"
 
 @step.register
 class ConanConfig:
+    """Configures the project for ``preset`` config using ``build_type`` config."""
+
     name = "Conan"
 
     def platform_dependencies(self):
