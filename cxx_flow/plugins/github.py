@@ -1,5 +1,9 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
+"""
+The **cxx_flow.plugins.github** provides GitHub-related switches for new
+projects.
+"""
 
 from cxx_flow.api import ctx
 

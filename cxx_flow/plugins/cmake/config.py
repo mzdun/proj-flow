@@ -1,6 +1,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.plugins.cmake.config** provides ``"CMake"`` step.
+"""
+
 import os
 from typing import Dict, List, cast
 

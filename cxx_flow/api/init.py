@@ -1,6 +1,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.init** exposes APIs used by initialization extensions.
+"""
+
 from typing import List
 
 from cxx_flow.api.env import Runtime

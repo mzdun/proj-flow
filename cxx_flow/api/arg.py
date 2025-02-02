@@ -1,6 +1,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.arg** is used by various commands to declare CLI arguments.
+"""
+
 import argparse
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Union

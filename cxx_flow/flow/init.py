@@ -1,11 +1,11 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
-import os
-from typing import Callable, Dict, Iterable, List
+"""
+The **cxx_flow.flow.init** supports the ``init`` command.
+"""
 
 from cxx_flow.api import ctx
-from cxx_flow.base import cmd
 
 
 def _fixup(settings: ctx.SettingsType, key: str, fixup: str, force=False):

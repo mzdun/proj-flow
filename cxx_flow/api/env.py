@@ -1,6 +1,14 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.env** provides interaction with project environment:
+
+- :class:`FlowConfig` loads the project config in ``.flow/config.yml``.
+- :class:`Runtime` provides means to run tools and print messages, while
+  respecting ``--dry-run``, ``--silent`` and ``--verbose``.
+- :class:`Config` represents single run configuration.
+"""
 
 import argparse
 import json

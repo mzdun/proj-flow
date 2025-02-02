@@ -1,6 +1,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.plugins.conan._conan** adds support for both Conan v1 and v2.
+"""
+
 import shutil
 from abc import ABC, abstractmethod
 from typing import Callable, List, cast
@@ -11,6 +15,8 @@ from cxx_flow.flow.dependency import VER_REGEX
 
 
 class conan(ABC):
+    version: int
+
     def __init__(self, version: int = 1):
         self.version = version
 

@@ -1,6 +1,9 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.ctx** provides tools for preparing the project template.
+"""
 
 import datetime
 import inspect

@@ -1,6 +1,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.dependency** verifies availabilty of Step's external tools.
+"""
+
 import re
 import sys
 from dataclasses import dataclass

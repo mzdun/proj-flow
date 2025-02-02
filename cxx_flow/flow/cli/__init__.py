@@ -3,6 +3,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.cli** provides command-line entry for the *C++ flow*.
+"""
+
 import argparse
 import os
 import sys
@@ -52,6 +56,7 @@ def __main():
 
 
 def main():
+    """Entry point for *C++ flow* tool."""
     try:
         __main()
     except KeyboardInterrupt:

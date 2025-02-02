@@ -1,12 +1,17 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.completers** defines :py:mod:`argcomplete` functions for
+``-C``, ``--step`` and ``-D``.
+"""
+
 import os
 from typing import Dict, List, Union, cast
 
 import yaml
 
-from cxx_flow import api, flow
+from cxx_flow import api
 
 
 def cd_completer(prefix, **kwargs):
@@ -25,18 +30,6 @@ def cd_completer(prefix, **kwargs):
             continue
 
         yield f"{full}{os.sep}"
-
-
-def command_completer(prefix, parser, **kwargs):
-    flow_cfg = cast(api.env.FlowConfig, parser.flow)
-
-    for entry in flow.cli.cmds.command_list:
-        if entry.name.startswith(prefix):
-            yield entry.name
-
-    for alias in flow_cfg.aliases:
-        if alias.name.startswith(prefix):
-            yield alias.name
 
 
 def step_completer(prefix: str, parser, **kwargs):

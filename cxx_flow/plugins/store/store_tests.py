@@ -1,7 +1,9 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
-import os
+"""
+The **cxx_flow.plugins.store** provides ``"StoreTests"`` step.
+"""
 
 from cxx_flow.api import env, step
 

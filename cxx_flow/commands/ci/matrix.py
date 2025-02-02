@@ -1,6 +1,10 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.commands.ci.matrix** implements ``./flow ci matrix`` command.
+"""
+
 import argparse
 import json
 import os

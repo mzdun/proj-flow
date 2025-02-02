@@ -1,6 +1,12 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.configs** provides :class:`Configs`, which uses
+:class:`api.env.FlowConfig` to load the matrix definition and filter it out
+using ``-D`` switches.
+"""
+
 
 import argparse
 import os

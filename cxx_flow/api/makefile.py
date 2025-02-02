@@ -1,6 +1,11 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.makefiles** exposes simple makefiles APIs, so extensions can
+easily provide run steps with multiple scripts being called.
+"""
+
 import os
 import sys
 from abc import ABC, abstractmethod

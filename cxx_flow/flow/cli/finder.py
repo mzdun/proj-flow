@@ -1,6 +1,12 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.cli.finder** extends the :py:class:`argcomplete.finders.CompletionFinder`
+to be able to see proper :class:`api.env.FlowConfig`, when completed invocation
+contains ``-C`` argument.
+"""
+
 import os
 import shlex
 from typing import List

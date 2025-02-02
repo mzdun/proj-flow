@@ -1,6 +1,11 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.interact** provides initialization context through user
+prompts.
+"""
+
 from dataclasses import dataclass
 from typing import List, Union
 
@@ -13,7 +18,7 @@ from cxx_flow.api import ctx
 
 
 @dataclass
-class Eval:
+class _Question:
     key: str
     prompt: str
     value: ctx.Values
@@ -103,20 +108,25 @@ class Eval:
         )
 
 
-def prompt():
+def prompt() -> ctx.SettingsType:
+    """
+    Prompts user to provide details of newly-crated project.
+
+    :returns: Dictionary with answers to all interactive settings and switches.
+    """
     settings: ctx.SettingsType = {}
 
     size = len(ctx.defaults) + len(ctx.switches)
     counter = 1
 
     for setting in ctx.defaults:
-        loaded = Eval.load_default(setting, settings)
+        loaded = _Question.load_default(setting, settings)
         value = loaded.interact(counter, size)
         settings[loaded.key] = value
         counter += 1
 
     for setting in ctx.switches:
-        loaded = Eval.load_default(setting, settings)
+        loaded = _Question.load_default(setting, settings)
         value = loaded.interact(counter, size)
         settings[loaded.key] = value
         counter += 1

@@ -1,6 +1,11 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.steps** allows loading both predefined and project-specific
+steps.
+"""
+
 import importlib
 import os
 import sys

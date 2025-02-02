@@ -1,6 +1,11 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.flow.cli.cmds** provides command-line builders and runners,
+supporting the functions defined in :mod:`cxx_flow.commands`.
+"""
+
 import argparse
 import inspect
 import itertools

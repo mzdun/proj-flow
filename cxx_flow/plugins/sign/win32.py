@@ -1,6 +1,11 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.plugins.sign.win32** provides code signing with SignTool
+from Windows SDKs.
+"""
+
 import base64
 import json
 import os

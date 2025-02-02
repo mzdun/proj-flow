@@ -1,9 +1,12 @@
 # Copyright (c) 2025 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **cxx_flow.api.step** exposes APIs used by run extensions.
+"""
+
 from abc import ABC, abstractmethod
-from pprint import pprint
-from typing import List, Optional
+from typing import List
 
 from cxx_flow.api.env import Config, Runtime
 from cxx_flow.base import matrix
