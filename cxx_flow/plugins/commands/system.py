@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **cxx_flow.commands.system** implements ``./flow system`` command.
+The **cxx_flow.plugins.commands.system** implements ``./flow system`` command.
 """
 
 import platform

@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **cxx_flow.commands.run** implements ``./flow run`` command.
+The **cxx_flow.plugins.commands.run** implements ``./flow run`` command.
 """
 
 import os

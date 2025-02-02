@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **cxx_flow.commands.ci.matrix** implements ``./flow ci matrix`` command.
+The **cxx_flow.plugins.commands.ci.matrix** implements ``./flow ci matrix`` command.
 """
 
 import argparse

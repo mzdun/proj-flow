@@ -11,9 +11,10 @@ import os
 import sys
 from dataclasses import dataclass
 from types import ModuleType
-from typing import List, Union, cast
+from typing import List, Optional, Union, cast
 
 from cxx_flow.api import env, step
+from cxx_flow.base.plugins import load_module_plugins
 
 
 @dataclass
@@ -29,36 +30,6 @@ class Sorted:
         runs_after = [*plugin.runs_after]
         runs_before = [*plugin.runs_before]
         return Sorted(plugin, name, runs_after, runs_before)
-
-
-def _load_plugins(directory: str, package: Union[str, None], can_fail=False):
-    for _, dirnames, filenames in os.walk(directory):
-        for dirname in dirnames:
-            try:
-                importlib.import_module(f".{dirname}", package=package)
-            except ModuleNotFoundError as err:
-                if not can_fail:
-                    raise err
-        for filename in filenames:
-            if filename == "__init__.py":
-                continue
-            try:
-                importlib.import_module(
-                    f".{os.path.splitext(filename)[0]}", package=package
-                )
-            except ModuleNotFoundError as err:
-                if not can_fail:
-                    raise err
-        dirnames[:] = []
-        pass
-
-
-def _load_module_plugins(cfg: env.FlowConfig, mod: ModuleType, can_fail=False):
-    spec = mod.__spec__
-    if not spec:
-        return
-    for location in spec.submodule_search_locations:
-        _load_plugins(location, spec.name, can_fail)
 
 
 def _sort_steps():
@@ -99,30 +70,12 @@ def _sort_steps():
     return result
 
 
-def load_steps(cfg: env.FlowConfig):
-    std_plugins = importlib.import_module("cxx_flow.plugins")
-    _load_module_plugins(cfg, std_plugins)
-
-    local_plugins = os.path.abspath(os.path.join(".flow", "extensions"))
-    if os.path.isdir(local_plugins):
-        sys.path.append(local_plugins)
-    for root, dirnames, _ in os.walk(local_plugins):
-        for dirname in dirnames:
-            init = os.path.join(root, dirname, "__init__.py")
-            if not os.path.isfile(init):
-                continue
-            plugins = importlib.import_module(dirname)
-            _load_module_plugins(cfg, plugins, can_fail=True)
-        dirnames[:] = []
-
-    return _sort_steps()
-
-
-def clean_aliases(cfg: env.FlowConfig, valid_steps: List[step.Step]):
+def clean_aliases(cfg: env.FlowConfig):
     entries = cfg.entry
     if not entries:
         return
 
+    valid_steps = _sort_steps()
     step_names = {step.name for step in valid_steps}
 
     keys_to_remove: List[str] = []
@@ -149,13 +102,3 @@ def clean_aliases(cfg: env.FlowConfig, valid_steps: List[step.Step]):
 
     cfg.steps = valid_steps
     cfg.aliases = [env.RunAlias.from_json(key, entries[key]) for key in entries]
-
-
-def get_flow_config(root=".", propagate_compilers=True):
-    flow_cfg = env.FlowConfig(root=root)
-    if propagate_compilers:
-        flow_cfg.propagate_compilers()
-    valid_steps = load_steps(flow_cfg)
-    clean_aliases(flow_cfg, valid_steps)
-
-    return flow_cfg

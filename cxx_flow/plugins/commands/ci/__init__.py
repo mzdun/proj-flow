@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **cxx_flow.commands.ci** implements ``./flow ci`` command.
+The **cxx_flow.plugins.commands.ci** implements ``./flow ci`` command.
 """
 
 from cxx_flow.api import arg, env

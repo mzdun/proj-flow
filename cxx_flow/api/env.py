@@ -11,6 +11,7 @@ The **cxx_flow.api.env** provides interaction with project environment:
 """
 
 import argparse
+import importlib
 import json
 import os
 import re
@@ -24,6 +25,7 @@ from typing import Dict, List, Optional, Union, cast
 import yaml
 
 from cxx_flow.base import uname
+from cxx_flow.base.plugins import load_module_plugins
 
 platform = uname.uname()[0]
 
@@ -125,9 +127,35 @@ class FlowConfig:
         except FileNotFoundError:
             self._cfg = {}
 
-    def propagate_compilers(self):
+        self._propagate_compilers()
+        self._load_plugins()
+
+    def _propagate_compilers(self):
         global _flow_config_default_compiler
         _flow_config_default_compiler = self.compiler_os_default
+
+    def _load_plugins(self):
+        std_plugins = importlib.import_module("cxx_flow.plugins")
+        load_module_plugins(std_plugins)
+
+        local_plugins = os.path.abspath(os.path.join(self.root, ".flow", "extensions"))
+        if not os.path.isdir(local_plugins):
+            plugins = importlib.import_module(local_plugins)
+            load_module_plugins(plugins, can_fail=True)
+            return
+
+        sys.path.insert(0, local_plugins)
+
+        for root, dirnames, _ in os.walk(local_plugins):
+            for dirname in dirnames:
+                init = os.path.join(root, dirname, "__init__.py")
+                if not os.path.isfile(init):
+                    continue
+                plugins = importlib.import_module(dirname)
+                load_module_plugins(plugins, can_fail=True)
+            dirnames[:] = []
+
+        sys.path.pop(0)
 
     @property
     def entry(self) -> Dict[str, dict]:

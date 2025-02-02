@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **cxx_flow.commands.init** implements ``cxx-flow init`` command.
+The **cxx_flow.plugins.commands.init** implements ``cxx-flow init`` command.
 """
 
 import json

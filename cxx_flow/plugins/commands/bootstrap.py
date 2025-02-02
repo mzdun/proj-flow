@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **cxx_flow.commands.bootstrap** implements ``./flow bootstrap`` command.
+The **cxx_flow.plugins.commands.bootstrap** implements ``./flow bootstrap`` command.
 """
 
 import os

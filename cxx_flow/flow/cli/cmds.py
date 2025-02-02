@@ -8,14 +8,11 @@ supporting the functions defined in :mod:`cxx_flow.commands`.
 
 import argparse
 import inspect
-import itertools
 import typing
 from dataclasses import dataclass, field
-from pprint import pprint
-from types import ModuleType
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union, cast
 
-from cxx_flow import __version__, commands
+from cxx_flow import __version__
 from cxx_flow.api import arg, completers, env
 from cxx_flow.flow.configs import Configs
 
@@ -147,20 +144,24 @@ class BuiltinEntry:
         if level == 0 and rt.only_host:
             rt.only_host = self.name == "run"
 
+        subcommand_name = None
+
         if len(self.children):
             subcommand_attribute = f"command_{level}"
             if hasattr(args, subcommand_attribute):
                 subcommand_name = getattr(args, subcommand_attribute)
-                subcommand = cast(
-                    BuiltinEntry,
-                    next(
-                        filter(
-                            lambda command: command.name == subcommand_name,
-                            self.children,
-                        )
-                    ),
-                )
-                return subcommand.run(args, rt, level=level + 1)
+
+        if subcommand_name is not None:
+            subcommand = cast(
+                BuiltinEntry,
+                next(
+                    filter(
+                        lambda command: command.name == subcommand_name,
+                        self.children,
+                    )
+                ),
+            )
+            return subcommand.run(args, rt, level=level + 1)
 
         kwargs = {}
         for arg in self.args:
@@ -177,6 +178,8 @@ class BuiltinEntry:
     def visit_all(
         parser: argparse.ArgumentParser, cfg: env.FlowConfig
     ) -> Dict[str, List[str]]:
+        global command_list
+        command_list = BuiltinEntry.build_menu(arg.get_commands().subs)
         shortcut_configs = BuiltinEntry.build_shortcuts(cfg)
 
         parser.flow = cfg
@@ -415,9 +418,4 @@ def _extract_args(entry: callable) -> List[Union[EntryArg, SpecialArg]]:
     return list(args)
 
 
-def _get_entries():
-    tree = arg.get_commands()
-    return BuiltinEntry.build_menu(tree.subs)
-
-
-command_list = _get_entries()
+command_list: List[BuiltinEntry] = []

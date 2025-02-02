@@ -13,8 +13,9 @@ import sys
 from typing import List, cast
 
 from cxx_flow import __version__
+from cxx_flow.api import env
+from cxx_flow.flow import steps
 from cxx_flow.flow.cli import cmds, finder
-from cxx_flow.flow.steps import get_flow_config
 
 
 def _change_dir():
@@ -45,9 +46,10 @@ def _expand_shortcuts(parser: argparse.ArgumentParser, args: argparse.Namespace)
 def __main():
     _change_dir()
 
-    flow_cfg = get_flow_config(finder.autocomplete.find_project())
-    parser = cmds.build_argparser(flow_cfg)
+    flow_cfg = env.FlowConfig(root=finder.autocomplete.find_project())
+    steps.clean_aliases(flow_cfg)
 
+    parser = cmds.build_argparser(flow_cfg)
     finder.autocomplete(parser)
     args = parser.parse_args()
     _expand_shortcuts(parser, args)
