@@ -14,6 +14,7 @@ from cxx_flow import flow
 from cxx_flow.api import arg, ctx, env, init
 
 
+@arg.command("init")
 def command_init(
     path: Annotated[
         Optional[str],

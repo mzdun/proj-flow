@@ -11,6 +11,7 @@ import inspect
 import itertools
 import typing
 from dataclasses import dataclass, field
+from pprint import pprint
 from types import ModuleType
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union, cast
 
@@ -114,6 +115,34 @@ class BuiltinEntry:
     additional: List[SpecialArg]
     children: List["BuiltinEntry"] = field(default_factory=list)
 
+    @staticmethod
+    def run_entry(args: argparse.Namespace, cfg: env.FlowConfig):
+        builtin_entries = {entry.name for entry in command_list}
+        aliases = cfg.aliases
+
+        rt = env.Runtime(args)
+        rt.steps = cfg.steps
+        rt.aliases = cfg.aliases
+        rt._cfg = cfg._cfg
+
+        if args.command in builtin_entries:
+            command = next(
+                filter(lambda command: command.name == args.command, command_list)
+            )
+            return cast(BuiltinEntry, command).run(args, rt)
+        elif args.command in {alias.name for alias in aliases}:
+            command = next(filter(lambda command: command.name == "run", command_list))
+            alias = next(filter(lambda alias: alias.name == args.command, aliases))
+            args.steps.append(alias.steps)
+            return cast(BuiltinEntry, command).run(args, rt)
+
+        print("known commands:")
+        for command in command_list:
+            print(f"   {command.name}: {command.doc}")
+        for alias in aliases:
+            print(f"   {alias.name}: {alias.doc}")
+        return 1
+
     def run(self, args: argparse.Namespace, rt: env.Runtime, level=0):
         if level == 0 and rt.only_host:
             rt.only_host = self.name == "run"
@@ -145,34 +174,6 @@ class BuiltinEntry:
         return 0 if result is None else result
 
     @staticmethod
-    def run_entry(args: argparse.Namespace, cfg: env.FlowConfig):
-        builtin_entries = {entry.name for entry in command_list}
-        aliases = cfg.aliases
-
-        rt = env.Runtime(args)
-        rt.steps = cfg.steps
-        rt.aliases = cfg.aliases
-        rt._cfg = cfg._cfg
-
-        if args.command in builtin_entries:
-            command = next(
-                filter(lambda command: command.name == args.command, command_list)
-            )
-            return cast(BuiltinEntry, command).run(args, rt)
-        elif args.command in {alias.name for alias in aliases}:
-            command = next(filter(lambda command: command.name == "run", command_list))
-            alias = next(filter(lambda alias: alias.name == args.command, aliases))
-            args.steps.append(alias.steps)
-            return cast(BuiltinEntry, command).run(args, rt)
-
-        print("known commands:")
-        for command in command_list:
-            print(f"   {command.name}: {command.doc}")
-        for alias in aliases:
-            print(f"   {alias.name}: {alias.doc}")
-        return 1
-
-    @staticmethod
     def visit_all(
         parser: argparse.ArgumentParser, cfg: env.FlowConfig
     ) -> Dict[str, List[str]]:
@@ -202,42 +203,6 @@ class BuiltinEntry:
                 run.visit(subparsers, alias=alias.name, doc=alias.doc)
         else:
             cfg.aliases = []
-
-    @staticmethod
-    def build_shortcuts(cfg: env.FlowConfig) -> Dict[str, List[str]]:
-        shortcut_configs: Dict[str, List[str]] = {}
-        args: List[Tuple[str, List[str], bool, bool]] = []
-
-        shortcuts = cfg.shortcuts
-        for shortcut_name in sorted(shortcuts.keys()):
-            has_os = False
-            has_compiler = False
-            shortcut = shortcuts[shortcut_name]
-            config: List[str] = []
-            for key in sorted(shortcut.keys()):
-                has_os = has_os or key == "os"
-                has_compiler = has_compiler or key == "os"
-                value = shortcut[key]
-                if isinstance(value, list):
-                    for v in value:
-                        config.append(f"{key}={_shortcut_value(v)}")
-                else:
-                    config.append(f"{key}={_shortcut_value(value)}")
-            if len(config) > 0:
-                args.append((shortcut_name, config, has_os, has_compiler))
-
-        if len(args):
-            os_prefix = f"os={env.platform}"
-            compiler_prefix = f"compiler={env.default_compiler()}"
-
-            for shortcut_name, config, has_os, has_compiler in args:
-                if not has_compiler:
-                    config.insert(0, compiler_prefix)
-                if not has_os:
-                    config.insert(0, os_prefix)
-                shortcut_configs[shortcut_name] = config
-
-        return shortcut_configs
 
     def visit(
         self,
@@ -350,6 +315,68 @@ class BuiltinEntry:
             for entry in self.children:
                 entry.visit(subparsers, level=level + 1)
 
+    @staticmethod
+    def build_shortcuts(cfg: env.FlowConfig) -> Dict[str, List[str]]:
+        shortcut_configs: Dict[str, List[str]] = {}
+        args: List[Tuple[str, List[str], bool, bool]] = []
+
+        shortcuts = cfg.shortcuts
+        for shortcut_name in sorted(shortcuts.keys()):
+            has_os = False
+            has_compiler = False
+            shortcut = shortcuts[shortcut_name]
+            config: List[str] = []
+            for key in sorted(shortcut.keys()):
+                has_os = has_os or key == "os"
+                has_compiler = has_compiler or key == "os"
+                value = shortcut[key]
+                if isinstance(value, list):
+                    for v in value:
+                        config.append(f"{key}={_shortcut_value(v)}")
+                else:
+                    config.append(f"{key}={_shortcut_value(value)}")
+            if len(config) > 0:
+                args.append((shortcut_name, config, has_os, has_compiler))
+
+        if len(args):
+            os_prefix = f"os={env.platform}"
+            compiler_prefix = f"compiler={env.default_compiler()}"
+
+            for shortcut_name, config, has_os, has_compiler in args:
+                if not has_compiler:
+                    config.insert(0, compiler_prefix)
+                if not has_os:
+                    config.insert(0, os_prefix)
+                shortcut_configs[shortcut_name] = config
+
+        return shortcut_configs
+
+    @staticmethod
+    def build_menu(commands: Dict[str, arg._Command]):
+        result: List[BuiltinEntry] = []
+        for cmd in commands.values():
+            name = cmd.name
+            doc = cmd.doc or ""
+            entry = cmd.entry or (lambda: 0)
+            children = BuiltinEntry.build_menu(cmd.subs)
+
+            args = _extract_args(entry)
+            special_args = [entry for entry in args if isinstance(entry, SpecialArg)]
+            entry_args = [entry for entry in args if isinstance(entry, EntryArg)]
+
+            result.append(
+                BuiltinEntry(
+                    name=name,
+                    doc=doc,
+                    entry=entry,
+                    args=entry_args,
+                    additional=special_args,
+                    children=children,
+                )
+            )
+
+        return result
+
 
 def _shortcut_value(value) -> str:
     if isinstance(value, bool):
@@ -388,84 +415,9 @@ def _extract_args(entry: callable) -> List[Union[EntryArg, SpecialArg]]:
     return list(args)
 
 
-def _get_entry(modname: str, module: ModuleType):
-    names = ["main", modname, f"command_{modname}"]
-    for name, entry in inspect.getmembers(module):
-        if not inspect.isfunction(entry) or name not in names:
-            continue
-
-        doc = inspect.getdoc(entry)
-        args = _extract_args(entry)
-        special_args = [entry for entry in args if isinstance(entry, SpecialArg)]
-        entry_args = [entry for entry in args if isinstance(entry, EntryArg)]
-
-        has_rt = False
-        for additional in special_args:
-            if additional.ctor == env.Runtime:
-                has_rt = True
-                break
-
-        if not has_rt:
-            continue
-
-        return BuiltinEntry(modname, doc, entry, entry_args, special_args)
-
-
-@dataclass
-class SubEntry:
-    command: str
-    name: str
-    doc: str
-    entry: callable
-
-    def expand(self):
-        args = _extract_args(self.entry)
-        special_args = [entry for entry in args if isinstance(entry, SpecialArg)]
-        entry_args = [entry for entry in args if isinstance(entry, EntryArg)]
-
-        has_rt = False
-        for additional in special_args:
-            if additional.ctor == env.Runtime:
-                has_rt = True
-                break
-
-        if not has_rt:
-            return None
-
-        return BuiltinEntry(self.name, self.doc, self.entry, entry_args, special_args)
-
-
-def _get_subentry(entry: callable):
-    module = inspect.getmodule(entry)
-    command = module.__name__.split(".")[2]
-    name = entry.__name__
-    doc = inspect.getdoc(entry)
-    return SubEntry(command=command, name=name, doc=doc, entry=entry)
-
-
 def _get_entries():
-    submodules = inspect.getmembers(commands, inspect.ismodule)
-    subcommands = {
-        command: list(group)
-        for command, group in itertools.groupby(
-            map(_get_subentry, arg.get_subcommands()), lambda subentry: subentry.command
-        )
-    }
-    all_entries = map(lambda tup: _get_entry(*tup), submodules)
-    valid_entries = cast(
-        List[BuiltinEntry], list(filter(lambda entry: entry is not None, all_entries))
-    )
-
-    for entry in valid_entries:
-        if entry.name not in subcommands:
-            continue
-        children = subcommands[entry.name]
-        all_children = map(lambda sub: sub.expand(), children)
-        entry.children = cast(
-            List[BuiltinEntry], list(filter(lambda sub: sub is not None, all_children))
-        )
-
-    return valid_entries
+    tree = arg.get_commands()
+    return BuiltinEntry.build_menu(tree.subs)
 
 
 command_list = _get_entries()

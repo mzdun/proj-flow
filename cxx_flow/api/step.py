@@ -133,6 +133,7 @@ _dummy_config = Config(
     [],
 )
 
+
 def _extend_docstring(conv, step: Step):
     info = "".join(
         (
@@ -155,6 +156,7 @@ def _extend_docstring(conv, step: Step):
     _make_private(conv.run)
     _make_private(conv.platform_dependencies)
     _make_private(conv.directories_to_remove)
+
 
 def register(cls=None):
     def impl(cls):

@@ -15,7 +15,7 @@ from cxx_flow.api import arg, env
 from cxx_flow.flow.configs import Configs
 
 
-@arg.flow_subcommand
+@arg.command("ci", "matrix")
 def matrix(
     official: Annotated[
         Optional[bool], arg.FlagArgument(help="Cut matrix to release builds only")

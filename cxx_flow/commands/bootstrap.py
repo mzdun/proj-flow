@@ -7,10 +7,11 @@ The **cxx_flow.commands.bootstrap** implements ``./flow bootstrap`` command.
 
 import os
 
-from cxx_flow.api.env import Runtime
+from cxx_flow.api import arg, env
 
 
-def command_bootstrap(rt: Runtime):
+@arg.command("bootstrap")
+def command_bootstrap(rt: env.Runtime):
     """Finish bootstrapping on behalf of flow.py"""
 
     GITHUB_ENV = os.environ.get("GITHUB_ENV")

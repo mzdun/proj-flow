@@ -17,6 +17,7 @@ from cxx_flow.flow import dependency
 from cxx_flow.flow.configs import Configs
 
 
+@api.arg.command("run")
 def command_run(
     steps: Annotated[
         Optional[List[str]],

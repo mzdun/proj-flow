@@ -13,6 +13,7 @@ from cxx_flow.api import arg, env, step
 from cxx_flow.base import matrix
 
 
+@arg.command("list")
 def command_list(
     builtin: Annotated[
         Optional[str], arg.FlagArgument(help="Show all builtin commands")

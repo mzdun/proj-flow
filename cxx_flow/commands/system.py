@@ -13,6 +13,7 @@ from cxx_flow.api import arg, env
 from cxx_flow.base import uname
 
 
+@arg.command("system")
 def command_system(
     format: Annotated[
         str,

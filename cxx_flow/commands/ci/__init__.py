@@ -5,12 +5,13 @@
 The **cxx_flow.commands.ci** implements ``./flow ci`` command.
 """
 
-from cxx_flow.api.env import Runtime
+from cxx_flow.api import arg, env
 
 from . import matrix
 
 __all__ = ["matrix", "command_ci"]
 
 
-def command_ci(rt: Runtime):
+@arg.command("ci")
+def command_ci(rt: env.Runtime):
     """Perform various CI tasks"""
