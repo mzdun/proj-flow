@@ -38,7 +38,7 @@ class Statement:
 
     def _run_directly(self, rt: Runtime):
         if rt.dry_run:
-            copy = Runtime(rt)
+            copy = Runtime(rt, rt)
             copy.dry_run = True
             return self.rule.run(self, copy)
 

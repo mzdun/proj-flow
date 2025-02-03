@@ -60,47 +60,10 @@ class SpecialArg:
 @dataclass
 class EntryArg:
     name: str
-    opt: bool
-    help: str
-    pos: bool
-    names: List[str]
-    nargs: Union[str, int, None]
-    meta: Optional[str]
-    action: Union[str, argparse.Action, None]
-    default: Optional[Any]
-    choices: Optional[List[str]] = None
-    completer: Optional[callable] = None
+    argument: arg.Argument
 
     def visit(self, parser: argparse.ArgumentParser):
-        kwargs = {}
-        if self.help is not None:
-            kwargs["help"] = self.help
-        if self.nargs is not None:
-            kwargs["nargs"] = self.nargs
-        if self.meta is not None:
-            kwargs["metavar"] = self.meta
-        if self.default is not None:
-            kwargs["default"] = self.default
-        if self.action is not None:
-            kwargs["action"] = self.action
-        if self.choices is not None:
-            kwargs["choices"] = self.choices
-
-        names = (
-            [self.name]
-            if self.pos
-            else self.names if len(self.names) > 0 else [f"--{self.name}"]
-        )
-
-        if self.pos:
-            kwargs["nargs"] = "?" if self.opt else 1
-        else:
-            kwargs["dest"] = self.name
-            kwargs["required"] = not self.opt
-
-        action = parser.add_argument(*names, **kwargs)
-        if self.completer:
-            action.completer = self.completer
+        return self.argument.visit(parser, self.name)
 
 
 @dataclass
@@ -117,10 +80,7 @@ class BuiltinEntry:
         builtin_entries = {entry.name for entry in command_list}
         aliases = cfg.aliases
 
-        rt = env.Runtime(args)
-        rt.steps = cfg.steps
-        rt.aliases = cfg.aliases
-        rt._cfg = cfg._cfg
+        rt = env.Runtime(args, cfg)
 
         if args.command in builtin_entries:
             command = first(lambda command: command.name == args.command, command_list)
@@ -385,7 +345,9 @@ def _extract_arg(argument: _inspect.Argument):
             return SpecialArg(argument.name, ctor)
 
     try:
-        metadata = first(lambda meta: isinstance(meta, arg.Argument), argument.metadata)
+        metadata: arg.Argument = first(
+            lambda meta: isinstance(meta, arg.Argument), argument.metadata
+        )
     except StopIteration:
         return None
 
@@ -397,10 +359,9 @@ def _extract_arg(argument: _inspect.Argument):
         optional = typing.get_origin(argument.type) is Union and type(
             None
         ) in typing.get_args(argument.type)
+    metadata.opt = optional
 
-    kwargs = metadata.__dict__.copy()
-    del kwargs["opt"]
-    return EntryArg(argument.name, optional, **kwargs)
+    return EntryArg(argument.name, metadata)
 
 
 def _extract_args(entry: callable) -> List[Union[EntryArg, SpecialArg]]:

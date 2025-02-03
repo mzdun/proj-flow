@@ -26,6 +26,37 @@ class Argument:
     choices: typing.Optional[typing.List[str]] = None
     completer: typing.Optional[callable] = None
 
+    def visit(self, parser: argparse.ArgumentParser, name: str):
+        kwargs = {}
+        if self.help is not None:
+            kwargs["help"] = self.help
+        if self.nargs is not None:
+            kwargs["nargs"] = self.nargs
+        if self.meta is not None:
+            kwargs["metavar"] = self.meta
+        if self.default is not None:
+            kwargs["default"] = self.default
+        if self.action is not None:
+            kwargs["action"] = self.action
+        if self.choices is not None:
+            kwargs["choices"] = self.choices
+
+        names = (
+            [name] if self.pos else self.names if len(self.names) > 0 else [f"--{name}"]
+        )
+
+        if self.pos:
+            kwargs["nargs"] = "?" if self.opt else 1
+        else:
+            kwargs["dest"] = name
+            kwargs["required"] = not self.opt
+
+        action = parser.add_argument(*names, **kwargs)
+        if self.completer:
+            action.completer = self.completer
+
+        return action
+
 
 class FlagArgument(Argument):
     def __init__(self, help: str = "", names: typing.List[str] = []):

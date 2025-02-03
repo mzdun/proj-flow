@@ -115,20 +115,27 @@ class FlowConfig:
     _cfg: dict
     steps: list = []
     aliases: List[RunAlias] = []
+    root: str
 
-    def __init__(self, root: str = "."):
-        self.root = os.path.abspath(root)
-        try:
-            with open(
-                os.path.join(self.root, ".flow", "config.yml"),
-                encoding="UTF-8",
-            ) as f:
-                self._cfg = yaml.load(f, Loader=yaml.Loader)
-        except FileNotFoundError:
-            self._cfg = {}
+    def __init__(self, cfg: Optional["FlowConfig"] = None, root: str = "."):
+        if cfg is not None:
+            self._cfg = cfg._cfg
+            self.steps = cfg.steps
+            self.aliases = cfg.aliases
+            self.root = cfg.root
+        else:
+            self.root = os.path.abspath(root)
+            try:
+                with open(
+                    os.path.join(self.root, ".flow", "config.yml"),
+                    encoding="UTF-8",
+                ) as f:
+                    self._cfg = yaml.load(f, Loader=yaml.Loader)
+            except FileNotFoundError:
+                self._cfg = {}
 
-        self._propagate_compilers()
-        self._load_plugins()
+            self._propagate_compilers()
+            self._load_plugins()
 
     def _propagate_compilers(self):
         global _flow_config_default_compiler
@@ -233,8 +240,10 @@ class Runtime(FlowConfig):
     platform: str
     secrets: List[str] = []
 
-    def __init__(self, argsOrRuntime: Union[argparse.Namespace, "Runtime"]):
-        super().__init__()
+    def __init__(
+        self, argsOrRuntime: Union[argparse.Namespace, "Runtime"], cfg: FlowConfig
+    ):
+        super().__init__(cfg=cfg)
 
         if isinstance(argsOrRuntime, argparse.Namespace):
             args = argsOrRuntime
