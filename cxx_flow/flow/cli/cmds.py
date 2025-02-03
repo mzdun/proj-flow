@@ -7,13 +7,13 @@ supporting the functions defined in :mod:`cxx_flow.commands`.
 """
 
 import argparse
-import inspect
 import typing
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from cxx_flow import __version__
 from cxx_flow.api import arg, completers, env
+from cxx_flow.base import inspect as _inspect
 from cxx_flow.flow.configs import Configs
 
 
@@ -123,15 +123,13 @@ class BuiltinEntry:
         rt._cfg = cfg._cfg
 
         if args.command in builtin_entries:
-            command = next(
-                filter(lambda command: command.name == args.command, command_list)
-            )
-            return cast(BuiltinEntry, command).run(args, rt)
+            command = first(lambda command: command.name == args.command, command_list)
+            return command.run(args, rt)
         elif args.command in {alias.name for alias in aliases}:
-            command = next(filter(lambda command: command.name == "run", command_list))
-            alias = next(filter(lambda alias: alias.name == args.command, aliases))
+            command = first(lambda command: command.name == "run", command_list)
+            alias = first(lambda alias: alias.name == args.command, aliases)
             args.steps.append(alias.steps)
-            return cast(BuiltinEntry, command).run(args, rt)
+            return command.run(args, rt)
 
         print("known commands:")
         for command in command_list:
@@ -152,14 +150,8 @@ class BuiltinEntry:
                 subcommand_name = getattr(args, subcommand_attribute)
 
         if subcommand_name is not None:
-            subcommand = cast(
-                BuiltinEntry,
-                next(
-                    filter(
-                        lambda command: command.name == subcommand_name,
-                        self.children,
-                    )
-                ),
+            subcommand = first(
+                lambda command: command.name == subcommand_name, self.children
             )
             return subcommand.run(args, rt, level=level + 1)
 
@@ -387,40 +379,44 @@ def _shortcut_value(value) -> str:
     return str(value)
 
 
-def _extract_arg(name: str, argument: Any):
+def _extract_arg(argument: _inspect.Argument):
     for ctor in [Configs, env.Runtime]:
-        if argument is ctor:
-            return SpecialArg(name, ctor)
+        if argument.type is ctor:
+            return SpecialArg(argument.name, ctor)
 
-    anno_type = typing.get_origin(argument)
-    if anno_type is not Annotated:
+    try:
+        metadata = first(lambda meta: isinstance(meta, arg.Argument), argument.metadata)
+    except StopIteration:
         return None
 
-    arg_dict = getattr(argument, "__dict__", {})
-    origin = arg_dict.get("__origin__", None)
-    (metadata,) = arg_dict.get("__metadata__", None)
-
-    if origin is None or not isinstance(metadata, arg.Argument):
+    if argument.type is None:
         return None
 
     optional = metadata.opt
     if optional is None:
-        optional = typing.get_origin(origin) is Union and type(None) in typing.get_args(
-            origin
-        )
+        optional = typing.get_origin(argument.type) is Union and type(
+            None
+        ) in typing.get_args(argument.type)
 
     kwargs = metadata.__dict__.copy()
     del kwargs["opt"]
-    return EntryArg(name, optional, **kwargs)
+    return EntryArg(argument.name, optional, **kwargs)
 
 
 def _extract_args(entry: callable) -> List[Union[EntryArg, SpecialArg]]:
-    entry_args = inspect.get_annotations(entry)
-    nullable_args = (
-        _extract_arg(name, entry_args[name]) for name in sorted(entry_args.keys())
-    )
-    args = filter(lambda item: item is not None, nullable_args)
+    args_with_possible_nones = map(_extract_arg, _inspect.signature(entry))
+    args = filter(lambda item: item is not None, args_with_possible_nones)
     return list(args)
+
+
+T = typing.TypeVar("T")
+
+
+def first(fltr: typing.Callable[[T], bool], items: typing.Iterable[T]) -> Optional[T]:
+    try:
+        return next(filter(fltr, items))
+    except StopIteration:
+        return None
 
 
 command_list: List[BuiltinEntry] = []

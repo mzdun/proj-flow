@@ -8,7 +8,7 @@ Synopsis
 
 .. code-block::
 
-   $ ./flow list [--alias] [--all] [--builtin] [--configs] [--pipe] [--steps]
+   $ ./flow list [--builtin] [--alias] [--steps] [--configs] [--all] [--pipe]
 
 Description
 -----------

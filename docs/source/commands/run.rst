@@ -84,6 +84,11 @@ Similarly, to build Debug binaries, the ``./flow run`` incantation would be
 ``-s step`` / ``--step step``
     List any number of steps to perform during this run.
 
+Other flags
+    There might be some additional flags, such as ``--rel``, ``--dbg`` or
+    ``--both``, that are added to the synopsis of this command through the
+    project configuration and they represent a grouping of ``-D`` parameters.
+
 ``$DEV_CXX``
     Override compiler selection from ``compiler.os-default`` flow project
     configuration. For example, on Ubuntu the default compiler is GCC. To get
