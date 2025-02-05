@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import os
-from typing import Dict
+from dataclasses import dataclass, field
+from typing import Dict, List
 
 import chevron
 
@@ -45,42 +46,51 @@ def all_modules():
             yield f"{parent}.{mod}"
 
 
+@dataclass
+class Module:
+    name: str
+    underline: str
+    children: List["Module"] = field(default_factory=list)
+
+    @property
+    def has_children(self):
+        return len(self.children) > 0
+
+
 def package_tree():
     modules = {
-        mod: {"name": mod, "underline": "=" * len(mod)} for mod in sorted(all_modules())
+        mod: Module(name=mod, underline=("=" * len(mod)))
+        for mod in sorted(all_modules())
     }
 
-    modules["cxx_flow"] = {}
+    modules["cxx_flow"] = Module("", "")
 
     for mod in modules:
         try:
             self = modules[mod]
-            parent_name = ".".join(self["name"].split(".")[:-1])
+            parent_name = ".".join(self.name.split(".")[:-1])
             parent = modules[parent_name]
         except KeyError:
             continue
-        try:
-            parent["children"].append(self)
-        except KeyError:
-            parent["children"] = [self]
+
+        parent.children.append(self)
 
     for mod in modules:
         self = modules[mod]
         try:
-            children = self["children"]
-            self["children"] = list(sorted(children, key=lambda obj: obj["name"]))
-            self["has_children"] = len(children) > 0
+            children = self.children
+            self.children = list(sorted(children, key=lambda obj: obj.name))
         except KeyError:
             continue
 
     return modules
 
 
-def render_autodocs(modules: Dict[str, dict]):
+def render_autodocs(modules: Dict[str, Module]):
     render(
         load("api.index.rst.mustache"),
         "index",
-        {"module": modules["cxx_flow"]["children"]},
+        {"module": modules["cxx_flow"].children},
     )
 
     del modules["cxx_flow"]

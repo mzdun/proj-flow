@@ -20,7 +20,8 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union, cast
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import yaml
 
@@ -39,11 +40,13 @@ def default_compiler():
     except KeyError:
         pass
 
+    flow_config_default_compiler = _flow_config_default_compiler or {}
+
     try:
-        return _flow_config_default_compiler[platform]
+        return flow_config_default_compiler[platform]
     except KeyError:
         print(
-            f"-- KeyError: {platform} in {_flow_config_default_compiler}",
+            f"-- KeyError: {platform} in {flow_config_default_compiler}",
             file=sys.stderr,
         )
         return "?"
@@ -78,17 +81,21 @@ class Printer:
         cmd = args[0] if raw else shlex.join([args[0]])
         if not use_color:
             if raw:
-                print(cmd, *(Printer.hide(arg) for arg in args[1:]), file=sys.stderr)
+                print(
+                    cmd,
+                    *(Printer.hide(arg, secrets) for arg in args[1:]),
+                    file=sys.stderr,
+                )
             else:
                 print(
                     cmd,
-                    shlex.join(Printer.hide(arg) for arg in args[1:]),
+                    shlex.join(Printer.hide(arg, secrets) for arg in args[1:]),
                     file=sys.stderr,
                 )
             return
 
-        args = " ".join([Printer.print_arg(arg, secrets, raw) for arg in args[1:]])
-        print(f"\033[33m{cmd}\033[m {args}", file=sys.stderr)
+        printed = " ".join([Printer.print_arg(arg, secrets, raw) for arg in args[1:]])
+        print(f"\033[33m{cmd}\033[m {printed}", file=sys.stderr)
 
 
 @dataclass
@@ -146,6 +153,9 @@ class FlowConfig:
         load_module_plugins(std_plugins)
 
         local_plugins = os.path.abspath(os.path.join(self.root, ".flow", "extensions"))
+        if not os.path.exists(local_plugins):
+            return
+
         if not os.path.isdir(local_plugins):
             plugins = importlib.import_module(local_plugins)
             load_module_plugins(plugins, can_fail=True)
@@ -224,6 +234,7 @@ def _cp(src: str, dst: str) -> int:
             if not os.path.isdir(dst):
                 _mkdir(os.path.dirname(dst))
             shutil.copy(src, dst, follow_symlinks=False)
+        return 0
     except FileNotFoundError as err:
         print(err, file=sys.stderr)
         return 1
@@ -335,7 +346,7 @@ class Config:
     items: dict
     keys: List[str]
 
-    def get_path(self, key: str, val: any = None):
+    def get_path(self, key: str, val: Any = None):
         path = key.split(".")
         ctx = self.items
         for step in path:
@@ -345,7 +356,7 @@ class Config:
             if child is None:
                 return val
             ctx = child
-        return cast(any, ctx)
+        return cast(Any, ctx)
 
     @property
     def os(self) -> str:

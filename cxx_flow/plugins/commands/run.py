@@ -19,14 +19,14 @@ from cxx_flow.flow.configs import Configs
 
 @api.arg.command("run")
 def main(
-    steps: Annotated[
+    cli_steps: Annotated[
         Optional[List[str]],
         api.arg.Argument(
             help="Run only listed steps; if missing, run all the steps",
             names=["-s", "--steps"],
             nargs="*",
             meta="step",
-            action="append",
+            action="store",
             default=[],
             completer=api.completers.step_completer,
         ),
@@ -37,9 +37,10 @@ def main(
     """Run automation steps for current project"""
 
     rt_steps = cast(List[api.step.Step], rt.steps)
-    steps = matrix.flatten(step.split(",") for step in matrix.flatten(steps))
-    if not steps:
+    if not cli_steps:
         steps = [step.name for step in rt_steps]
+    else:
+        steps = matrix.flatten(step.split(",") for step in cli_steps)
     steps = list(map(lambda s: s.lower(), steps))
 
     step_names = set(steps)

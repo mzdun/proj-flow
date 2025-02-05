@@ -11,7 +11,7 @@ resulting set of configurations.
 
 import os
 import sys
-from typing import Dict, List, Tuple, TypeVar
+from typing import Dict, Iterable, List, Tuple, TypeVar
 
 import yaml
 
@@ -57,7 +57,7 @@ def find_compiler(
     return filename, compilers
 
 
-def flatten(array: List[List[T]]) -> List[T]:
+def flatten(array: Iterable[List[T]]) -> List[T]:
     """
     Turns list of lists into a list.
 

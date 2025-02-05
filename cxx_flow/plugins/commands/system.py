@@ -21,7 +21,7 @@ def main(
             help="Select, what format should be returned",
             choices=["props", "platform", "debug"],
         ),
-    ]
+    ],
 ):
     """Produce system information for CI pipelines"""
 

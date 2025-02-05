@@ -27,7 +27,7 @@ class Argument:
     metadata: typing.List[typing.Any]
 
 
-def signature(call: callable) -> typing.Generator[Argument, None, None]:
+def signature(call: callable) -> typing.Generator[Argument, None, None]:  # type: ignore
     """
     Extract the arguments from the function and produces list of
     :class:`Argument` objects.
@@ -51,7 +51,7 @@ def signature(call: callable) -> typing.Generator[Argument, None, None]:
             continue
 
         origin = anno_args[0]
-        metadata = anno_args[1:]
+        metadata = list(anno_args[1:])
 
         yield Argument(name=param_name, type=origin, metadata=metadata)
 
@@ -97,6 +97,9 @@ def type_name(t: type) -> str:
 
     if origin is typing.Union:
         return "|".join(_unique_union_arg_names(t))
+
+    if origin is None:
+        return "?"
 
     if origin in [list, type, dict]:
         args = typing.get_args(t)

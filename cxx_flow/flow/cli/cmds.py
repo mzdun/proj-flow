@@ -9,7 +9,7 @@ supporting the functions defined in :mod:`cxx_flow.commands`.
 import argparse
 import typing
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 from cxx_flow import __version__
 from cxx_flow.api import arg, completers, env
@@ -40,7 +40,7 @@ def build_argparser(flow_cfg: env.FlowConfig):
         nargs="?",
         help="Run as if cxx-flow was started in <dir> instead of the current "
         "working directory. This directory must exist.",
-    ).completer = completers.cd_completer
+    ).completer = completers.cd_completer  # type: ignore
 
     BuiltinEntry.visit_all(parser, flow_cfg)
     return parser
@@ -49,7 +49,7 @@ def build_argparser(flow_cfg: env.FlowConfig):
 @dataclass
 class SpecialArg:
     name: str
-    ctor: callable
+    ctor: callable  # type: ignore
 
     def create(self, rt: env.Runtime, args: argparse.Namespace):
         if self.ctor == env.Runtime:
@@ -70,7 +70,7 @@ class EntryArg:
 class BuiltinEntry:
     name: str
     doc: str
-    entry: callable
+    entry: callable  # type: ignore
     args: List[EntryArg]
     additional: List[SpecialArg]
     children: List["BuiltinEntry"] = field(default_factory=list)
@@ -84,12 +84,14 @@ class BuiltinEntry:
 
         if args.command in builtin_entries:
             command = first(lambda command: command.name == args.command, command_list)
-            return command.run(args, rt)
+            if command:
+                return command.run(args, rt)
         elif args.command in {alias.name for alias in aliases}:
             command = first(lambda command: command.name == "run", command_list)
             alias = first(lambda alias: alias.name == args.command, aliases)
-            args.steps.append(alias.steps)
-            return command.run(args, rt)
+            if command and alias:
+                args.cli_steps.append(",".join(alias.steps))
+                return command.run(args, rt)
 
         print("known commands:")
         for command in command_list:
@@ -113,6 +115,8 @@ class BuiltinEntry:
             subcommand = first(
                 lambda command: command.name == subcommand_name, self.children
             )
+            if not subcommand:
+                return 1
             return subcommand.run(args, rt, level=level + 1)
 
         kwargs = {}
@@ -127,23 +131,21 @@ class BuiltinEntry:
         return 0 if result is None else result
 
     @staticmethod
-    def visit_all(
-        parser: argparse.ArgumentParser, cfg: env.FlowConfig
-    ) -> Dict[str, List[str]]:
+    def visit_all(parser: argparse.ArgumentParser, cfg: env.FlowConfig):
         global command_list
         command_list = BuiltinEntry.build_menu(arg.get_commands().subs)
         shortcut_configs = BuiltinEntry.build_shortcuts(cfg)
 
-        parser.flow = cfg
-        parser.shortcuts = shortcut_configs
+        parser.flow = cfg  # type: ignore
+        parser.shortcuts = shortcut_configs  # type: ignore
 
         subparsers = parser.add_subparsers(
             dest="command", metavar="{command}", help="Known command name, see below"
         )
 
-        subparsers.parent = parser
+        subparsers.parent = parser  # type: ignore
 
-        run: BuiltinEntry = None
+        run: Optional[BuiltinEntry] = None
         for entry in command_list:
             entry.visit(subparsers)
             if entry.name == "run":
@@ -176,8 +178,8 @@ class BuiltinEntry:
         )
 
         parent = getattr(subparsers, "parent")
-        parser.flow = getattr(parent, "flow")
-        parser.shortcuts = getattr(parent, "shortcuts")
+        parser.flow = getattr(parent, "flow")  # type: ignore
+        parser.shortcuts = getattr(parent, "shortcuts")  # type: ignore
 
         assert parent.flow is not None
         assert parent.shortcuts is not None
@@ -223,7 +225,7 @@ class BuiltinEntry:
                 dest="configs",
                 metavar="key=value",
                 nargs="*",
-                action="append",
+                action="store",
                 default=[],
                 help="Run only builds on matching configs. The key is one of "
                 'the keys into "matrix" object in .flow/matrix.yml definition '
@@ -235,7 +237,7 @@ class BuiltinEntry:
                 "If given key is never used, all values from .flow/matrix.yaml "
                 "for that key are used. Otherwise, only values from command "
                 "line are used.",
-            ).completer = completers.matrix_completer
+            ).completer = completers.matrix_completer  # type: ignore
 
             parser.add_argument(
                 "--official",
@@ -244,11 +246,11 @@ class BuiltinEntry:
                 help="Cut matrix to release builds only",
             )
 
-            if len(parser.shortcuts):
+            if len(parser.shortcuts):  # type: ignore
                 group = parser.add_mutually_exclusive_group()
 
-                for shortcut_name in sorted(parser.shortcuts.keys()):
-                    config = parser.shortcuts[shortcut_name]
+                for shortcut_name in sorted(parser.shortcuts.keys()):  # type: ignore
+                    config = parser.shortcuts[shortcut_name]  # type: ignore
                     group.add_argument(
                         f"--{shortcut_name}",
                         required=False,
@@ -265,7 +267,7 @@ class BuiltinEntry:
                 metavar="{command}",
                 help="Known command name, see below",
             )
-            subparsers.parent = parser
+            subparsers.parent = parser  # type: ignore
 
             for entry in self.children:
                 entry.visit(subparsers, level=level + 1)
@@ -344,14 +346,11 @@ def _extract_arg(argument: _inspect.Argument):
         if argument.type is ctor:
             return SpecialArg(argument.name, ctor)
 
-    try:
-        metadata: arg.Argument = first(
-            lambda meta: isinstance(meta, arg.Argument), argument.metadata
-        )
-    except StopIteration:
-        return None
+    metadata: Optional[arg.Argument] = first(
+        lambda meta: isinstance(meta, arg.Argument), argument.metadata
+    )
 
-    if argument.type is None:
+    if metadata is None or argument.type is None:
         return None
 
     optional = metadata.opt
@@ -364,10 +363,13 @@ def _extract_arg(argument: _inspect.Argument):
     return EntryArg(argument.name, metadata)
 
 
-def _extract_args(entry: callable) -> List[Union[EntryArg, SpecialArg]]:
+AnArg = Union[EntryArg, SpecialArg]
+
+
+def _extract_args(entry: callable):  # type: ignore
     args_with_possible_nones = map(_extract_arg, _inspect.signature(entry))
     args = filter(lambda item: item is not None, args_with_possible_nones)
-    return list(args)
+    return cast(List[AnArg], list(args))
 
 
 T = typing.TypeVar("T")

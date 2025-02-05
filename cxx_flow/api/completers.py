@@ -7,7 +7,7 @@ The **cxx_flow.api.completers** defines :py:mod:`argcomplete` functions for
 """
 
 import os
-from typing import Dict, List, Union, cast
+from typing import Any, Dict, List, Union, cast
 
 import yaml
 
@@ -59,7 +59,7 @@ def matrix_completer(prefix: str, parser, **kwargs):
 
     matrix_yml = os.path.join(flow_cfg.root, ".flow", "matrix.yml")
     with open(matrix_yml, "r", encoding="UTF-8") as contents:
-        data: Dict[str, List[any]] = yaml.load(contents, Loader=yaml.Loader).get(
+        data: Dict[str, List[Any]] = yaml.load(contents, Loader=yaml.Loader).get(
             "matrix", {}
         )
 

@@ -41,9 +41,12 @@ class StorePackages:
 
         global _project_pkg
         if _project_pkg is None:
-            _project_pkg = get_project("").pkg
+            project = get_project("")
+            if project is None:
+                rt.fatal(f"Cannot get project information from {rt.root}")
+            _project_pkg = project.pkg
 
-        main_group = cast(List[str], rt._cfg.get("package", {}).get("main-group"))
+        main_group = cast(str, rt._cfg.get("package", {}).get("main-group"))
         if main_group is not None and not rt.dry_run:
             src = _package_name(config, _project_pkg, main_group)
             dst = _package_name(config, _project_pkg, "")

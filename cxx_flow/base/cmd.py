@@ -46,5 +46,5 @@ def run(app: str, *args: str, capture_output=False):
     if cmd is None:
         return None
     return subprocess.run(
-        [cmd, *args], check=False, encoding="UTF-8", capture_output=capture_output
+        [cmd, *args], shell=False, encoding="UTF-8", capture_output=capture_output
     )

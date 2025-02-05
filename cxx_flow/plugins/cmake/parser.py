@@ -63,6 +63,8 @@ def _token_stream(text: str) -> Iterator[Token]:
     mo = get_token(text)
     while mo is not None:
         token_type = mo.lastgroup
+        if not token_type:
+            continue
         if token_type not in ["COMMENT", "WS"]:
             value = mo.group(token_type)
             yield Token(type=token_type, value=value, offset=offset)
@@ -100,14 +102,19 @@ def _cmake(filename: str):
 
     return commands
 
+NO_ARG = Arg("", -1)
 
-def get_project(dirname: str) -> Project:
-    commands = _cmake(os.path.join(dirname, "CMakeLists.txt"))
+
+def get_project(dirname: str) -> Optional[Project]:
+    try:
+        commands = _cmake(os.path.join(dirname, "CMakeLists.txt"))
+    except FileNotFoundError:
+        return None
 
     project_name: Optional[Arg] = None
     version = Arg("0.1.0", -1)
     version_stability: Optional[Arg] = None
-    description = Arg("", -1)
+    description = NO_ARG
 
     for cmd in commands:
         if cmd.name == "project":
@@ -117,7 +124,7 @@ def get_project(dirname: str) -> Project:
                 name.value: value for name, value in zip(args[::2], args[1::2])
             }
             version = project_dict.get("VERSION", version)
-            description = project_dict.get("DESCRIPTION", "")
+            description = project_dict.get("DESCRIPTION", description)
             if version_stability is not None:
                 break
         elif cmd.name == "set":
@@ -128,15 +135,13 @@ def get_project(dirname: str) -> Project:
                     break
 
     if project_name is None:
-        project_name = Arg("", -1)
+        return None
     if version_stability is None:
-        version_stability = Arg("", -1)
+        version_stability = NO_ARG
 
-    project_version = Project(
+    return Project(
         name=project_name,
         version=version,
         stability=version_stability,
         description=description,
     )
-
-    return project_version

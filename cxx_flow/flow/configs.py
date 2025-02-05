@@ -10,14 +10,14 @@ using ``-D`` switches.
 
 import argparse
 import os
-from typing import Dict, List
+from typing import Any, Callable, Dict, List
 
 from cxx_flow.api import env
 from cxx_flow.base import matrix
 
 
 def _compiler_inner(
-    value: str, used_compilers: Dict[str, List[str]], config_names: Dict[str, List[str]]
+    value: str, used_compilers: Dict[str, List[List[str]]], config_names: Dict[str, List[str]]
 ):
     compiler, names = matrix.find_compiler(value, config_names)
     if compiler not in used_compilers:
@@ -26,7 +26,7 @@ def _compiler_inner(
     return compiler
 
 
-def _compiler(used_compilers: Dict[str, List[str]], config_names: Dict[str, List[str]]):
+def _compiler(used_compilers: Dict[str, List[List[str]]], config_names: Dict[str, List[str]]):
     return lambda value: _compiler_inner(value, used_compilers, config_names)
 
 
@@ -43,14 +43,13 @@ _TRUE = {"true", "on", "yes", "1"}
 _boolean_sanitizer = _boolean("with-sanitizer")
 
 
-def _types(used_compilers: Dict[str, List[str]], config_names: Dict[str, List[str]]):
+def _types(used_compilers: Dict[str, List[List[str]]], config_names: Dict[str, List[str]]):
     return {
         "compiler": _compiler(used_compilers, config_names),
         "sanitizer": _boolean_sanitizer,
     }
 
-
-def _config(config: List[str], only_host: bool, types: Dict[str, callable]):
+def _config(config: List[str], only_host: bool, types: Dict[str, Callable[[str], Any]]):
     args = {}
     for arg in config:
         if arg[:1] == "-":
@@ -117,12 +116,10 @@ class Configs:
         super()
         configs, keys = _load_flow_data(rt)
 
-        used_compilers: Dict[str, List[str]] = {}
+        used_compilers: Dict[str, List[List[str]]] = {}
 
         types = _types(used_compilers=used_compilers, config_names=rt.compiler_names)
-        arg_configs = matrix.cartesian(
-            _config(matrix.flatten(args.configs), rt.only_host, types)
-        )
+        arg_configs = matrix.cartesian(_config(args.configs, rt.only_host, types))
 
         # from commands/github
         spread_lts = hasattr(args, "matrix") and not not args.matrix

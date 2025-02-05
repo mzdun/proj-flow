@@ -10,7 +10,7 @@ The **cxx_flow.flow.cli** provides command-line entry for the *C++ flow*.
 import argparse
 import os
 import sys
-from typing import List, cast
+from typing import Dict, List, cast
 
 from cxx_flow import __version__
 from cxx_flow.api import env
@@ -33,11 +33,12 @@ def _change_dir():
 
 def _expand_shortcuts(parser: argparse.ArgumentParser, args: argparse.Namespace):
     args_kwargs = dict(args._get_kwargs())
-    for key in parser.shortcuts:
+    shortcuts: Dict[str, List[str]] = parser.shortcuts  # type: ignore
+    for key in shortcuts:
         try:
             if not args_kwargs[key]:
                 continue
-            cast(List[List[str]], args.configs).append(parser.shortcuts[key])
+            cast(List[str], args.configs).extend(shortcuts[key])
             break
         except KeyError:
             continue

@@ -6,6 +6,6 @@ The **cxx_flow.plugins.cmake** provides ``"CMake"``, ``"Build"``, ``"Pack"`` and
 ``"Test"`` steps, as well as CMake-specific initialization context.
 """
 
-from . import build, config, context, pack, test
+from . import build, config, context, pack, parser, test
 
-__all__ = ["build", "config", "context", "pack", "test"]
+__all__ = ["build", "config", "context", "pack", "parser", "test"]

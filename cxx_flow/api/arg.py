@@ -24,7 +24,7 @@ class Argument:
     action: typing.Union[str, argparse.Action, None] = None
     default: typing.Optional[typing.Any] = None
     choices: typing.Optional[typing.List[str]] = None
-    completer: typing.Optional[callable] = None
+    completer: typing.Optional[callable] = None  # type: ignore
 
     def visit(self, parser: argparse.ArgumentParser, name: str):
         kwargs = {}
@@ -53,7 +53,7 @@ class Argument:
 
         action = parser.add_argument(*names, **kwargs)
         if self.completer:
-            action.completer = self.completer
+            action.completer = self.completer  # type: ignore
 
         return action
 
@@ -68,11 +68,11 @@ class FlagArgument(Argument):
 @dataclass
 class _Command:
     name: str
-    entry: typing.Optional[callable]
+    entry: typing.Optional[callable]  # type: ignore
     doc: typing.Optional[str]
     subs: typing.Dict[str, "_Command"]
 
-    def add(self, names: typing.List[str], entry: callable, doc: typing.Optional[str]):
+    def add(self, names: typing.List[str], entry: callable, doc: typing.Optional[str]):  # type: ignore
         name = names[0]
         rest = names[1:]
         if len(rest):
@@ -101,7 +101,7 @@ _autodoc = {
 
 
 def command(*name: str):
-    def wrap(entry: callable):
+    def wrap(entry: callable):  # type: ignore
         global _known_commands
         _known_commands.add(list(name), entry, entry.__doc__)
 

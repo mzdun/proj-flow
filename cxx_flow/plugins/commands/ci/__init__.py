@@ -5,11 +5,11 @@
 The **cxx_flow.plugins.commands.ci** implements ``./flow ci`` command.
 """
 
-from cxx_flow.api import arg, env
+from cxx_flow.api import arg
 
 from . import matrix
 
-__all__ = ["matrix", "command_ci"]
+__all__ = ["matrix"]
 
 
 @arg.command("ci")
