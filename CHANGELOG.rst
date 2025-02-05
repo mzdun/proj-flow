@@ -4,13 +4,13 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-`0.8.1 <https://github.com/mzdun/cxx-flow/compare/v0.8.0...v0.8.1>`_ (2025-02-05)
+`0.8.1 <https://github.com/mzdun/proj-flow/compare/v0.8.0...v0.8.1>`_ (2025-02-05)
 =================================================================================
 
 Bug Fixes
 ---------
 
-- rename the package (`a994760 <https://github.com/mzdun/cxx-flow/commit/a994760c82630aee5c962d8910d4183408b10def>`_)
+- rename the package (`a994760 <https://github.com/mzdun/proj-flow/commit/a994760c82630aee5c962d8910d4183408b10def>`_)
 
 `0.8.0 <https://github.com/mzdun/proj-flow/compare/v0.7.1...v0.8.0>`_ (2025-02-05)
 =================================================================================

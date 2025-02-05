@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__file__, "../../..")))
 
 import proj_flow
 
-project = "C++ flow"
+project = "Project Flow"
 copyright = "2025, Marcin Zdun"
 author = "Marcin Zdun"
 

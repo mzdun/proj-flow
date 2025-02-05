@@ -20,7 +20,7 @@ while deciding on the file name of packages produced by CPack.
 
 ``--format props``
     Print list of platform properties for `cov <https://github.com/mzdun/cov>`_.
-    Currently, no tooling in *C++ flow* makes any use of this format.
+    Currently, no tooling in *Project Flow* makes any use of this format.
 
 ``--format platform``
     Print the chunk of package file in form of ``<platform>[-<version>]-<arch>``.

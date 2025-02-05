@@ -3,9 +3,9 @@
 Directory template
 ==================
 
-*C++ flow* directory template consist of layers. Each layer will be used only
-if a switch is turned on in the mustache context (if that switch is named in
-layer config). Every file, whose extension is ``.mustache``, will have this
+*Project Flow* directory template consist of layers. Each layer will be used
+only if a switch is turned on in the mustache context (if that switch is named
+in layer config). Every file, whose extension is ``.mustache``, will have this
 extension removed while copying the file to its destination, with the contents
 processed by mustache engine.
 
@@ -56,12 +56,12 @@ value itself if is is a scalar.
 |                         | - ``WTFPL``                                        |
 |                         | - ``Zlib``                                         |
 +-------------------------+----------------------------------------------------+
-| ``INCLUDE_PREFIX``      | Prefix for includes (as in #include                | 
+| ``INCLUDE_PREFIX``      | Prefix for includes (as in #include                |
 |                         | "{PREFIX}/version.hpp")                            |
 |                         |                                                    |
 |                         | *Current value of* ``PROJECT.NAME`` *context*      |
 +-------------------------+----------------------------------------------------+
-| ``NAME_PREFIX``         | CMake variable name prefix                         | 
+| ``NAME_PREFIX``         | CMake variable name prefix                         |
 |                         |                                                    |
 |                         | *Current value of* ``PROJECT.NAME``, *upper cased  |
 |                         | and safe for variable names*                       |

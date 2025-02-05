@@ -26,4 +26,4 @@ GitHub workflow job will have current virtual environment activated as well.
 
 Both those features are used by ``.github/workflows/build.yml`` file generated
 by :ref:`command-init` in ``build`` job, so that all :ref:`command-run`
-commands following the bootstrap share the same *C++ flow* installation.
+commands following the bootstrap share the same *Project Flow* installation.

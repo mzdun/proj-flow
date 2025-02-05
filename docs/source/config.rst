@@ -2,7 +2,7 @@ Flow config
 ===========
 
 Flow config file is a YAML file saved as ``.flow/config.yml``. It is used by
-various parts of *C++ flow* to negotiate some details with the project
+various parts of *Project Flow* to negotiate some details with the project
 maintainer.
 
 ``cmake``

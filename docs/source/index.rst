@@ -1,10 +1,10 @@
-C++ flow
+Project Flow
 ===================================
 
-**C++ flow** aims at being a one-stop tool for C++ projects, from creating new
-project, though building and verifying, all the way to publishing releases to
-the repository. It will run a set of known steps and will happily consult your
-project what do you want to call any subset of those steps.
+**Project Flow** aims at being a one-stop tool for C++ projects, from creating
+new project, though building and verifying, all the way to publishing releases
+to the repository. It will run a set of known steps and will happily consult
+your project what do you want to call any subset of those steps.
 
 Currently, it will make use of Conan for external dependencies, CMake presets
 for config and build and GitHub CLI for releases.

@@ -53,7 +53,7 @@ include:
   - os: ubuntu
     build_type: Release
     sanitizer: false
-  
+
   - os: windows
     build_type: Release
     conan_settings: [ compiler.runtime=MD ]

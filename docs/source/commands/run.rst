@@ -14,9 +14,9 @@ Synopsis
 Description
 -----------
 
-The `./flow run` command is the heart of daily work with *C++ flow*. Depending on
-which steps are taken and which configs are selected, various flows are
-performed. For instance, calling
+The `./flow run` command is the heart of daily work with *Project Flow*.
+Depending on which steps are taken and which configs are selected, various
+flows are performed. For instance, calling
 
 .. code-block:: console
 
@@ -27,7 +27,7 @@ Release build, using Ninja build system, with no sanitizer. However, this
 incantation is quite mouthful. It is so long, the browser needs to add a
 scrollbar to display it.
 
-The *C++ flow* addresses this in three ways. First, the aliases. They list
+The *Project Flow* addresses this in three ways. First, the aliases. They list
 number of steps they represent and are configurable through flow config file in
 ``"entry"`` object. It so happens, that alias named "config" covers those two
 steps, changing the call to
@@ -36,11 +36,11 @@ steps, changing the call to
 
     $ ./flow config -Dos=ubuntu -Dcompiler=gcc -Dbuild_type=Debug -Dbuild_type=Release -Dsanitizer=off
 
-Second approach is done through definition shortcuts which *C++ flow* reads from
-the same config file, this time from object named ``"shortcuts"``. Again, in a
-freshly-initialized config file, there is a shortcut named "both", covering both
-Debug and Release builds with sanitizer turned off. Since the shortcut names are
-added to ``./flow run`` as switches, the call changes to
+Second approach is done through definition shortcuts which *Project Flow*
+reads from the same config file, this time from object named ``"shortcuts"``.
+Again, in a freshly-initialized config file, there is a shortcut named "both",
+covering both Debug and Release builds with sanitizer turned off. Since the
+shortcut names are added to ``./flow run`` as switches, the call changes to
 
 .. code-block:: console
 
