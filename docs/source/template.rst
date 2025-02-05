@@ -12,7 +12,7 @@ processed by mustache engine.
 Mustache context
 ----------------
 
-Currently, a handful of ``cxx-flow init`` settings are defined, each building
+Currently, a handful of ``proj-flow init`` settings are defined, each building
 the mustache context a bit.
 
 .. _interactive-settings:

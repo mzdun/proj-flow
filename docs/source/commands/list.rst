@@ -13,7 +13,7 @@ Synopsis
 Description
 -----------
 
-The `./flow list` command prints the CLI params a `cxx-flow` or `./flow` can
+The `./flow list` command prints the CLI params a `proj-flow` or `./flow` can
 take. Most of the output is about possible :ref:`command-run` command parameters
 or aliases.
 

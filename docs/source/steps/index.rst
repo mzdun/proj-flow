@@ -42,7 +42,7 @@ Icons
 +-------------------+---------------------------+
 
 Uses the SVG images to create an ``data/assets/appicon.ico`` and
-``data/assets/appicon-256.png``. Installed during ``cxx-flow init`` as an
+``data/assets/appicon-256.png``. Installed during ``proj-flow init`` as an
 example of *C++ flow* extension read from project directory.
 
 Build

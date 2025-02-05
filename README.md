@@ -1,8 +1,8 @@
 # C++ flow
 
-[![Python package workflow badge](https://github.com/mzdun/cxx-flow/actions/workflows/python-publish.yml/badge.svg)](https://github.com/mzdun/cxx-flow/actions)
-[![PyPI version badge](https://img.shields.io/pypi/v/cxx-flow.svg)](https://pypi.python.org/pypi/cxx-flow)
-[![PyPI License: MIT](https://img.shields.io/pypi/l/cxx-flow.svg)](https://pypi.python.org/pypi/cxx-flow)
+[![Python package workflow badge](https://github.com/mzdun/proj-flow/actions/workflows/python-publish.yml/badge.svg)](https://github.com/mzdun/proj-flow/actions)
+[![PyPI version badge](https://img.shields.io/pypi/v/proj-flow.svg)](https://pypi.python.org/pypi/proj-flow)
+[![PyPI License: MIT](https://img.shields.io/pypi/l/proj-flow.svg)](https://pypi.python.org/pypi/proj-flow)
 
 **C++ flow** aims at being a one-stop tool for C++ projects, from creating new
 project, though building and verifying, all the way to publishing releases to
@@ -17,11 +17,11 @@ for config and build and GitHub CLI for releases.
 To create a new project with _C++ flow_, first install it using pip:
 
 ```sh
-(.venv) $ pip install cxx-flow
+(.venv) $ pip install proj-flow
 ```
 
 Every project created with _C++ flow_ has a self-bootstrapping helper script,
-which will install `cxx-flow` if it is needed, using either current virtual
+which will install `proj-flow` if it is needed, using either current virtual
 environment or switching to a private virtual environment (created inside
 `.flow/.venv` directory). This is used by the GitHub workflow in the generated
 projects through the `bootstrap` command.
@@ -50,8 +50,8 @@ From PowerShell with:
 A fresh C++ project can be created with a
 
 ```sh
-cxx-flow init
+proj-flow init
 ```
 
 This command will ask multiple questions to build Mustache context for the
-project template. For more information, see [the documentation](https://cxx-flow.readthedocs.io/en/latest/).
+project template. For more information, see [the documentation](https://proj-flow.readthedocs.io/en/latest/).

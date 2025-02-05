@@ -16,14 +16,14 @@ Description
 -----------
 
 ``-h`` / ``--help``
-   Without the command, or before the command, show the help for cxx-flow
+   Without the command, or before the command, show the help for proj-flow
    and exit. After the command, show the help for that command and exit.
 
 ``-v`` / ``--version``
-   Show cxx-flow's version and exit.
+   Show proj-flow's version and exit.
 
 ``-C dir``
-   Run as if cxx-flow was started in <dir> instead of the current working
+   Run as if proj-flow was started in <dir> instead of the current working
    directory. This directory must exist.
 
 ``{command}``
@@ -36,7 +36,7 @@ Description
    .. note::
 
       If the ``--dry-run`` is used through ``./flow`` helper, the helper may
-      still create private virtual environment and install ``cxx-flow`` package
+      still create private virtual environment and install ``proj-flow`` package
       as needed.
 
 ``--silent``

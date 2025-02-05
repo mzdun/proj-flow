@@ -21,7 +21,7 @@ If the reference starts with a ``"?"``, then this variable is an ``"ON"`` /
 ``"OFF"`` variable, otherwise it will be a string variable. Then if the rest
 of the reference starts with ``config:``, the config for current run will be
 used to retrieve the value. Finally, if that start was ``runtime:``, the
-:class:`Runtime<cxx_flow.api.env.Runtime>` object is queried for the value.
+:class:`Runtime<proj_flow.api.env.Runtime>` object is queried for the value.
 
 Currently the default value is passed through Mustache engine:
 

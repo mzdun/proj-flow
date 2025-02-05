@@ -15,7 +15,7 @@ Description
 -----------
 
 This command does nearly nothing, but when it is paired with ``./flow`` helper,
-it is the simplest way to finish ``cxx-flow`` bootstrapping, where the helper
+it is the simplest way to finish ``proj-flow`` bootstrapping, where the helper
 creates a virtual environment as needed and installs a compatible version of
 the package.
 

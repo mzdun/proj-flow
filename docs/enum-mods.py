@@ -28,7 +28,7 @@ def render(template: str, name: str, ctx):
 def all_modules():
     root = os.path.abspath(os.path.join(__file__, "../.."))
     prefix = os.path.join(root, "")
-    for current, dirnames, filenames in os.walk(os.path.join(root, "cxx_flow")):
+    for current, dirnames, filenames in os.walk(os.path.join(root, "proj_flow")):
         dirnames[:] = [dirname for dirname in dirnames if dirname != "__pycache__"]
 
         parent = current[len(prefix) :].replace(os.sep, ".")
@@ -63,7 +63,7 @@ def package_tree():
         for mod in sorted(all_modules())
     }
 
-    modules["cxx_flow"] = Module("", "")
+    modules["proj_flow"] = Module("", "")
 
     for mod in modules:
         try:
@@ -90,10 +90,10 @@ def render_autodocs(modules: Dict[str, Module]):
     render(
         load("api.index.rst.mustache"),
         "index",
-        {"module": modules["cxx_flow"].children},
+        {"module": modules["proj_flow"].children},
     )
 
-    del modules["cxx_flow"]
+    del modules["proj_flow"]
 
     template = load("api.rst.mustache")
     for mod in modules:

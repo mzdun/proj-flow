@@ -1,6 +1,6 @@
 .. _command-init:
 
-``cxx-flow init``
+``proj-flow init``
 =================
 
 Synopsis
@@ -8,12 +8,12 @@ Synopsis
 
 .. code-block::
 
-   $ cxx-flow init [-y] [--ctx] [path]
+   $ proj-flow init [-y] [--ctx] [path]
 
 Description
 -----------
 
-The `cxx-flow init` command creates a new project in current directory.
+The `proj-flow init` command creates a new project in current directory.
 
 It first builds the mustache context for the :ref:`directory template<template>`
 by prompting for all the interactive :ref:`settings<interactive-settings>` and

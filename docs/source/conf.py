@@ -6,14 +6,14 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, "../../..")))
 
-import cxx_flow
+import proj_flow
 
 project = "C++ flow"
 copyright = "2025, Marcin Zdun"
 author = "Marcin Zdun"
 
-release = ".".join(cxx_flow.__version__.split(".", 2)[:2])
-version = cxx_flow.__version__
+release = ".".join(proj_flow.__version__.split(".", 2)[:2])
+version = proj_flow.__version__
 
 # -- General configuration
 
