@@ -1,5 +1,9 @@
 # C++ flow
 
+[![Python package workflow badge](https://github.com/mzdun/cxx-flow/actions/workflows/python-publish.yml/badge.svg)](https://github.com/mzdun/cxx-flow/actions)
+[![PyPI version badge](https://img.shields.io/pypi/v/cxx-flow.svg)](https://pypi.python.org/pypi/cxx-flow)
+[![PyPI License: MIT](https://img.shields.io/pypi/l/cxx-flow.svg)](https://pypi.python.org/pypi/cxx-flow)
+
 **C++ flow** aims at being a one-stop tool for C++ projects, from creating new
 project, though building and verifying, all the way to publishing releases to
 the repository. It will run a set of known steps and will happily consult your

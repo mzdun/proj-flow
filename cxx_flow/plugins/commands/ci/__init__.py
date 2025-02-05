@@ -7,9 +7,9 @@ The **cxx_flow.plugins.commands.ci** implements ``./flow ci`` command.
 
 from cxx_flow.api import arg
 
-from . import matrix
+from . import changelog, matrix, release
 
-__all__ = ["matrix"]
+__all__ = ["changelog", "matrix", "release"]
 
 
 @arg.command("ci")

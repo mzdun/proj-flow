@@ -20,7 +20,7 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    usage
    commands/index
@@ -28,3 +28,4 @@ Contents
    template
    config
    api/index
+   changelog
