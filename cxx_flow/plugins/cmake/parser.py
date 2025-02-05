@@ -42,6 +42,10 @@ class Project(NamedTuple):
     stability: Arg
     description: Arg
 
+    def set_version(self, directory: str, next_version: str):
+        _patch(directory, self.version, next_version)
+        return "CMakeLists.txt"
+
     @property
     def ver(self):
         return f"{self.version.value}{self.stability.value}"
@@ -101,6 +105,21 @@ def _cmake(filename: str):
             commands.append(_command(tok, stream))
 
     return commands
+
+
+def _patch(directory: str, arg: Arg, value: str):
+    with open(
+        os.path.join(directory, "CMakeLists.txt"), "r", encoding="UTF-8"
+    ) as input:
+        text = input.read()
+
+    patched = text[: arg.offset] + value + text[arg.offset + len(arg.value) :]
+
+    with open(
+        os.path.join(directory, "CMakeLists.txt"), "w", encoding="UTF-8"
+    ) as input:
+        input.write(patched)
+
 
 NO_ARG = Arg("", -1)
 

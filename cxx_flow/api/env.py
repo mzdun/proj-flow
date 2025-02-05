@@ -240,6 +240,26 @@ def _cp(src: str, dst: str) -> int:
         return 1
 
 
+class Msg(Enum):
+    """Message level for Runtime.message"""
+
+    DEBUG = 0
+    """Print only, when verbose is set"""
+
+    STATUS = 2
+    """Print when silent if not set"""
+
+    ALWAYS = 3
+    """Print always"""
+
+
+MSG_GUARD: Dict[Msg, Callable[["Runtime"], bool]] = {
+    Msg.DEBUG: lambda rt: rt.verbose,
+    Msg.STATUS: lambda rt: not rt.silent,
+    Msg.ALWAYS: lambda rt: True,
+}
+
+
 class Runtime(FlowConfig):
     dry_run: bool
     silent: bool
@@ -285,11 +305,15 @@ class Runtime(FlowConfig):
             self.platform = rt.platform
             self.secrets = [*rt.secrets]
 
-    def message(self, *args: str, **kwargs):
-        if not self.verbose:
+    def message(self, *args: str, level=Msg.DEBUG, **kwargs):
+        if not MSG_GUARD[level](self):
             return
 
         print("--", *args, **kwargs, file=sys.stderr)
+
+    def fatal(self, *args: str, **kwargs):
+        print("-- FATAL:", *args, **kwargs, file=sys.stderr)
+        sys.exit(1)
 
     def print(self, *args: str, raw=False):
         if not self.silent:
@@ -310,6 +334,11 @@ class Runtime(FlowConfig):
             )
             return 1
         return 0
+
+    def capture(self, *args: str, silent=False):
+        if not silent:
+            self.print(*args)
+        return subprocess.run(args, shell=False, encoding="UTF-8", capture_output=True)
 
     def mkdirs(self, dirname: str):
         self.print("mkdir", "-p", dirname)
