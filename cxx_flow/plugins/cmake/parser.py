@@ -44,7 +44,7 @@ class Project(NamedTuple):
 
     def set_version(self, directory: str, next_version: str):
         _patch(directory, self.version, next_version)
-        return "CMakeLists.txt"
+        return ["cxx_flow/__init__.py"]
 
     @property
     def ver(self):

@@ -123,4 +123,4 @@ class ChangelogGenerator(abc.ABC):
         with open(filename, "wb") as f:
             f.write(new_text.encode("UTF-8"))
 
-        return filename
+        return [filename]

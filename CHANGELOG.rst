@@ -4,6 +4,20 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.8.0 <https://github.com/mzdun/cxx-flow/compare/v0.7.1...v0.8.0>`_ (2025-02-05)
+=================================================================================
+
+New Features
+------------
+
+- add ci commands (`e90afde <https://github.com/mzdun/cxx-flow/commit/e90afde2e4fd1c1e3439f056a9ace31032554cba>`_)
+- changelog support (`a77b99c <https://github.com/mzdun/cxx-flow/commit/a77b99c632957a38d83cd91f4f54268b5a0eadeb>`_)
+
+Bug Fixes
+---------
+
+- extract the code common to docstr and argparse (`ce09b2f <https://github.com/mzdun/cxx-flow/commit/ce09b2f131e8bd2df7563b600ac5d1ff50928957>`_)
+
 `0.7.1 <https://github.com/mzdun/cxx-flow/compare/v0.7.0...v0.7.1>`_ (2025-02-02)
 =================================================================================
 

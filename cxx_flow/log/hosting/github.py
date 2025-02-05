@@ -41,6 +41,10 @@ class GitHub(commit.Hosting):
         return not not self._info.remote
 
     @property
+    def remote(self):
+        return self._info.remote
+
+    @property
     def owner(self):
         return self._info.owner
 
@@ -123,6 +127,8 @@ class GitHub(commit.Hosting):
     ) -> commit.ReleaseInfo:
         if setup.curr_tag is None:
             git.rt.fatal(f"New tag is needed.")
+
+        git.push_with_refs(self.remote, "main")
 
         body = release.ReleaseMessage(setup).format_changelog(log)
 
