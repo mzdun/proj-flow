@@ -3,7 +3,7 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [tool.hatch.version]
-path = "proj_flow/__init__.py"
+path = "src/proj_flow/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = ["/.github", "/docs"]

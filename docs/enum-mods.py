@@ -26,7 +26,7 @@ def render(template: str, name: str, ctx):
 
 
 def all_modules():
-    root = os.path.abspath(os.path.join(__file__, "../.."))
+    root = os.path.abspath(os.path.join(__file__, "../../src"))
     prefix = os.path.join(root, "")
     for current, dirnames, filenames in os.walk(os.path.join(root, "proj_flow")):
         dirnames[:] = [dirname for dirname in dirnames if dirname != "__pycache__"]
