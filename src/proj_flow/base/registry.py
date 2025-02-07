@@ -50,7 +50,7 @@ class Registry(typing.Generic[T]):
             @abstractmethod
             def speak(self): ...
 
-        animals = Registry[Animal]()
+        animals = Registry[Animal]("Animal")
 
         def speak_all():
             for animal in animals.get():
@@ -62,20 +62,26 @@ class Registry(typing.Generic[T]):
                 print("woof!")
     """
 
-    _container: typing.List[T] = []
+    name: str
+    container: typing.List[T]
+
+    def __init__(self, name: str):
+        self.name = name
+        self.container = []
+        _debug_copies.append(self)
 
     def add(self, cls: typing.Type[T]):
         obj: T = cls()
-        self._container.append(obj)
+        self.container.append(obj)
         return cls
 
     def get(self):
-        return self._container
+        return self.container
 
     def find(
         self, filter: typing.Callable[[T], K]
     ) -> typing.Tuple[typing.Optional[T], typing.Optional[K]]:
-        for item in self._container:
+        for item in self.container:
             candidate = filter(item)
             if candidate is not None:
                 return item, candidate
@@ -83,6 +89,17 @@ class Registry(typing.Generic[T]):
 
     def first(self) -> typing.Optional[T]:
         try:
-            return next(self._container.__iter__())
+            return next(self.container.__iter__())
         except StopIteration:
             return None
+
+
+_debug_copies: typing.List[Registry] = []
+
+
+def verbose_info():
+    for registry in _debug_copies:
+        for item in registry.container:
+            print(
+                f"-- {registry.name}: adding `{item.__module__}.{item.__class__.__name__}`"
+            )

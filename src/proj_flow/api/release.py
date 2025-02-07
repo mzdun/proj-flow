@@ -96,4 +96,4 @@ class ProjectSuite(ABC):
             input.write(patched)
 
 
-project_suites = registry.Registry[ProjectSuite]()
+project_suites = registry.Registry[ProjectSuite]("ProjectSuite")

@@ -10,11 +10,11 @@ supporting the functions decorated with :func:`@arg.command()
 import argparse
 import typing
 from dataclasses import dataclass, field
-from pprint import pprint
 
 from proj_flow import __version__
-from proj_flow.api import arg, completers, env
+from proj_flow.api import arg, completers, env, step
 from proj_flow.base import inspect as _inspect
+from proj_flow.base import registry
 from proj_flow.flow import configs
 
 
@@ -48,6 +48,11 @@ class Parser(argparse.ArgumentParser):
         aliases = self.flow.aliases
 
         rt = env.Runtime(args, self.flow)
+
+        if rt.verbose:
+            verbose_info(self.menu)
+            step.verbose_info()
+            registry.verbose_info()
 
         if args.command in commands:
             command = _first(lambda command: command.name == args.command, self.menu)
@@ -433,3 +438,10 @@ def _argparse_config_visit(parser: Parser):
                 action="store_true",
                 help=f'Shortcut for "-D {" ".join(config)}"',
             )
+
+def verbose_info(commands: typing.List[Command], prefix = ""):
+    for command in commands:
+        cli = f"{prefix} {command.name}" if prefix else command.name
+        if command.entry is not None:
+            print(f"-- Command: adding `{cli}` from `{command.entry.__module__}.{command.entry.__name__}(...)`")
+        verbose_info(command.children, cli)
