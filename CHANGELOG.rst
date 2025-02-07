@@ -4,6 +4,15 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.9.1 <https://github.com/mzdun/proj-flow/compare/v0.9.0...v0.9.1>`_ (2025-02-07)
+==================================================================================
+
+Bug Fixes
+---------
+
+- turn auto-release on (`1a79267 <https://github.com/mzdun/proj-flow/commit/1a792677e66c882266b3e2b61f5adde885653814>`_)
+- prepare for autorelease (`9bbc4c5 <https://github.com/mzdun/proj-flow/commit/9bbc4c5abba3a945908f1ad796fed0e3d5bf390e>`_)
+
 `0.9.0 <https://github.com/mzdun/proj-flow/compare/v0.8.1...v0.9.0>`_ (2025-02-07)
 ==================================================================================
 
