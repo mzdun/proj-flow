@@ -1,7 +1,7 @@
 .. _command-init:
 
 ``proj-flow init``
-=================
+==================
 
 Synopsis
 --------

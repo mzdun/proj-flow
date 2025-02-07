@@ -185,6 +185,29 @@ class CommitMessage(ChangelogMessage):
         return result
 
 
+class ReleaseMessage(ChangelogMessage):
+    setup: commit.LogSetup
+
+    def __init__(self, setup: commit.LogSetup):
+        self.setup = setup
+
+    def scope_text(self, scope: str):
+        if len(scope):
+            scope = f"**{scope}**: "
+        return scope
+
+    def short_hash_link(self, link: commit.Link):
+        url = self.setup.single_commit_link(link)
+        if not url:
+            return link.short_hash
+        return f"[{link.short_hash}]({url})"
+
+    def outro_lines(self, lines: List[str]) -> None:
+        url = self.setup.commit_listing_link()
+        if url:
+            lines.append(f"**Full Changelog**: {url}")
+
+
 def _find_breaking_notes(links: List[commit.Link]) -> List[str]:
     breaking: List[str] = []
     for link in links:

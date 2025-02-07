@@ -12,10 +12,10 @@ import re
 from typing import Dict, List, Type
 
 from proj_flow.api import env
-from proj_flow.log import commit, release
+from proj_flow.log import commit, msg
 
 
-class FileUpdate(release.ReleaseMessage):
+class FileUpdate(msg.ReleaseMessage):
     commit_date: str
 
     def __init__(self, setup: commit.LogSetup, commit_date: str):

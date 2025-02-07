@@ -11,7 +11,7 @@ from typing import Any, List, NamedTuple, Optional, Tuple, cast
 
 from proj_flow.api import env
 from proj_flow.base import cmd
-from proj_flow.log import commit, release
+from proj_flow.log import commit, msg
 
 
 class _GitHub(NamedTuple):
@@ -130,7 +130,7 @@ class GitHub(commit.Hosting):
 
         git.push_with_refs(self.remote, "main")
 
-        body = release.ReleaseMessage(setup).format_changelog(log)
+        body = msg.ReleaseMessage(setup).format_changelog(log)
 
         rel = {
             "tag_name": setup.curr_tag,

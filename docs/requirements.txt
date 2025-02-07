@@ -4,3 +4,4 @@ argcomplete
 chevron2021
 prompt_toolkit
 PyYAML
+toml
