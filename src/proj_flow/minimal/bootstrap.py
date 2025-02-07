@@ -2,12 +2,12 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.commands.bootstrap** implements ``./flow bootstrap`` command.
+The **proj_flow.minimal.bootstrap** implements ``./flow bootstrap`` command.
 """
 
 import os
 
-from proj_flow.api import arg, env
+from proj_flow.api import arg
 
 
 @arg.command("bootstrap")

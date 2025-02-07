@@ -135,37 +135,24 @@ class FlowConfig:
             )
 
             self._propagate_compilers()
-            self._load_plugins()
+            self._load_extensions()
 
     def _propagate_compilers(self):
         global _flow_config_default_compiler
         _flow_config_default_compiler = self.compiler_os_default
 
-    def _load_plugins(self):
-        std_plugins = importlib.import_module("proj_flow.plugins")
-        load_module_plugins(std_plugins)
+    def _load_extensions(self):
+        extensions = cast(List[str], self._cfg.get("extensions", []))
+        extensions.insert(0, "proj_flow.minimal")
 
-        local_plugins = os.path.abspath(os.path.join(self.root, ".flow", "extensions"))
-        if not os.path.exists(local_plugins):
-            return
+        local_extensions = os.path.abspath(
+            os.path.join(self.root, ".flow", "extensions")
+        )
+        if os.path.isdir(local_extensions):
+            sys.path.insert(0, local_extensions)
 
-        if not os.path.isdir(local_plugins):
-            plugins = importlib.import_module(local_plugins)
-            load_module_plugins(plugins, can_fail=True)
-            return
-
-        sys.path.insert(0, local_plugins)
-
-        for root, dirnames, _ in os.walk(local_plugins):
-            for dirname in dirnames:
-                init = os.path.join(root, dirname, "__init__.py")
-                if not os.path.isfile(init):
-                    continue
-                plugins = importlib.import_module(dirname)
-                load_module_plugins(plugins, can_fail=True)
-            dirnames[:] = []
-
-        sys.path.pop(0)
+        for extension in extensions:
+            importlib.import_module(extension)
 
     @property
     def entry(self) -> Dict[str, dict]:

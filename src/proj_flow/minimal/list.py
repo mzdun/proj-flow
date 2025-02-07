@@ -2,13 +2,13 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.commands.list** implements ``./flow list`` command.
+The **proj_flow.minimal.list** implements ``./flow list`` command.
 """
 
 import os
-from typing import Annotated, Dict, List, Optional, Set, cast
+from typing import Annotated, Dict, List, Set, cast
 
-from proj_flow import flow
+from proj_flow import cli
 from proj_flow.api import arg, env, step
 from proj_flow.base import matrix
 
@@ -24,6 +24,7 @@ def main(
     ],
     pipe: Annotated[bool, arg.FlagArgument(help="Do not show additional information")],
     rt: env.Runtime,
+    menu: cli.argument.Command,
 ):
     """List all the commands and/or steps for proj-flow"""
 
@@ -38,9 +39,10 @@ def main(
         configs = True
 
     if builtin:
-        builtin_entries = list(
-            sorted((entry.name, entry.doc) for entry in flow.cli.cmds.command_list)
-        )
+        root = menu
+        while root.parent is not None:
+            root = root.parent
+        builtin_entries = list(sorted((cmd.name, cmd.doc) for cmd in root.children))
         if not pipe and len(builtin_entries) > 0:
             print("Builtin commands")
             print("----------------")
@@ -68,13 +70,13 @@ def main(
             print("Known aliases")
             print("-------------")
 
-        for alias in aliases:
+        for run_alias in aliases:
             if pipe:
-                print(alias.name)
+                print(run_alias.name)
                 continue
 
-            name = f"{bold}{alias.name}{reset}"
-            print(f"- {name}: {', '.join(alias.steps)}")
+            name = f"{bold}{run_alias.name}{reset}"
+            print(f"- {name}: {', '.join(run_alias.steps)}")
 
         printed_something = True
 
