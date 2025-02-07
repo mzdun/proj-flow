@@ -10,7 +10,7 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from importlib.metadata import version as package_version
-from typing import Callable, List, Set, Tuple
+from typing import Callable, List, Set, Tuple, cast
 
 from proj_flow.base import cmd
 
@@ -27,7 +27,7 @@ def _ver(ver: str) -> Version:
     chunks = [int(v.strip()) for v in ver.split(".")]
     while len(chunks) < 3:
         chunks.append(0)
-    return (*chunks[:3],)
+    return cast(Tuple[int, int, int], (*chunks[:3],))
 
 
 @dataclass
@@ -121,8 +121,8 @@ def verify(deps: List[Dependency]):
     for pkg in (dep for dep in uniq if dep.kind == DepKind.PYTHON_PKG):
         try:
             version = package_version(pkg.name)
-        except:
-            errors.add(f"{pkg.name}: Python package is missing")
+        except Exception as ex:
+            errors.add(f"{pkg.name}: Python package is missing: {ex}")
             continue
         msg = pkg.match_version(version)
         if msg is not None:
@@ -133,7 +133,9 @@ def verify(deps: List[Dependency]):
             errors.add(f"{app.name}: tool is missing")
             continue
         proc = cmd.run(app.name, "--version", capture_output=True)
-        if proc.returncode:
+        if not proc:
+            version = None
+        elif proc.returncode:
             if proc.stderr:
                 print(proc.stderr.rstrip(), file=sys.stderr)
             version = None
@@ -146,7 +148,7 @@ def verify(deps: List[Dependency]):
                 f"{app.name}: could not read version for `{app.version_expression}`"
             )
             continue
-        msg = app.match_version(version)
+        msg = version and app.match_version(version)
         if msg is not None:
             errors.add(msg)
 
