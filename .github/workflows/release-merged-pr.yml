@@ -18,5 +18,7 @@ jobs:
 
       - name: Publish the release
         run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           python -m pip install .
           python -m proj_flow github release --publish ON

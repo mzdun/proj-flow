@@ -122,4 +122,4 @@ def add_release(
     if hosting.is_active:
         draft_url = hosting.add_release(changelog, setup, git, draft).draft_url
         if draft_url:
-            rt.message("-- Visit draft at", draft_url, level=env.Msg.ALWAYS)
+            rt.message("Visit draft at", draft_url, level=env.Msg.ALWAYS)
