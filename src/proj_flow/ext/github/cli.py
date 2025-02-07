@@ -86,6 +86,13 @@ def release(
             choices=FORCED_LEVEL_CHOICES,
         ),
     ],
+    publish: typing.Annotated[
+        typing.Optional[str],
+        arg.Argument(
+            help="Publish the release during this command.",
+            choices=["ON", "OFF"],
+        ),
+    ],
 ):
     """
     Bumps the project version based on current git logs, creates a "chore"
@@ -106,7 +113,7 @@ def release(
             rt=rt,
             forced_level=forced_level,
             take_all=all,
-            draft=True,
+            draft=publish != "ON",
             generator=generator,
             git=git,
             hosting=gh_links,

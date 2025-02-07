@@ -1,0 +1,22 @@
+name: Release Merged PR
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Publish the release
+        run: |
+          python -m pip install .
+          python -m proj_flow github release --publish ON --dry-run
