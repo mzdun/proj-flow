@@ -7,4 +7,5 @@ entry:
   build: [ Build ]
   install: [ Install ]
   docs: [ RTD ]
-  local: [ Build, Install, RTD ]
+  verify: [ Build, Check Twine ]
+  refresh: [ Install, Build, RTD, Check Twine ]
