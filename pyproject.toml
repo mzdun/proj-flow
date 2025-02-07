@@ -42,4 +42,4 @@ Homepage = "https://pypi.org/project/proj-flow/"
 "Source Code" = "https://github.com/mzdun/proj-flow"
 
 [project.scripts]
-proj-flow = "proj_flow.flow.cli:main"
+proj-flow = "proj_flow.cli:main"

@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.commands.run** implements ``./flow run`` command.
+The **proj_flow.minimal.run** implements ``./flow run`` command.
 """
 
 import os
@@ -19,6 +19,8 @@ from proj_flow.flow.configs import Configs
 
 @api.arg.command("run")
 def main(
+    configs: Configs,
+    rt: api.env.Runtime,
     cli_steps: Annotated[
         Optional[List[str]],
         api.arg.Argument(
@@ -31,8 +33,6 @@ def main(
             completer=api.completers.step_completer,
         ),
     ],
-    configs: Configs,
-    rt: api.env.Runtime,
 ):
     """Run automation steps for current project"""
 
@@ -117,6 +117,7 @@ def run_steps(
     configs: Configs, rt: api.env.Runtime, program: List[api.step.Step], printed: bool
 ) -> int:
     config_count = len(configs.usable)
+    steps_ran = 0
     for config_index in range(config_count):
         config = configs.usable[config_index]
         steps = [step for step in program if step.is_active(config, rt)]
@@ -128,20 +129,28 @@ def run_steps(
             print(file=sys.stderr)
         printed = True
 
-        if config_count < 2:
-            print(f"- {config.build_name}", file=sys.stderr)
-        else:
-            print(
-                f"- {config_index + 1}/{config_count}: {config.build_name}",
-                file=sys.stderr,
-            )
+        build_name: Optional[str] = getattr(config, "build_name")
 
-        with compilers_env_setup(config.compiler, rt):
+        if build_name:
+            if config_count < 2:
+                print(f"- {build_name}", file=sys.stderr)
+            else:
+                print(
+                    f"- {config_index + 1}/{config_count}: {build_name}",
+                    file=sys.stderr,
+                )
+
+        compilers: List[str] = getattr(config, "compiler", [])
+        with compilers_env_setup(compilers, rt):
             for index in range(step_count):
                 step = steps[index]
                 print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)
+                steps_ran += 1
                 ret = step.run(config, rt)
                 if ret:
                     return 1
+
+    if steps_ran == 0:
+        print("Nothing to do.")
 
     return 0

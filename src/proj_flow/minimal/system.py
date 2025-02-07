@@ -2,14 +2,14 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.commands.system** implements ``./flow system`` command.
+The **proj_flow.minimal.system** implements ``./flow system`` command.
 """
 
 import platform
 import sys
 from typing import Annotated
 
-from proj_flow.api import arg, env
+from proj_flow.api import arg
 from proj_flow.base import uname
 
 

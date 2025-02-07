@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.flow.cli.finder** extends the :py:class:`argcomplete.finders.CompletionFinder`
+The **proj_flow.cli.finder** extends the :py:class:`argcomplete.finders.CompletionFinder`
 to be able to see proper :class:`api.env.FlowConfig`, when completed invocation
 contains ``-C`` argument.
 """
