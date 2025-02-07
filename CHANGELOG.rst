@@ -4,6 +4,20 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.9.2 <https://github.com/mzdun/proj-flow/compare/v0.9.1...v0.9.2>`_ (2025-02-07)
+==================================================================================
+
+Bug Fixes
+---------
+
+- check gh release output (6) (`271b7ed <https://github.com/mzdun/proj-flow/commit/271b7eda53d72ccee945e7956f57689faebb4f99>`_)
+- check gh release output (5) (`af79c49 <https://github.com/mzdun/proj-flow/commit/af79c4994ab1565d0702507659b6ffcee819d9c6>`_)
+- check gh release output (4) (`974c4f1 <https://github.com/mzdun/proj-flow/commit/974c4f12b6af135cd44875efd0b6cbfab73123fb>`_)
+- check gh release output (3) (`6d76591 <https://github.com/mzdun/proj-flow/commit/6d76591f0bad51500387485b78239655e94ac171>`_)
+- check gh release output (2) (`54ce04b <https://github.com/mzdun/proj-flow/commit/54ce04be570dd872eecbbc756475eee9d8fadadf>`_)
+- check gh release output (`392321b <https://github.com/mzdun/proj-flow/commit/392321bf6a948ee8c3065ac8541733b28f115bb4>`_)
+- introduce yourself to Git (`022015b <https://github.com/mzdun/proj-flow/commit/022015b302c35721d7ea6907eb824d1f25bce32e>`_)
+
 `0.9.1 <https://github.com/mzdun/proj-flow/compare/v0.9.0...v0.9.1>`_ (2025-02-07)
 ==================================================================================
 
