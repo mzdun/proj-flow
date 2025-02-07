@@ -68,16 +68,30 @@ class ProjectSuite(release.ProjectSuite):
         try:
             data = toml.load(pyproject_path)
             project = data.get("project", {})
+            hatch = data.get("tool", {}).get("hatch", {})
+            wheels = (
+                hatch.get("build", {})
+                .get("targets", {})
+                .get("wheel", {})
+                .get("packages", [])
+            )
+
+            name = project.get("name")
+            if len(wheels) > 0:
+                first_wheel = wheels[0].split("/")[-1]
+                if first_wheel:
+                    name = first_wheel
+
             dynamic = project.get("dynamic", [])
             if "version" in dynamic:
-                version_dict = data.get("tool", {}).get("hatch", {}).get("version", {})
+                version_dict = hatch.get("version", {})
                 return QuickProjectInfo(
-                    name=project.get("name"),
+                    name=name,
                     path=version_dict.get("path"),
                     pattern=version_dict.get("pattern"),
                 )
             return QuickProjectInfo(
-                name=project.get("name"),
+                name=name,
                 path="pyproject.toml",
             )
         except FileNotFoundError:
