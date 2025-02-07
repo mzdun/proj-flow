@@ -23,7 +23,7 @@ class VersionUpdater(ABC):
     def on_version_change(self, new_version: str) -> OneOrMoreStrings: ...
 
 
-version_updaters = registry.Registry[VersionUpdater]()
+version_updaters = registry.Registry[VersionUpdater]("VersionUpdater")
 
 
 def _bump_version(ver: str, level: commit.Level):

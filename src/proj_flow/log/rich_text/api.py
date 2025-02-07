@@ -129,4 +129,4 @@ class ChangelogGenerator(abc.ABC):
             f.write(new_text.encode("UTF-8"))
 
 
-changelog_generators = base.registry.Registry[ChangelogGenerator]()
+changelog_generators = base.registry.Registry[ChangelogGenerator]("ChangelogGenerator")

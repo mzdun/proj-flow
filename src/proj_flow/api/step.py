@@ -174,3 +174,10 @@ def register(cls=None):
         return impl
 
     return impl(cls)
+
+
+def verbose_info():
+    for step in __steps:
+        print(
+            f'-- Step: adding "{step.name}" from `{step.__module__}.{step.__class__.__name__}`'
+        )

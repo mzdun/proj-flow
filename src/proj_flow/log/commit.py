@@ -475,4 +475,4 @@ class HostingFactory(ABC):
     ) -> Optional[Hosting]: ...
 
 
-hosting_factories = registry.Registry[HostingFactory]()
+hosting_factories = registry.Registry[HostingFactory]("HostingFactory")
