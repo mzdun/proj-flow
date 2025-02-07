@@ -16,6 +16,7 @@ from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from proj_flow.api import env
+from proj_flow.base import registry
 
 COMMIT_SEP = "--{}".format(
     "".join(secrets.choice(string.ascii_letters + string.digits) for i in range(20))
@@ -227,8 +228,12 @@ class Hosting(ABC):
         ...
 
     @abstractmethod
-    def draft_a_release(
-        self, log: ChangeLog, setup: "LogSetup", git: "Git"
+    def add_release(
+        self,
+        log: ChangeLog,
+        setup: "LogSetup",
+        git: "Git",
+        draft: bool,
     ) -> ReleaseInfo:
         """
         Publish a release for current setup, putting the log into release
@@ -258,8 +263,8 @@ class NoHosting(Hosting):
     def reference_link(self, ref: str) -> Optional[str]:
         return None
 
-    def draft_a_release(
-        self, log: ChangeLog, setup: "LogSetup", git: "Git"
+    def add_release(
+        self, log: ChangeLog, setup: "LogSetup", git: "Git", draft: bool
     ) -> ReleaseInfo:
         return ReleaseInfo(draft_url=None)
 
@@ -461,3 +466,13 @@ class Git:
 
     def push_with_refs(self, remote: str, branch: str):
         return self.cmd("push", remote, branch, "--follow-tags", "--force-with-lease")
+
+
+class HostingFactory(ABC):
+    @abstractmethod
+    def from_repo(
+        self, git: Git, remote: Optional[str] = None
+    ) -> Optional[Hosting]: ...
+
+
+hosting_factories = registry.Registry[HostingFactory]()
