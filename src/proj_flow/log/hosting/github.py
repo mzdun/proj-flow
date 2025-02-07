@@ -122,8 +122,12 @@ class GitHub(commit.Hosting):
 
         return json.loads(proc.stdout)
 
-    def draft_a_release(
-        self, log: commit.ChangeLog, setup: commit.LogSetup, git: commit.Git
+    def add_release(
+        self,
+        log: commit.ChangeLog,
+        setup: commit.LogSetup,
+        git: commit.Git,
+        draft: bool,
     ) -> commit.ReleaseInfo:
         if setup.curr_tag is None:
             git.rt.fatal(f"New tag is needed.")
@@ -136,7 +140,7 @@ class GitHub(commit.Hosting):
             "tag_name": setup.curr_tag,
             "name": setup.curr_tag,
             "body": body,
-            "draft": True,
+            "draft": draft,
             "prerelease": len(setup.curr_tag.split("-", 1)) > 1,
         }
 
@@ -157,7 +161,7 @@ class GitHub(commit.Hosting):
     def from_repo(git: commit.Git, remote: Optional[str] = None):
         info = _find_github(git, remote)
         if info == _NO_GITHUB:
-            return commit.NoHosting()
+            return None
         return GitHub(info, git.rt)
 
 

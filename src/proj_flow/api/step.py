@@ -10,7 +10,8 @@ from abc import ABC, abstractmethod
 from typing import List, cast
 
 from proj_flow.api.env import Config, Runtime
-from proj_flow.base import matrix, inspect as _inspect
+from proj_flow.base import inspect as _inspect
+from proj_flow.base import matrix
 
 
 class Step(ABC):
