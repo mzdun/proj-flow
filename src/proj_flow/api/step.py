@@ -5,11 +5,12 @@
 The **proj_flow.api.step** exposes APIs used by run extensions.
 """
 
+import os
 from abc import ABC, abstractmethod
 from typing import List, cast
 
 from proj_flow.api.env import Config, Runtime
-from proj_flow.base import matrix
+from proj_flow.base import matrix, inspect as _inspect
 
 
 class Step(ABC):
@@ -77,7 +78,8 @@ def _register_step(step: Step):
 
     name = step.name
     if name in [step.name for step in __steps]:
-        raise NameError(f"Step {name} already registered")
+        if "READTHEDOCS" not in os.environ:
+            raise NameError(f"Step {name} already registered")
 
     __steps.append(step)
 
@@ -115,7 +117,7 @@ def _name_list(label: str, names: List[str], template="`{}`") -> str:
     return f"\n:{label}: {prefix}{em[-1]}"
 
 
-def _make_private(f: callable):
+def _make_private(f: _inspect.Function):
     if f.__doc__:
         f.__doc__ += "\n\n:meta private:\n"
     else:

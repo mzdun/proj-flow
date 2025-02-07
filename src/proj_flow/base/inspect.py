@@ -11,6 +11,14 @@ import typing
 from dataclasses import dataclass
 
 
+class Function(typing.Protocol):
+    """Replacement for :py:func:`callable` as universal argument type."""
+
+    __name__: str
+
+    def __call__(self, **kwarg) -> typing.Any: ...
+
+
 @dataclass
 class Argument:
     """Extracted argument type"""
@@ -27,7 +35,7 @@ class Argument:
     metadata: typing.List[typing.Any]
 
 
-def signature(call: callable) -> typing.Generator[Argument, None, None]:  # type: ignore
+def signature(call: Function) -> typing.Generator[Argument, None, None]:
     """
     Extract the arguments from the function and produces list of
     :class:`Argument` objects.
@@ -56,29 +64,6 @@ def signature(call: callable) -> typing.Generator[Argument, None, None]:  # type
         yield Argument(name=param_name, type=origin, metadata=metadata)
 
 
-def _union_args(t):
-    origin = typing.get_origin(t)
-
-    if origin is typing.Union:
-        args = typing.get_args(t)
-        for arg in args:
-            for candidate in _union_args(arg):
-                yield candidate
-        return
-
-    yield t
-
-
-def _unique_union_arg_names(t):
-    seen: typing.Set[str] = set()
-    for arg in _union_args(t):
-        name = type_name(arg)
-        if name in seen:
-            continue
-        seen.add(name)
-        yield name
-
-
 def type_name(t: type) -> str:
     """
     Converts a type to simplified string representing that type.
@@ -96,7 +81,12 @@ def type_name(t: type) -> str:
     origin = typing.get_origin(t)
 
     if origin is typing.Union:
-        return "|".join(_unique_union_arg_names(t))
+        args = typing.get_args(t)
+        names: typing.List[str] = []
+        for arg in args:
+            name = type_name(arg)
+            names.append(name)
+        return " | ".join(names)
 
     if origin is None:
         return "?"
@@ -112,22 +102,3 @@ def type_name(t: type) -> str:
         return f"{origin.__name__}[{arg_list}]"
 
     return typing.cast(str, origin.__name__)
-
-
-def union_arg(t: type) -> typing.Generator[typing.Any, None, None]:
-    """
-    Extract the arguments from :py:class:`typing.Union`. In case some of the
-    generic argument are unions themsleves, this function will flatten
-    the resulting list of types.
-
-    :param t: Type to ananlyze.
-    :returns: List of the argument, if the argument is a Union.
-    """
-
-    seen: typing.Set[str] = set()
-    for arg in _union_args(t):
-        name = type_name(arg)
-        if name in seen:
-            continue
-        seen.add(name)
-        yield arg

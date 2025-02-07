@@ -6,15 +6,10 @@ The **proj_flow.flow.steps** allows loading both predefined and project-specific
 steps.
 """
 
-import importlib
-import os
-import sys
 from dataclasses import dataclass
-from types import ModuleType
-from typing import List, Optional, Union, cast
+from typing import List, cast
 
 from proj_flow.api import env, step
-from proj_flow.base.plugins import load_module_plugins
 
 
 @dataclass
@@ -43,6 +38,7 @@ def _sort_steps():
                 if successor.name != name:
                     continue
                 successor.runs_after.append(plugin.name)
+                break
 
     for plugin in unsorted:
         runs_after: List[str] = []
@@ -71,12 +67,14 @@ def _sort_steps():
 
 
 def clean_aliases(cfg: env.FlowConfig):
+    cfg_steps = _sort_steps()
+    cfg.steps = cfg_steps
+
     entries = cfg.entry
     if not entries:
         return
 
-    valid_steps = _sort_steps()
-    step_names = {step.name for step in valid_steps}
+    step_names = {step.name for step in cfg_steps}
 
     keys_to_remove: List[str] = []
     for key in entries:
@@ -100,5 +98,4 @@ def clean_aliases(cfg: env.FlowConfig):
     for key in keys_to_remove:
         del entries[key]
 
-    cfg.steps = valid_steps
     cfg.aliases = [env.RunAlias.from_json(key, entries[key]) for key in entries]

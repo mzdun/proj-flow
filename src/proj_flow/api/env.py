@@ -23,9 +23,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-import yaml
-
-from proj_flow.base import uname
+from proj_flow.base import plugins, uname
 from proj_flow.base.plugins import load_module_plugins
 
 platform = uname.uname()[0]
@@ -132,14 +130,9 @@ class FlowConfig:
             self.root = cfg.root
         else:
             self.root = os.path.abspath(root)
-            try:
-                with open(
-                    os.path.join(self.root, ".flow", "config.yml"),
-                    encoding="UTF-8",
-                ) as f:
-                    self._cfg = yaml.load(f, Loader=yaml.Loader)
-            except FileNotFoundError:
-                self._cfg = {}
+            self._cfg = plugins.load_data(
+                os.path.join(self.root, ".flow", "config.json")
+            )
 
             self._propagate_compilers()
             self._load_plugins()

@@ -24,7 +24,7 @@ class Argument:
     action: typing.Union[str, argparse.Action, None] = None
     default: typing.Optional[typing.Any] = None
     choices: typing.Optional[typing.List[str]] = None
-    completer: typing.Optional[callable] = None  # type: ignore
+    completer: typing.Optional[_inspect.Function] = None
 
     def visit(self, parser: argparse.ArgumentParser, name: str):
         kwargs = {}
@@ -68,11 +68,16 @@ class FlagArgument(Argument):
 @dataclass
 class _Command:
     name: str
-    entry: typing.Optional[callable]  # type: ignore
+    entry: typing.Optional[_inspect.Function]
     doc: typing.Optional[str]
     subs: typing.Dict[str, "_Command"]
 
-    def add(self, names: typing.List[str], entry: callable, doc: typing.Optional[str]):  # type: ignore
+    def add(
+        self,
+        names: typing.List[str],
+        entry: _inspect.Function,
+        doc: typing.Optional[str],
+    ):
         name = names[0]
         rest = names[1:]
         if len(rest):
@@ -97,15 +102,18 @@ _known_commands = _Command("", None, None, {})
 _autodoc = {
     "proj_flow.flow.configs.Configs": "Current configuration list.",
     "proj_flow.api.env.Runtime": "Tools and print messages, while respecting ``--dry-run``, ``--silent`` and ``--verbose``.",
+    "proj_flow.cli.argument.Command": "The Command object attached to this @command function.",
 }
 
 
 def command(*name: str):
-    def wrap(entry: callable):  # type: ignore
+    def wrap(function: object):
+        entry = typing.cast(_inspect.Function, function)
         global _known_commands
-        _known_commands.add(list(name), entry, entry.__doc__)
+        orig_doc = inspect.getdoc(entry)
+        _known_commands.add(list(name), entry, orig_doc)
 
-        doc = inspect.getdoc(entry) or ""
+        doc = orig_doc or ""
         if doc:
             doc += "\n\n"
 

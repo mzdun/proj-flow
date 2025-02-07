@@ -22,7 +22,7 @@ PYTHON_EXECUTABLE = sys.executable
 
 
 def python(
-    *args: List[str],
+    *args: str,
     module: Optional[str] = None,
     capture_output: bool = True,
 ) -> subprocess.CompletedProcess:
@@ -37,7 +37,7 @@ def python(
     )
 
 
-def pip(*args: List[str], capture_output: bool = False):
+def pip(*args: str, capture_output: bool = False):
     return python(*args, module="pip", capture_output=capture_output)
 
 
@@ -105,9 +105,9 @@ def activate_virtual_env():
             venv.create(".venv", with_pip=True, upgrade_deps=True)
             bindir = get_venv_path()
 
-        os.environ["PATH"] = (
-            f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
-        )
+        if bindir:
+            PATH = f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
+            os.environ["PATH"] = PATH
         PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
 
     return 0
@@ -119,9 +119,7 @@ with open(os.path.join(ROOT_DIR, ".readthedocs.yaml")) as rtd_yaml:
     formats = cast(List[str], data.get("formats", []))
     formats.insert(0, "html")
 
-    build_jobs = cast(
-        Optional[Dict[str, List[str]]], data.get("build", {}).get("jobs", {})
-    )
+    build_jobs = cast(Dict[str, List[str]], data.get("build", {}).get("jobs", {}))
 
     sphinx_configuration = cast(
         Optional[str], data.get("sphinx", {}).get("configuration")
@@ -199,7 +197,7 @@ for name in build_jobs:
         jobs[name] = lambda: script(build_jobs[name])
         continue
 
-    build_jobs_build = cast(Dict[str, Dict[str, List[str]]], build_jobs["build"])
+    build_jobs_build = cast(Dict[str, List[str]], build_jobs["build"])
     for format in formats:
         if format not in build_jobs_build:
             continue
@@ -208,6 +206,7 @@ for name in build_jobs:
 
 READTHEDOCS_OUTPUT = builder.READTHEDOCS_OUTPUT if builder is not None else "docs/build"
 os.environ["READTHEDOCS_OUTPUT"] = READTHEDOCS_OUTPUT
+os.environ["READTHEDOCS"] = "True"
 
 for job in job_listing:
     try:

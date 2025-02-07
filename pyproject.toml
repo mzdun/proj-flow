@@ -9,7 +9,7 @@ path = "src/proj_flow/__init__.py"
 exclude = ["/.github", "/docs"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["proj_flow"]
+packages = ["src/proj_flow"]
 
 [project]
 authors = [{name = "Marcin Zdun", email = "marcin.zdun@gmail.com"}]
@@ -27,6 +27,7 @@ dependencies = [
   "chevron2021",
   "prompt_toolkit",
   "PyYAML",
+  "toml",
 ]
 description = "C++ project maintenance, automated"
 dynamic = ["version"]
