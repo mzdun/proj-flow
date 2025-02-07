@@ -4,6 +4,24 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.9.0 <https://github.com/mzdun/proj-flow/compare/v0.8.1...v0.9.0>`_ (2025-02-07)
+==================================================================================
+
+New Features
+------------
+
+- add python steps and version bumper (`1bca0cb <https://github.com/mzdun/proj-flow/commit/1bca0cb11e53ee137b0179d951c3d9767475fb8d>`_)
+- add ``github matrix`` and ``github release`` (`56d3ada <https://github.com/mzdun/proj-flow/commit/56d3ada74b2f38f1c1fb0dd8d63cdcb1e3e6ac98>`_)
+- allow making software releases (`7ae1552 <https://github.com/mzdun/proj-flow/commit/7ae1552011c62fb92aefa8dafcef8cf499c2165d>`_)
+- create hosting extension point (`f1464c2 <https://github.com/mzdun/proj-flow/commit/f1464c2da6dfea8aa42ce59d0d039505e6b37ae6>`_)
+- add simple decorator for extension points (`1483dba <https://github.com/mzdun/proj-flow/commit/1483dba8794e75ad8444e831af9a38fc7dc2d430>`_)
+- introduce new plugin system (`eb62ce3 <https://github.com/mzdun/proj-flow/commit/eb62ce3b5b9649affc9c925ce454940cbd2d52c3>`_)
+
+Bug Fixes
+---------
+
+- add some verbosity to plugin system (`830f6b8 <https://github.com/mzdun/proj-flow/commit/830f6b8227ba62286ec039d0445c1b5dc81cd65a>`_)
+
 `0.8.1 <https://github.com/mzdun/proj-flow/compare/v0.8.0...v0.8.1>`_ (2025-02-05)
 ==================================================================================
 
