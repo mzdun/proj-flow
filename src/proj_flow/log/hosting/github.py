@@ -117,6 +117,12 @@ class GitHub(commit.Hosting):
             return default
 
         if self.rt.verbose:
+            self.rt.message(f"[DEBUG] stderr={proc.returncode}")
+            self.rt.message("[DEBUG] stderr=")
+            try:
+                self.rt.message(pformat(json.loads(proc.stderr)))
+            except json.decoder.JSONDecodeError:
+                self.rt.message(proc.stderr)
             self.rt.message("[DEBUG] stdout=")
             try:
                 self.rt.message(pformat(json.loads(proc.stdout)))
