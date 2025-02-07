@@ -312,7 +312,7 @@ class Runtime(FlowConfig):
                 f"proj-flow: error: {args[0]} ended in failure, exiting",
                 file=sys.stderr,
             )
-            return 1
+            raise SystemExit(1)
         return 0
 
     def capture(self, *args: str, silent=False):
