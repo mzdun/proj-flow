@@ -5,6 +5,14 @@
 The **proj_flow.log** defines tools for generating various changelog views.
 """
 
-from . import commit, fmt, hosting, msg, release, rich_text
+from . import commit, error, fmt, hosting, msg, release, rich_text
 
-__all__ = ["commit", "fmt", "hosting", "msg", "release", "rich_text"]
+__all__ = [
+    "commit",
+    "error",
+    "fmt",
+    "hosting",
+    "msg",
+    "release",
+    "rich_text",
+]

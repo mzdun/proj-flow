@@ -5,6 +5,15 @@
 The **proj_flow.api** contains public APIs, usable in third-party plugins.
 """
 
-from . import arg, completers, ctx, env, init, makefile, step
+from . import arg, completers, ctx, env, init, makefile, release, step
 
-__all__ = ["arg", "completers", "ctx", "env", "init", "makefile", "step"]
+__all__ = [
+    "arg",
+    "completers",
+    "ctx",
+    "env",
+    "init",
+    "makefile",
+    "release",
+    "step",
+]
