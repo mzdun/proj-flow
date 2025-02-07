@@ -11,6 +11,7 @@ import os
 import re
 from typing import Dict, List, Type
 
+from proj_flow import base
 from proj_flow.api import env
 from proj_flow.log import commit, msg
 
@@ -24,6 +25,10 @@ class FileUpdate(msg.ReleaseMessage):
 
 
 class ChangelogGenerator(abc.ABC):
+    @property
+    def filename(self) -> str:
+        return f"CHANGELOG{self.ext}"
+
     @property
     @abc.abstractmethod
     def formatter(self) -> Type[FileUpdate]: ...
@@ -101,7 +106,7 @@ class ChangelogGenerator(abc.ABC):
             setup, commit.read_tag_date(setup.curr_tag or "HEAD", rt)
         )
         text = formatter.format_changelog(log)
-        filename = f"CHANGELOG{self.ext}"
+        filename = self.filename
         path = os.path.join(rt.root, filename)
 
         try:
@@ -123,4 +128,5 @@ class ChangelogGenerator(abc.ABC):
         with open(filename, "wb") as f:
             f.write(new_text.encode("UTF-8"))
 
-        return [filename]
+
+changelog_generators = base.registry.Registry[ChangelogGenerator]()
