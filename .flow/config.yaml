@@ -1,0 +1,10 @@
+extensions:
+  - proj_flow.ext.python
+  - proj_flow.ext.github
+  - proj_flow.ext.re_structured_changelist
+
+entry:
+  build: [ Build ]
+  install: [ Install ]
+  docs: [ RTD ]
+  local: [ Build, Install, RTD ]
