@@ -439,9 +439,12 @@ def _argparse_config_visit(parser: Parser):
                 help=f'Shortcut for "-D {" ".join(config)}"',
             )
 
-def verbose_info(commands: typing.List[Command], prefix = ""):
+
+def verbose_info(commands: typing.List[Command], prefix=""):
     for command in commands:
         cli = f"{prefix} {command.name}" if prefix else command.name
         if command.entry is not None:
-            print(f"-- Command: adding `{cli}` from `{command.entry.__module__}.{command.entry.__name__}(...)`")
+            print(
+                f"-- Command: adding `{cli}` from `{command.entry.__module__}.{command.entry.__name__}(...)`"
+            )
         verbose_info(command.children, cli)

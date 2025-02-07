@@ -5,6 +5,6 @@
 The **proj_flow.__main__** allows *Project Flow* to be called as Python component.
 """
 
-from .flow.cli import main
+from proj_flow.cli import main
 
 main()
