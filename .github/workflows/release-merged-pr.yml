@@ -30,4 +30,4 @@ jobs:
           git config user.email
           git tag
           python -m pip install .
-          python -m proj_flow github release --publish ON
+          python -m proj_flow github release --publish ON --verbose
