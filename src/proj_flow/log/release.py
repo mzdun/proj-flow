@@ -5,6 +5,7 @@
 The **proj_flow.log.release** performs a relase on the hosting service.
 """
 
+import os
 import typing
 from abc import ABC, abstractmethod
 from typing import Iterable, Union
@@ -74,6 +75,11 @@ def add_release(
 
     if not project or not suite:
         raise NoProjectError()
+
+    rt.message("Environment:")
+    for name in os.environ:
+        if name.startswith('GITHUB_'):
+            rt.message("  >", name, "=", os.environ[name])
 
     tags = git.tag_list(silent=True)
     prev_tag = tags[-1] if len(tags) > 0 else None
