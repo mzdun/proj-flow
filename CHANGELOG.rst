@@ -4,6 +4,16 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.9.3 <https://github.com/mzdun/proj-flow/compare/v0.9.2...v0.9.3>`_ (2025-02-08)
+==================================================================================
+
+Bug Fixes
+---------
+
+- build release packages from the same workflow (`72608cf <https://github.com/mzdun/proj-flow/commit/72608cf1b4f3ca57ff4690328bc21593fa715473>`_)
+- get the history needed (`f7f899a <https://github.com/mzdun/proj-flow/commit/f7f899a2946572598566d84b879355c8cc550d83>`_)
+- add debug output to ``github release`` (`126e034 <https://github.com/mzdun/proj-flow/commit/126e034867bbce705fa801df59440470c40a69df>`_)
+
 `0.9.2 <https://github.com/mzdun/proj-flow/compare/v0.9.1...v0.9.2>`_ (2025-02-07)
 ==================================================================================
 
