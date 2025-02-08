@@ -89,7 +89,7 @@ def add_release(
     for grp, links in changelog.items():
         rt.message("  >", grp)
         for link in links:
-            rt.message("       ", str(link))
+            rt.message("     ", str(link.summary))
 
     project_version = f"{project.version}"
     next_version = _bump_version(project_version, forced_level or log_level)
