@@ -79,8 +79,18 @@ def add_release(
 
     prev_tag = tags[-1] if len(tags) > 0 else None
 
+    rt.message("Tags:")
+    for tag in reversed(tags):
+        rt.message("  >", tag, "*" if tag == prev_tag else "")
+
     setup = commit.LogSetup(hosting, prev_tag, None, take_all=take_all)
     changelog, log_level = git.get_log(setup)
+
+    rt.message("Changelog:")
+    for grp, links in changelog.items():
+        rt.message("  >", grp)
+        for link in links:
+            rt.message("     ", str(link.summary))
 
     project_version = f"{project.version}"
     next_version = _bump_version(project_version, forced_level or log_level)
