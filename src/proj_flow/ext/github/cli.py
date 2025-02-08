@@ -107,9 +107,10 @@ def release(
     forced_level = commit.FORCED_LEVEL.get(force) if force else None
     git = commit.Git(rt)
     gh_links = hosting.github.GitHub.from_repo(git) or commit.NoHosting()
+    released = False
 
     try:
-        log.release.add_release(
+        next_tag = log.release.add_release(
             rt=rt,
             forced_level=forced_level,
             take_all=all,
@@ -118,8 +119,16 @@ def release(
             git=git,
             hosting=gh_links,
         )
+        released = not not next_tag
     except log.release.VersionNotAdvancing as err:
         rt.message(err.message, level=env.Msg.STATUS)
-        return 0
+        return
     except log.error.ReleaseError as err:
         rt.fatal(err.message)
+    finally:
+        if "GITHUB_ACTIONS" in os.environ:
+            GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
+            if GITHUB_OUTPUT is not None:
+                with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
+                    print(f"tag={next_tag}", file=github_output)
+                    print(f"released={json.dumps(released)}", file=github_output)
