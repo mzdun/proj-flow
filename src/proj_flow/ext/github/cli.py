@@ -109,7 +109,7 @@ def release(
     gh_links = hosting.github.GitHub.from_repo(git) or commit.NoHosting()
 
     try:
-        log.release.add_release(
+        next_tag = log.release.add_release(
             rt=rt,
             forced_level=forced_level,
             take_all=all,
@@ -120,6 +120,13 @@ def release(
         )
     except log.release.VersionNotAdvancing as err:
         rt.message(err.message, level=env.Msg.STATUS)
-        return 0
+        return
     except log.error.ReleaseError as err:
         rt.fatal(err.message)
+
+    if "GITHUB_ACTIONS" in os.environ:
+        GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
+        if GITHUB_OUTPUT is not None:
+            var = json.dumps(next_tag)
+            with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
+                print(f"tag={var}", file=github_output)

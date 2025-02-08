@@ -133,3 +133,5 @@ def add_release(
         draft_url = hosting.add_release(changelog, setup, git, draft).draft_url
         if draft_url:
             rt.message("Visit draft at", draft_url, level=env.Msg.ALWAYS)
+
+    return setup.curr_tag
