@@ -11,7 +11,7 @@ import uuid
 
 import chevron
 
-from proj_flow import api, flow
+from proj_flow import api, project
 
 from .__version__ import CMAKE_VERSION
 
@@ -49,7 +49,7 @@ class CMakeInit(api.init.InitStep):
 def _list_cmake_types():
     return api.ctx.move_to_front(
         "console-application",
-        sorted(key for key in flow.init.get_internal("cmake").keys() if key),
+        sorted(key for key in project.data.get_internal("cmake").keys() if key),
     )
 
 

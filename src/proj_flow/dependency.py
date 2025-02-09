@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.flow.dependency** verifies availabilty of Step's external tools.
+The **proj_flow.dependency** verifies availabilty of Step's external tools.
 """
 
 import re
