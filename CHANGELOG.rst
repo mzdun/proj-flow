@@ -4,6 +4,17 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.10.0 <https://github.com/mzdun/proj-flow/compare/v0.9.4...v0.10.0>`_ (2025-02-09)
+====================================================================================
+
+New Features
+------------
+
+- add ``project`` parameter to ``proj-flow init`` (`7d8c942 <https://github.com/mzdun/proj-flow/commit/7d8c942d608eea091589cebb21ca4e2c91654e4a>`_)
+- add project key to init settings (`c03662a <https://github.com/mzdun/proj-flow/commit/c03662a4878d47f19d0d3f200baa335c3e7eba44>`_)
+- introduce init-specific project module (`61e8710 <https://github.com/mzdun/proj-flow/commit/61e871067c79dcbbfffd121f095ac9c7ce3b69df>`_)
+- evaluate command argument' properties lazily (`18ecb83 <https://github.com/mzdun/proj-flow/commit/18ecb837a584d7e4670fce689661319cf832388e>`_)
+
 `0.9.4 <https://github.com/mzdun/proj-flow/compare/v0.9.3...v0.9.4>`_ (2025-02-09)
 ==================================================================================
 
