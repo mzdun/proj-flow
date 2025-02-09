@@ -8,7 +8,7 @@ Synopsis
 
 .. code-block::
 
-   $ proj-flow init [-y] [--ctx] [path]
+   $ proj-flow init [-y] [--ctx] project [path]
 
 Description
 -----------
@@ -28,6 +28,10 @@ should populate the project or not. All the ``.mustache`` files are then passed
 through the mustache engine and written to project directory, all other files
 follow suit. Finally, Git repository is initialized and initial commit is made
 out of all files copied into the project directory.
+
+``project``
+    Type of project to create. Currently, only one project type is supported,
+    named ``cxx``, which builds the same project layout old command built.
 
 ``path``
     Optional parameter, pointing to some other directory. The directory will be

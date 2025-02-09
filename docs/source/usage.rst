@@ -44,7 +44,7 @@ A fresh C++ project can be created with a
 
 .. code-block:: console
 
-   $ proj-flow init
+   $ proj-flow init cxx
 
 This command will ask multiple questions to build Mustache context for the
 project template. For more information, see :ref:`command-init`.

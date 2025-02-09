@@ -192,7 +192,7 @@ class Command:
         if len(self.children):
             subparsers = parser.add_subparsers(
                 dest=f"command_{level}",
-                metavar="{command}",
+                metavar="command",
                 help="Known command name, see below",
             )
             subparsers.parent = parser  # type: ignore
@@ -254,7 +254,7 @@ def _argparse_visit_all(
     parser.shortcuts = shortcut_configs
 
     subparsers = parser.add_subparsers(
-        dest="command", metavar="{command}", help="Known command name, see below"
+        dest="command", metavar="command", help="Known command name, see below"
     )
 
     subparsers.parent = parser  # type: ignore
