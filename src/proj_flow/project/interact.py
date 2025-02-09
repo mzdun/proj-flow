@@ -7,7 +7,7 @@ user prompts.
 """
 
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Callable, List, Optional, Union
 
 from prompt_toolkit import prompt as tk_prompt
 from prompt_toolkit.completion import WordCompleter
@@ -109,19 +109,36 @@ class _Question:
         )
 
 
-def _prompt() -> ctx.SettingsType:
+def _project_filter(project: Optional[str]):
+    if project is None:
+
+        def impl(setting: ctx.Setting):
+            return setting.project is None
+
+        return impl
+
+    def impl(setting: ctx.Setting):
+        return setting.project is None or setting.project == project
+
+    return impl
+
+
+def _prompt(wanted: Callable[[ctx.Setting], bool]) -> ctx.SettingsType:
     settings: ctx.SettingsType = {}
 
-    size = len(ctx.defaults) + len(ctx.switches)
+    defaults = [setting for setting in ctx.defaults if wanted(setting)]
+    switches = [setting for setting in ctx.switches if wanted(setting)]
+
+    size = len(defaults) + len(switches)
     counter = 1
 
-    for setting in ctx.defaults:
+    for setting in defaults:
         loaded = _Question.load_default(setting, settings)
         value = loaded.interact(counter, size)
         settings[loaded.key] = value
         counter += 1
 
-    for setting in ctx.switches:
+    for setting in switches:
         loaded = _Question.load_default(setting, settings)
         value = loaded.interact(counter, size)
         settings[loaded.key] = value
@@ -130,7 +147,7 @@ def _prompt() -> ctx.SettingsType:
     return settings
 
 
-def _all_default():
+def _all_default(wanted: Callable[[ctx.Setting], bool]):
     """
     Chooses default answers for all details of newly-crated project.
 
@@ -140,11 +157,14 @@ def _all_default():
 
     settings: ctx.SettingsType = {}
 
-    for setting in ctx.defaults:
+    defaults = [setting for setting in ctx.defaults if wanted(setting)]
+    switches = [setting for setting in ctx.switches if wanted(setting)]
+
+    for setting in defaults:
         value = _get_default(setting, settings)
         settings[setting.json_key] = value
 
-    for setting in ctx.switches:
+    for setting in switches:
         value = _get_default(setting, settings)
         settings[setting.json_key] = value
 
@@ -167,16 +187,23 @@ def _get_default(setting: ctx.Setting, settings: ctx.SettingsType):
     return value
 
 
-def _fixup_context(settings: ctx.SettingsType):
-    for setting in ctx.hidden:
+def _fixup_context(settings: ctx.SettingsType, wanted: Callable[[ctx.Setting], bool]):
+    defaults = [setting for setting in ctx.defaults if wanted(setting)]
+    hidden = [setting for setting in ctx.hidden if wanted(setting)]
+
+    for setting in hidden:
         value = _get_default(setting, settings)
         if isinstance(value, bool) or value != "":
             settings[setting.json_key] = value
 
-    for coll in [ctx.defaults, ctx.hidden]:
+    for coll in [defaults, hidden]:
         for setting in coll:
             _fixup(settings, setting.json_key, setting.fix or "", setting.force_fix)
-    del settings["EXT"]
+
+    try:
+        del settings["EXT"]
+    except KeyError:
+        pass
 
     result = {}
     for key in settings:
@@ -190,7 +217,7 @@ def _fixup_context(settings: ctx.SettingsType):
     return result
 
 
-def get_context(interactive: bool):
+def get_context(interactive: bool, project: Optional[str]):
     """
     Prompts user to provide details of newly-crated project. If `interactive`
     is true, however, this functions skips the prompts and chooses all the
@@ -201,4 +228,8 @@ def get_context(interactive: bool):
 
     :returns: Dictionary with answers to all interactive settings and switches.
     """
-    return _fixup_context(_all_default() if not interactive else _prompt())
+
+    wanted = _project_filter(project)
+    return _fixup_context(
+        _all_default(wanted) if not interactive else _prompt(wanted), wanted
+    )

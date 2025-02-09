@@ -50,7 +50,7 @@ From PowerShell with:
 A fresh C++ project can be created with a
 
 ```sh
-proj-flow init
+proj-flow init cxx
 ```
 
 This command will ask multiple questions to build Mustache context for the

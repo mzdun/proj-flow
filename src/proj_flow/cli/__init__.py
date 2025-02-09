@@ -29,7 +29,7 @@ def main():
 def _change_dir():
     root = argparse.ArgumentParser(
         prog="proj-flow",
-        usage="proj-flow [-h] [--version] [-C [dir]] {command} ...",
+        usage="proj-flow [-h] [--version] [-C [dir]] command ...",
         add_help=False,
     )
     root.add_argument("-C", dest="cd", nargs="?")
