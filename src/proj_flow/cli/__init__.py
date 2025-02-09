@@ -10,10 +10,8 @@ The **proj_flow.cli** provides command-line entry for the *Project Flow*.
 import argparse
 import os
 import sys
-from pprint import pprint
-from typing import Dict, Optional, Tuple
 
-from proj_flow.api import arg, env
+from proj_flow.api import env
 from proj_flow.cli import argument, finder
 from proj_flow.flow import steps
 
