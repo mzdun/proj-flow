@@ -6,6 +6,6 @@ The **proj_flow.ext.github** provides GitHub support through CLI and GitHub
 hosting plugin.
 """
 
-from . import cli, hosting
+from . import cli, hosting, switches
 
-__all__ = ["cli", "hosting"]
+__all__ = ["cli", "hosting", "switches"]

@@ -2,8 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ext.python.steps** defines steps for building, installing and
-documenting.
+The **proj_flow.ext.python.version** provides project suite plugin.
 """
 
 import os

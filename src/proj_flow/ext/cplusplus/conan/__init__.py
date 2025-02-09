@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.conan** provides the ``"Conan"`` step.
+The **proj_flow.ext.cplusplus.conan** provides the ``"Conan"`` step.
 """
 
 import os
@@ -23,6 +23,7 @@ class ConanConfig:
     """Configures the project for ``preset`` config using ``build_type`` config."""
 
     name = "Conan"
+    runs_before = ["CMake"]
 
     def platform_dependencies(self):
         return ["conan"]

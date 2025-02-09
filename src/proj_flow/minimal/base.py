@@ -2,8 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.base** provides basic initialization setup for new
-projects.
+The **proj_flow.minimal.base** provides basic initialization setup for all
+new projects.
 """
 
 from proj_flow import __version__, api
