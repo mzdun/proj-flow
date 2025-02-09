@@ -79,7 +79,7 @@ def main(
                 print(f"proj-flow: {error}", file=sys.stderr)
         return 1
 
-    context = current_project.get_context(not non_interactive)
+    context = current_project.get_context(not non_interactive, rt)
     if not non_interactive and not rt.silent:
         print()
 

@@ -15,7 +15,7 @@ from prompt_toolkit.formatted_text.base import AnyFormattedText
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.validation import Validator
 
-from proj_flow.api import ctx
+from proj_flow.api import ctx, env
 
 
 @dataclass
@@ -25,8 +25,18 @@ class _Question:
     value: ctx.Values
 
     @classmethod
-    def load_default(cls, default: ctx.Setting, previous: ctx.SettingsType):
+    def load_default(
+        cls,
+        default: ctx.Setting,
+        previous: ctx.SettingsType,
+        override: Optional[ctx.StrOrBool],
+    ):
         value = default.calc_value(previous)
+        if override is not None:
+            if isinstance(value, (str, bool)) and type(value) == type(override):
+                value = override
+            elif isinstance(value, list) and isinstance(override, str):
+                value = ctx.move_to_front(override, value)
         return cls(default.json_key, default.prompt, value)
 
     def interact(self, counter: int, size: int) -> ctx.StrOrBool:
@@ -123,7 +133,9 @@ def _project_filter(project: Optional[str]):
     return impl
 
 
-def _prompt(wanted: Callable[[ctx.Setting], bool]) -> ctx.SettingsType:
+def _prompt(
+    wanted: Callable[[ctx.Setting], bool], overrides: ctx.SettingsType
+) -> ctx.SettingsType:
     settings: ctx.SettingsType = {}
 
     defaults = [setting for setting in ctx.defaults if wanted(setting)]
@@ -132,22 +144,19 @@ def _prompt(wanted: Callable[[ctx.Setting], bool]) -> ctx.SettingsType:
     size = len(defaults) + len(switches)
     counter = 1
 
-    for setting in defaults:
-        loaded = _Question.load_default(setting, settings)
-        value = loaded.interact(counter, size)
-        settings[loaded.key] = value
-        counter += 1
-
-    for setting in switches:
-        loaded = _Question.load_default(setting, settings)
-        value = loaded.interact(counter, size)
-        settings[loaded.key] = value
-        counter += 1
+    for coll in [defaults, switches]:
+        for setting in coll:
+            loaded = _Question.load_default(
+                setting, settings, overrides.get(setting.json_key)
+            )
+            value = loaded.interact(counter, size)
+            settings[loaded.key] = value
+            counter += 1
 
     return settings
 
 
-def _all_default(wanted: Callable[[ctx.Setting], bool]):
+def _all_default(wanted: Callable[[ctx.Setting], bool], overrides: ctx.SettingsType):
     """
     Chooses default answers for all details of newly-crated project.
 
@@ -160,13 +169,13 @@ def _all_default(wanted: Callable[[ctx.Setting], bool]):
     defaults = [setting for setting in ctx.defaults if wanted(setting)]
     switches = [setting for setting in ctx.switches if wanted(setting)]
 
-    for setting in defaults:
-        value = _get_default(setting, settings)
-        settings[setting.json_key] = value
-
-    for setting in switches:
-        value = _get_default(setting, settings)
-        settings[setting.json_key] = value
+    for coll in [defaults, switches]:
+        for setting in coll:
+            if setting.json_key in overrides:
+                settings[setting.json_key] = overrides[setting.json_key]
+            else:
+                value = _get_default(setting, settings)
+                settings[setting.json_key] = value
 
     return settings
 
@@ -217,19 +226,30 @@ def _fixup_context(settings: ctx.SettingsType, wanted: Callable[[ctx.Setting], b
     return result
 
 
-def get_context(interactive: bool, project: Optional[str]):
+def get_context(interactive: bool, project: Optional[str], rt: env.Runtime):
     """
     Prompts user to provide details of newly-crated project. If `interactive`
     is true, however, this functions skips the prompts and chooses all the
     default answers.
 
     :param interactive: Selects, if the initialization process is done through
-        prompts, or not
+        prompts, or not.
+
+    :param project: Alows to select questions for any given language.
+
+    :param rt: Runtime with config loaded in.
 
     :returns: Dictionary with answers to all interactive settings and switches.
     """
 
+    overrides = rt._cfg.get("defaults", {})
+
     wanted = _project_filter(project)
     return _fixup_context(
-        _all_default(wanted) if not interactive else _prompt(wanted), wanted
+        (
+            _all_default(wanted, overrides)
+            if not interactive
+            else _prompt(wanted, overrides)
+        ),
+        wanted,
     )
