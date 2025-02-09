@@ -12,7 +12,7 @@ from typing import Dict, List, cast
 from proj_flow import api
 from proj_flow.api import env, step
 
-from .__version__ import CMAKE_VERSION
+from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 
 
 class CMakeBase(api.step.Step):

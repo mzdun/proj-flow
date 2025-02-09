@@ -63,8 +63,3 @@ class ConanConfig:
         if not rt.dry_run and os.path.exists("CMakeUserPresets.json"):
             os.remove("CMakeUserPresets.json")
         return 0
-
-
-cplusplus.project.register_switch(
-    "with_conan", "Use Conan for dependency manager", True
-)

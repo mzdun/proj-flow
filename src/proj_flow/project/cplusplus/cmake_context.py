@@ -12,9 +12,10 @@ import uuid
 import chevron
 
 from proj_flow import api, project
-from proj_flow.project import cplusplus
+from proj_flow.project import data
+from proj_flow.project.cplusplus import project
 
-from .__version__ import CMAKE_VERSION
+from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 
 config_json_mustache = """
 {{#with_cmake}}
@@ -50,23 +51,23 @@ class CMakeInit(api.init.InitStep):
 def _list_cmake_types():
     return api.ctx.move_to_front(
         "console-application",
-        sorted(key for key in project.data.get_internal("cmake").keys() if key),
+        sorted(key for key in data.get_internal("cmake").keys() if key),
     )
 
 
 api.init.register_init_step(CMakeInit())
 
-cplusplus.project.register_init_setting(
+project.cxx.register_init_setting(
     api.ctx.Setting("PROJECT.TYPE", "CMake project type", _list_cmake_types)
 )
-cplusplus.project.register_init_setting(
+project.cxx.register_init_setting(
     api.ctx.Setting("cmake", fix="{PROJECT.TYPE$map:cmake}"),
     api.ctx.Setting("CMAKE_VERSION", value=CMAKE_VERSION),
     api.ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
     is_hidden=True,
 )
-cplusplus.project.register_switch("with_cmake", "Use CMake", True)
-cplusplus.project.register_internal(
+project.cxx.register_switch("with_cmake", "Use CMake", True)
+project.cxx.register_internal(
     "cmake",
     {
         "": {"cmd": "add_executable", "type": ""},
