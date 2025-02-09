@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, List, NamedTuple, Optional
 
 from proj_flow import base
-from proj_flow.api import ctx
+from proj_flow.api import ctx, env
 from proj_flow.project import interact
 
 
@@ -30,8 +30,8 @@ class ProjectType(ABC):
     def register_init_setting(self, *settings: ctx.Setting, is_hidden=False):
         ctx.register_init_setting(*settings, is_hidden=is_hidden, project=self.id)
 
-    def get_context(self, interactive: bool):
-        return interact.get_context(interactive, self.id)
+    def get_context(self, interactive: bool, rt: env.Runtime):
+        return interact.get_context(interactive, self.id, rt)
 
 
 project_type = base.registry.Registry[ProjectType]("ProjectType")

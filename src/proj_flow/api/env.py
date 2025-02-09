@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
+from proj_flow.api import ctx
 from proj_flow.base import plugins, uname
 
 platform = uname.uname()[0]
@@ -115,6 +116,59 @@ class RunAlias:
         return RunAlias(name, doc, steps)
 
 
+def _merge_dicts(dst: dict, src: dict):
+    for key in src:
+        if key not in dst:
+            dst[key] = src[key]
+            continue
+
+        src_val = src[key]
+        dst_val = dst[key]
+
+        if isinstance(src_val, dict):
+            if isinstance(dst_val, dict):
+                _merge_dicts(dst_val, src_val)
+                continue
+
+        dst[key] = src_val
+
+
+def _flatten_dict(dst: ctx.SettingsType, defaults: Dict[str, Any], prefix=""):
+    for key, val in defaults.items():
+        this_key = f"{prefix}{key}"
+
+        if isinstance(val, dict):
+            _flatten_dict(dst, val, f"{this_key}.")
+            continue
+
+        if val is None:
+            dst[this_key] = ""
+            continue
+
+        if isinstance(val, bool):
+            dst[this_key] = val
+            continue
+
+        dst[this_key] = str(val)
+
+
+def _merge(cfg: dict, defaults: ctx.SettingsType, path: str):
+    config = plugins.load_data(path)
+    if not isinstance(config, dict):
+        return
+
+    stored_defaults = config.get("defaults", {})
+    try:
+        del config["defaults"]
+    except KeyError:
+        pass
+
+    _merge_dicts(cfg, config)
+
+    if isinstance(stored_defaults, dict):
+        _flatten_dict(defaults, stored_defaults)
+
+
 class FlowConfig:
     _cfg: dict
     steps: list = []
@@ -129,9 +183,18 @@ class FlowConfig:
             self.root = cfg.root
         else:
             self.root = os.path.abspath(root)
-            self._cfg = plugins.load_data(
-                os.path.join(self.root, ".flow", "config.json")
+            defaults: ctx.SettingsType = {}
+            dest: dict = {}
+
+            _merge(
+                dest,
+                defaults,
+                os.path.join(os.path.expanduser("~"), ".config", "proj-flow.json"),
             )
+            _merge(dest, defaults, os.path.join(self.root, ".flow", "config.json"))
+
+            self._cfg = dest
+            self._cfg["defaults"] = defaults
 
             self._propagate_compilers()
             self._load_extensions()
