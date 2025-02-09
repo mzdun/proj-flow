@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.cli.arguments** provides command-line builders and runners,
+The **proj_flow.cli.argument** provides command-line builders and runners,
 supporting the functions decorated with :func:`@arg.command()
 <proj_flow.api.arg.command>`.
 """

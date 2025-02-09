@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.api.makefiles** exposes simple makefiles APIs, so extensions can
+The **proj_flow.api.makefile** exposes simple makefile APIs, so extensions can
 easily provide run steps with multiple scripts being called.
 """
 
