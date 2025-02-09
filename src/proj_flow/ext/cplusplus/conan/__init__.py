@@ -9,7 +9,8 @@ import os
 import textwrap
 from typing import List
 
-from proj_flow.api import ctx, env, step
+from proj_flow.api import env, step
+from proj_flow.project import cplusplus
 
 from ._conan import conan_api
 
@@ -64,4 +65,6 @@ class ConanConfig:
         return 0
 
 
-ctx.register_switch("with_conan", "Use Conan for dependency manager", True)
+cplusplus.project.register_switch(
+    "with_conan", "Use Conan for dependency manager", True
+)

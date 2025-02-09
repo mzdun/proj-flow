@@ -12,6 +12,7 @@ from typing import List, cast
 from proj_flow.api.env import Config, Runtime
 from proj_flow.base import inspect as _inspect
 from proj_flow.base import matrix
+from proj_flow.base.name_list import name_list
 
 
 class Step(ABC):
@@ -111,11 +112,8 @@ def _name_list(label: str, names: List[str], template="`{}`") -> str:
     if len(names) == 0:
         return ""
 
-    em = [template.format(name) for name in names]
-    prefix = ", ".join(em[:-1])
-    if prefix:
-        prefix += " and "
-    return f"\n:{label}: {prefix}{em[-1]}"
+    joined = name_list([template.format(name) for name in names])
+    return f"\n:{label}: {joined}"
 
 
 def _make_private(f: _inspect.Function):

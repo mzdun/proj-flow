@@ -28,7 +28,7 @@ class _Completable(typing.Protocol):
 
 @dataclass
 class Argument:
-    help: str = ""
+    help: LazyArgument[str] = ""
     pos: bool = False
     names: LazyArgument[typing.List[str]] = field(default_factory=list)
     nargs: LazyArgument[typing.Union[str, int, None]] = None
@@ -42,6 +42,7 @@ class Argument:
     def visit(self, parser: argparse.ArgumentParser, name: str):
         kwargs = {}
 
+        self_help = _eval(self.help)
         self_names = _eval(self.names)
         self_nargs = _eval(self.nargs)
         self_opt = _eval(self.opt)
@@ -50,8 +51,8 @@ class Argument:
         self_default = _eval(self.default)
         self_choices = _eval(self.choices)
 
-        if self.help is not None:
-            kwargs["help"] = self.help
+        if self_help is not None:
+            kwargs["help"] = self_help
         if self_nargs is not None:
             kwargs["nargs"] = self_nargs
         if self_meta is not None:

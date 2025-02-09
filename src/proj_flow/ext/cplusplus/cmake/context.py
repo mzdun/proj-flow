@@ -12,6 +12,7 @@ import uuid
 import chevron
 
 from proj_flow import api, project
+from proj_flow.project import cplusplus
 
 from .__version__ import CMAKE_VERSION
 
@@ -54,17 +55,18 @@ def _list_cmake_types():
 
 
 api.init.register_init_step(CMakeInit())
-api.ctx.register_init_setting(
+
+cplusplus.project.register_init_setting(
     api.ctx.Setting("PROJECT.TYPE", "CMake project type", _list_cmake_types)
 )
-api.ctx.register_init_setting(
+cplusplus.project.register_init_setting(
     api.ctx.Setting("cmake", fix="{PROJECT.TYPE$map:cmake}"),
     api.ctx.Setting("CMAKE_VERSION", value=CMAKE_VERSION),
     api.ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
     is_hidden=True,
 )
-api.ctx.register_switch("with_cmake", "Use CMake", True)
-api.ctx.register_internal(
+cplusplus.project.register_switch("with_cmake", "Use CMake", True)
+cplusplus.project.register_internal(
     "cmake",
     {
         "": {"cmd": "add_executable", "type": ""},
