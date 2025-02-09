@@ -16,20 +16,11 @@ import typing
 
 from proj_flow import log
 from proj_flow.api import arg, env
+from proj_flow.base.name_list import name_list
 from proj_flow.flow.configs import Configs
 from proj_flow.log import commit, hosting, rich_text
 
 FORCED_LEVEL_CHOICES = list(commit.FORCED_LEVEL.keys())
-
-
-def _name_list(names: typing.List[str]) -> str:
-    if len(names) == 0:
-        return ""
-
-    prefix = ", ".join(names[:-1])
-    if prefix:
-        prefix += " and "
-    return f"{prefix}{names[-1]}"
 
 
 @arg.command("github")
@@ -81,7 +72,7 @@ def release(
         typing.Optional[str],
         arg.Argument(
             help="Ignore the version change from changelog and instead use this value. "
-            f"Allowed values are: {_name_list(FORCED_LEVEL_CHOICES)}",
+            f"Allowed values are: {name_list(FORCED_LEVEL_CHOICES)}",
             meta="level",
             choices=FORCED_LEVEL_CHOICES,
         ),

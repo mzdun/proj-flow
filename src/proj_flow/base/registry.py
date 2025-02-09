@@ -7,6 +7,7 @@ to register the plugins with a decorator.
 """
 
 import typing
+from collections import OrderedDict
 
 T = typing.TypeVar("T")
 K = typing.TypeVar("K")
@@ -101,6 +102,19 @@ _debug_copies: typing.List[Registry] = []
 def verbose_info():
     for registry in _debug_copies:
         for item in registry.container:
-            print(
-                f"-- {registry.name}: adding `{item.__module__}.{item.__class__.__name__}`"
-            )
+            full_name = f"{item.__module__}.{item.__class__.__name__}"
+
+            kw = OrderedDict()
+
+            if hasattr(item, "name"):
+                kw["name"] = getattr(item, "name")
+            elif hasattr(item, "__name__"):
+                kw["name"] = getattr(item, "__name__")
+
+            if hasattr(item, "id"):
+                kw["id"] = getattr(item, "id")
+
+            items = ", ".join([f"{key}={value}" for key, value in kw.items()])
+            if len(items) > 0:
+                items = f" ({items})"
+            print(f"-- {registry.name}: adding `{full_name}`{items}")

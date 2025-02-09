@@ -26,5 +26,6 @@ api.init.register_init_step(GitInit())
 api.ctx.register_init_setting(
     api.ctx.Setting("__flow_version__", value=__version__),
     api.ctx.Setting("${", value="${"),
+    project=None,
     is_hidden=True,
 )
