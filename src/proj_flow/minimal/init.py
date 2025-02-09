@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.commands.init** implements ``proj-flow init`` command.
+The **proj_flow.minimal.init** implements ``proj-flow init`` command.
 """
 
 import json
