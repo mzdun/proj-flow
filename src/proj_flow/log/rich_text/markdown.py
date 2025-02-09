@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.log.rich.markdown** provides details of making Markdown
+The **proj_flow.log.rich_text.markdown** provides details of making Markdown
 changelogs.
 """
 
