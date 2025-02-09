@@ -10,8 +10,9 @@ import os
 import sys
 from typing import Annotated, Optional
 
-from proj_flow import flow
+from proj_flow import dependency, flow
 from proj_flow.api import arg, ctx, env, init
+from proj_flow.project import interact
 
 
 @arg.command("init")
@@ -42,16 +43,14 @@ def main(
         os.makedirs(path, exist_ok=True)
         os.chdir(path)
 
-    errors = flow.dependency.verify(flow.dependency.gather(init.__steps))
+    errors = dependency.verify(dependency.gather(init.__steps))
     if len(errors) > 0:
         if not rt.silent:
             for error in errors:
                 print(f"proj-flow: {error}", file=sys.stderr)
         return 1
 
-    context = flow.init.fixup(
-        flow.init.all_default() if non_interactive else flow.interact.prompt()
-    )
+    context = interact.get_context(not non_interactive)
     if not non_interactive and not rt.silent:
         print()
 

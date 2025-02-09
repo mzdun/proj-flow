@@ -13,7 +13,7 @@ from typing import Callable, List, cast
 
 from proj_flow.api.env import Config, Runtime
 from proj_flow.base import cmd
-from proj_flow.flow.dependency import VER_REGEX
+from proj_flow.dependency import VER_REGEX
 
 
 class conan(ABC):

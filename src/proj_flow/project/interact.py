@@ -2,8 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.flow.interact** provides initialization context through user
-prompts.
+The **proj_flow.project.interact** provides initialization context through
+user prompts.
 """
 
 from dataclasses import dataclass
@@ -11,6 +11,7 @@ from typing import List, Union
 
 from prompt_toolkit import prompt as tk_prompt
 from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.formatted_text.base import AnyFormattedText
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.validation import Validator
 
@@ -39,7 +40,7 @@ class _Question:
     def ps(self):
         return self.prompt or f'"{self.key}"'
 
-    def _ps(self, default: ctx.Values, counter: int, size: int):
+    def _ps(self, default: ctx.Values, counter: int, size: int) -> AnyFormattedText:
         if default:
             if isinstance(default, str):
                 return [
@@ -89,7 +90,7 @@ class _Question:
 
     def _tk_prompt(
         self,
-        defaults: Union[bool | List[str]],
+        defaults: Union[bool, List[str]],
         words: List[str],
         counter: int,
         size: int,
@@ -108,12 +109,7 @@ class _Question:
         )
 
 
-def prompt() -> ctx.SettingsType:
-    """
-    Prompts user to provide details of newly-crated project.
-
-    :returns: Dictionary with answers to all interactive settings and switches.
-    """
+def _prompt() -> ctx.SettingsType:
     settings: ctx.SettingsType = {}
 
     size = len(ctx.defaults) + len(ctx.switches)
@@ -132,3 +128,77 @@ def prompt() -> ctx.SettingsType:
         counter += 1
 
     return settings
+
+
+def _all_default():
+    """
+    Chooses default answers for all details of newly-crated project.
+
+    :returns: Dictionary with default values of all interactive settings
+        and switches.
+    """
+
+    settings: ctx.SettingsType = {}
+
+    for setting in ctx.defaults:
+        value = _get_default(setting, settings)
+        settings[setting.json_key] = value
+
+    for setting in ctx.switches:
+        value = _get_default(setting, settings)
+        settings[setting.json_key] = value
+
+    return settings
+
+
+def _fixup(settings: ctx.SettingsType, key: str, fixup: str, force=False):
+    value = settings.get(key, "")
+    if value != "" and not force:
+        return
+
+    value = ctx._build_fixup(settings, fixup)
+    settings[key] = value
+
+
+def _get_default(setting: ctx.Setting, settings: ctx.SettingsType):
+    value = setting.calc_value(settings)
+    if isinstance(value, list):
+        return value[0]
+    return value
+
+
+def _fixup_context(settings: ctx.SettingsType):
+    for setting in ctx.hidden:
+        value = _get_default(setting, settings)
+        if isinstance(value, bool) or value != "":
+            settings[setting.json_key] = value
+
+    for coll in [ctx.defaults, ctx.hidden]:
+        for setting in coll:
+            _fixup(settings, setting.json_key, setting.fix or "", setting.force_fix)
+    del settings["EXT"]
+
+    result = {}
+    for key in settings:
+        path = key.split(".")
+        path_ctx = result
+        for step in path[:-1]:
+            if step not in path_ctx or not isinstance(path_ctx[step], dict):
+                path_ctx[step] = {}
+            path_ctx = path_ctx[step]
+        path_ctx[path[-1]] = settings[key]
+    return result
+
+
+def get_context(interactive: bool):
+    """
+    Prompts user to provide details of newly-crated project. If `interactive`
+    is true, however, this functions skips the prompts and chooses all the
+    default answers.
+
+    :param interactive: Selects, if the initialization process is done through
+        prompts, or not
+
+    :returns: Dictionary with answers to all interactive settings and switches.
+    """
+    return _fixup_context(_all_default() if not interactive else _prompt())

@@ -11,9 +11,8 @@ import sys
 from contextlib import contextmanager
 from typing import Annotated, List, Optional, Set, cast
 
-from proj_flow import api
+from proj_flow import api, dependency
 from proj_flow.base import matrix
-from proj_flow.flow import dependency
 from proj_flow.flow.configs import Configs
 
 
