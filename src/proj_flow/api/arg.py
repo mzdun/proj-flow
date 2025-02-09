@@ -12,48 +12,70 @@ from dataclasses import dataclass, field
 
 from proj_flow.base import inspect as _inspect
 
+T = typing.TypeVar("T")
+LazyArgument = typing.Union[T, typing.Callable[[], T]]
+
+
+def _eval(arg: LazyArgument[T]) -> T:
+    if callable(arg):
+        return typing.cast(T, arg())
+    return arg
+
+
+class _Completable(typing.Protocol):
+    completer: _inspect.Function
+
 
 @dataclass
 class Argument:
     help: str = ""
     pos: bool = False
-    names: typing.List[str] = field(default_factory=list)
-    nargs: typing.Union[str, int, None] = None
-    opt: typing.Optional[bool] = None
-    meta: typing.Optional[str] = None
-    action: typing.Union[str, argparse.Action, None] = None
-    default: typing.Optional[typing.Any] = None
-    choices: typing.Optional[typing.List[str]] = None
+    names: LazyArgument[typing.List[str]] = field(default_factory=list)
+    nargs: LazyArgument[typing.Union[str, int, None]] = None
+    opt: LazyArgument[typing.Optional[bool]] = None
+    meta: LazyArgument[typing.Optional[str]] = None
+    action: LazyArgument[typing.Union[str, argparse.Action, None]] = None
+    default: LazyArgument[typing.Optional[typing.Any]] = None
+    choices: LazyArgument[typing.Optional[typing.List[str]]] = None
     completer: typing.Optional[_inspect.Function] = None
 
     def visit(self, parser: argparse.ArgumentParser, name: str):
         kwargs = {}
+
+        self_names = _eval(self.names)
+        self_nargs = _eval(self.nargs)
+        self_opt = _eval(self.opt)
+        self_meta = _eval(self.meta)
+        self_action = _eval(self.action)
+        self_default = _eval(self.default)
+        self_choices = _eval(self.choices)
+
         if self.help is not None:
             kwargs["help"] = self.help
-        if self.nargs is not None:
-            kwargs["nargs"] = self.nargs
-        if self.meta is not None:
-            kwargs["metavar"] = self.meta
-        if self.default is not None:
-            kwargs["default"] = self.default
-        if self.action is not None:
-            kwargs["action"] = self.action
-        if self.choices is not None:
-            kwargs["choices"] = self.choices
+        if self_nargs is not None:
+            kwargs["nargs"] = self_nargs
+        if self_meta is not None:
+            kwargs["metavar"] = self_meta
+        if self_default is not None:
+            kwargs["default"] = self_default
+        if self_action is not None:
+            kwargs["action"] = self_action
+        if self_choices is not None:
+            kwargs["choices"] = self_choices
 
         names = (
-            [name] if self.pos else self.names if len(self.names) > 0 else [f"--{name}"]
+            [name] if self.pos else self_names if len(self_names) > 0 else [f"--{name}"]
         )
 
         if self.pos:
-            kwargs["nargs"] = "?" if self.opt else 1
+            kwargs["nargs"] = "?" if self_opt else 1
         else:
             kwargs["dest"] = name
-            kwargs["required"] = not self.opt
+            kwargs["required"] = not self_opt
 
         action = parser.add_argument(*names, **kwargs)
         if self.completer:
-            action.completer = self.completer  # type: ignore
+            typing.cast(_Completable, action).completer = self.completer
 
         return action
 
