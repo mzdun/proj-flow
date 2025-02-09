@@ -2,17 +2,16 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.store** provides ``"StorePackages"`` step.
+The **proj_flow.ext.store** provides ``"Store"``, ``"StoreTests"`` and
+``"StorePackages"`` steps.
 """
 
 import os
 import shutil
 from typing import List, cast
 
-from proj_flow.api import env, step
+from proj_flow.api import env, release, step
 from proj_flow.base.uname import uname
-
-from ..cmake.parser import get_project
 
 _system, _version, _arch = uname()
 _version = "" if _version is None else f"-{_version}"
@@ -26,12 +25,24 @@ def _package_name(config: env.Config, pkg: str, group: str):
     return f"{pkg}-{_system}{_version}-{_arch}{debug}{suffix}"
 
 
+def _get_project(rt: env.Runtime):
+    def wrap(suite: release.ProjectSuite):
+        return suite.get_project(rt)
+
+    return wrap
+
+
 @step.register
-class StorePackages:
+class StorePackages(step.Step):
     """Stores archives and installers build for ``preset`` config value."""
 
-    name = "StorePackages"
-    runs_after = ["Pack"]
+    @property
+    def name(self):
+        return "StorePackages"
+
+    @property
+    def runs_after(self):
+        return ["Pack"]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         if not rt.dry_run:
@@ -41,10 +52,10 @@ class StorePackages:
 
         global _project_pkg
         if _project_pkg is None:
-            project = get_project("")
+            _, project = release.project_suites.find(_get_project(rt))
             if project is None:
                 rt.fatal(f"Cannot get project information from {rt.root}")
-            _project_pkg = project.pkg
+            _project_pkg = project.archive_name
 
         main_group = cast(str, rt._cfg.get("package", {}).get("main-group"))
         if main_group is not None and not rt.dry_run:
@@ -77,3 +88,34 @@ class StorePackages:
             "build/artifacts/packages",
             f"^{_project_pkg}-.*$",
         )
+
+
+@step.register
+class StoreTests(step.Step):
+    """Stores test results gathered during tests for ``preset`` config value."""
+
+    @property
+    def name(self):
+        return "StoreTests"
+
+    @property
+    def runs_after(self):
+        return ["Test"]
+
+    def run(self, config: env.Config, rt: env.Runtime) -> int:
+        return rt.cp(
+            f"build/{config.preset}/test-results", "build/artifacts/test-results"
+        )
+
+
+@step.register
+class StoreBoth(step.SerialStep):
+    """Stores all artifacts created for ``preset`` config value."""
+
+    @property
+    def name(self):
+        return "Store"
+
+    def __init__(self):
+        super().__init__()
+        self.children = [StoreTests(), StorePackages()]

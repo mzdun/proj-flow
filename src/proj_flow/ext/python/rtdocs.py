@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ext.python.steps.rtdocs** defines RTDocs step, which uses
+The **proj_flow.ext.python.rtdocs** defines RTDocs step (`"RTD"`), which uses
 .readthedocs.yaml to build the HTML documentation.
 """
 

@@ -2,10 +2,12 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.conan._conan** adds support for both Conan v1 and v2.
+The **proj_flow.ext.cplusplus.conan._conan** adds support for both Conan v1
+and v2.
 """
 
 import shutil
+import subprocess
 from abc import ABC, abstractmethod
 from typing import Callable, List, cast
 
@@ -119,7 +121,10 @@ def _conan_version():
     if found is None:
         return 1
 
-    proc = cmd.run(found, "--version", capture_output=True)
+    proc = cast(
+        subprocess.CompletedProcess[str],
+        cmd.run(found, "--version", capture_output=True),
+    )
     if proc.returncode != 0:
         return 1
     m = VER_REGEX.search(proc.stdout)

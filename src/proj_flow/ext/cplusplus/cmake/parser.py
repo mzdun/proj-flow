@@ -2,12 +2,14 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.plugins.cmake.parser** contains simple CMake parser.
+The **proj_flow.ext.cplusplus.cmake.parser** contains simple CMake parser.
 """
 
 import os
 import re
 from typing import Iterator, List, NamedTuple, Optional
+
+from proj_flow.api.release import NO_ARG, Arg
 
 TOKENS = [
     ("COMMENT", r"#.*"),
@@ -25,38 +27,17 @@ class Token(NamedTuple):
     offset: int
 
 
-class Arg(NamedTuple):
-    value: str
-    offset: int
-
-
 class Command(NamedTuple):
     name: str
     args: List[Arg]
     offset: int
 
 
-class Project(NamedTuple):
+class CMakeProject(NamedTuple):
     name: Arg
     version: Arg
     stability: Arg
     description: Arg
-
-    def set_version(self, directory: str, next_version: str):
-        _patch(directory, self.version, next_version)
-        return ["proj_flow/__init__.py"]
-
-    @property
-    def ver(self):
-        return f"{self.version.value}{self.stability.value}"
-
-    @property
-    def pkg(self):
-        return f"{self.name.value}-{self.ver}"
-
-    @property
-    def tag(self):
-        return f"v{self.ver}"
 
 
 def _token_stream(text: str) -> Iterator[Token]:
@@ -121,10 +102,7 @@ def _patch(directory: str, arg: Arg, value: str):
         input.write(patched)
 
 
-NO_ARG = Arg("", -1)
-
-
-def get_project(dirname: str) -> Optional[Project]:
+def get_project(dirname: str) -> Optional[CMakeProject]:
     try:
         commands = _cmake(os.path.join(dirname, "CMakeLists.txt"))
     except FileNotFoundError:
@@ -158,7 +136,7 @@ def get_project(dirname: str) -> Optional[Project]:
     if version_stability is None:
         version_stability = NO_ARG
 
-    return Project(
+    return CMakeProject(
         name=project_name,
         version=version,
         stability=version_stability,
