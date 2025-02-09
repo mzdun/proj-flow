@@ -4,6 +4,19 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.11.0 <https://github.com/mzdun/proj-flow/compare/v0.10.0...v0.11.0>`_ (2025-02-09)
+=====================================================================================
+
+New Features
+------------
+
+- read config in user directory (`8721d90 <https://github.com/mzdun/proj-flow/commit/8721d90ee9be579f544baadfa466f6d1621366e6>`_)
+
+Bug Fixes
+---------
+
+- bring back cmake and conan initailisation (`8148f52 <https://github.com/mzdun/proj-flow/commit/8148f52e6d3fda66349f552dfb02f524a81ee33c>`_)
+
 `0.10.0 <https://github.com/mzdun/proj-flow/compare/v0.9.4...v0.10.0>`_ (2025-02-09)
 ====================================================================================
 
