@@ -7,11 +7,10 @@ The **proj_flow.project.cplusplus** registers a ``"C++"`` projects support.
 
 from proj_flow.project import api
 
-
 @api.project_type.add
 class CPlusPlus(api.ProjectType):
     def __init__(self):
-        super().__init__("C++ + CMake + Conan", "cxx")
+        super().__init__("C++ plus CMake plus Conan", "cxx")
 
 
-project = api.get_project_type("cxx")
+cxx = api.get_project_type("cxx")
