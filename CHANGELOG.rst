@@ -4,6 +4,17 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.9.4 <https://github.com/mzdun/proj-flow/compare/v0.9.3...v0.9.4>`_ (2025-02-09)
+==================================================================================
+
+Bug Fixes
+---------
+
+- remove vestiges of old plugin finder + styles (`484fec4 <https://github.com/mzdun/proj-flow/commit/484fec44107474fe765091b7754b94094395c838>`_)
+- move C++ things to ext.cplusplus (`fce7318 <https://github.com/mzdun/proj-flow/commit/fce7318b614a645dd9b72854a4ab78c0c5cf7b00>`_)
+- move last command to minimal (`c3f1dba <https://github.com/mzdun/proj-flow/commit/c3f1dba7c4f55fc8f62eb4d44162833991cd516f>`_)
+- **docs**: cleanup the docstrings after moving (`a952ebe <https://github.com/mzdun/proj-flow/commit/a952ebe19c65cb51585dc2c69ead74bfe7fff5cc>`_)
+
 `0.9.3 <https://github.com/mzdun/proj-flow/compare/v0.9.2...v0.9.3>`_ (2025-02-08)
 ==================================================================================
 
