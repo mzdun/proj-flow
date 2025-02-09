@@ -24,7 +24,6 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from proj_flow.base import plugins, uname
-from proj_flow.base.plugins import load_module_plugins
 
 platform = uname.uname()[0]
 
@@ -152,7 +151,13 @@ class FlowConfig:
             sys.path.insert(0, local_extensions)
 
         for extension in extensions:
-            importlib.import_module(extension)
+            try:
+                importlib.import_module(extension)
+            except ModuleNotFoundError:
+                print(
+                    f"-- error: module `{extension}` was no found, ignoring",
+                    file=sys.stderr,
+                )
 
     @property
     def entry(self) -> Dict[str, dict]:
