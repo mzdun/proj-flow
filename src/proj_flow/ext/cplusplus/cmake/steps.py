@@ -11,7 +11,6 @@ from typing import Dict, List, cast
 
 from proj_flow import api
 from proj_flow.api import env, step
-
 from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 
 

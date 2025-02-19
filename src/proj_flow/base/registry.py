@@ -98,12 +98,14 @@ class Registry(typing.Generic[T]):
 
 _debug_copies: typing.List[Registry] = []
 
+
 def quoted(s: str) -> str:
     if '"' in s:
         return "'{}'".format(s.replace("\\", r"\\").replace("'", r"\'"))
     if "'" in s or " " in s:
         return '"{}"'.format(s)
     return s
+
 
 def verbose_info():
     for registry in _debug_copies:
