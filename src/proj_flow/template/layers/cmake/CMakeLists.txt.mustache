@@ -93,7 +93,7 @@ if (MSVC)
     /w14906
     /w14928
     /w14946)
-  if (COV_SANITIZE)
+  if ({{NAME_PREFIX}}_SANITIZE)
     list(APPEND {{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
       /fsanitize=address
       /D_DISABLE_VECTOR_ANNOTATION
@@ -131,7 +131,7 @@ else()
       -Wuseless-cast
       )
   endif()
-  if (COV_SANITIZE)
+  if ({{NAME_PREFIX}}_SANITIZE)
     list(APPEND {{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
       -fsanitize=address
       -fsanitize=undefined
