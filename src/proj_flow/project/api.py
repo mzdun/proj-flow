@@ -33,6 +33,23 @@ class ProjectType(ABC):
     def get_context(self, interactive: bool, rt: env.Runtime):
         return interact.get_context(interactive, self.id, rt)
 
+    def append_extensions(self, context: dict):
+        extensions = self.get_extension_list(context)
+        if len(extensions) == 0:
+            return
+        text = "".join(f"\n  - {ext}" for ext in extensions)
+        text = f"extensions:{text}\n\n"
+
+        with open(".flow/config.yml", encoding="UTF-8") as config_file:
+            content = config_file.read()
+
+        with open(".flow/config.yml", "w", encoding="UTF-8") as config_file:
+            config_file.write(text)
+            config_file.write(content)
+
+    @abstractmethod
+    def get_extension_list(self, context: dict) -> List[str]: ...
+
 
 project_type = base.registry.Registry[ProjectType]("ProjectType")
 

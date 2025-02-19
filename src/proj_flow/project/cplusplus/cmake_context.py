@@ -12,10 +12,9 @@ import uuid
 import chevron
 
 from proj_flow import api, project
+from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 from proj_flow.project import data
 from proj_flow.project.cplusplus import project
-
-from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 
 config_json_mustache = """
 {{#with_cmake}}
@@ -24,7 +23,6 @@ cmake:
     {{NAME_PREFIX}}_COVERAGE: "?config:coverage"
     {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer"
     {{NAME_PREFIX}}_CUTDOWN_OS: "?runtime:cutdown_os"
-
 {{/with_cmake}}
 """
 
@@ -36,7 +34,7 @@ class CMakeInit(api.init.InitStep):
             return
 
         with open(".flow/config.yml", encoding="UTF-8") as config_file:
-            patched = re.split(r"(\nshortcuts:\n)", config_file.read())
+            patched = re.split(r"(\n\nshortcuts:\n)", config_file.read())
 
         if len(patched) != 3:
             return

@@ -6,10 +6,15 @@ The **proj_flow.minimal.base** provides basic initialization setup for all
 new projects.
 """
 
+import sys
+
 from proj_flow import __version__, api
 
 
 class GitInit(api.init.InitStep):
+    def priority(self):
+        return sys.maxsize
+
     def platform_dependencies(self):
         return ["git"]
 

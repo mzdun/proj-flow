@@ -11,6 +11,9 @@ from proj_flow.api.env import Runtime
 
 
 class InitStep:
+    def priority(self):
+        return 100
+
     def platform_dependencies(self) -> List[str]:
         return []
 
