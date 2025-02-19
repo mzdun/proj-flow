@@ -104,5 +104,8 @@ def main(
         with open(".gitignore", "ab") as ignoref:
             ignoref.write("\n/.context.yaml\n".encode("UTF-8"))
 
-    for step in init.__steps:
+    current_project.append_extensions(context)
+
+    steps = sorted((step.priority(), i, step) for i, step in enumerate(init.__steps))
+    for _, _, step in steps:
         step.postprocess(rt, context)
