@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.11.1 <https://github.com/mzdun/proj-flow/compare/v0.11.0...v0.11.1>`_ (2025-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- bring back base ext (git initial commit) (`3f97d0a <https://github.com/mzdun/proj-flow/commit/3f97d0a6407b26728f4e99bf8985600e8d41acae>`_)
+
 `0.11.0 <https://github.com/mzdun/proj-flow/compare/v0.10.0...v0.11.0>`_ (2025-02-09)
 =====================================================================================
 
