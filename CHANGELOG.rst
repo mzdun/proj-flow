@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.11.3 <https://github.com/mzdun/proj-flow/compare/v0.11.2...v0.11.3>`_ (2025-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- finish sign changes (`14c19b5 <https://github.com/mzdun/proj-flow/commit/14c19b503ce7859808888a30b64be01cc9a3e047>`_)
+
 `0.11.2 <https://github.com/mzdun/proj-flow/compare/v0.11.1...v0.11.2>`_ (2025-02-19)
 =====================================================================================
 
