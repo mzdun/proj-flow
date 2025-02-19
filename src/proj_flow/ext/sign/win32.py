@@ -34,7 +34,9 @@ if sys.platform == "win32":
         def is_signable(self, filename: str, as_package: bool):
             if as_package:
                 _, ext = os.path.splitext(filename)
-                return ext.lower() == ".msi"
+                if ext.lower() == ".msi":
+                    return True
+                # suport NSIS by checking if the archive is a PE
             return _is_pe_exec(filename)
 
     Version = Tuple[int, int, int]
