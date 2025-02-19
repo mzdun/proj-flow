@@ -104,7 +104,7 @@ class SignFiles(SignBase):
                         continue
 
                     full_path = os.path.join(curr_dir, filename)
-                    if tool.is_executable(full_path, as_package=False):
+                    if tool.is_signable(full_path, as_package=False):
                         result.append(full_path)
         return result
 
@@ -134,7 +134,7 @@ class SignMsi(SignBase):
             dirnames[:] = []
             for filename in filenames:
                 full_path = os.path.join(curr_dir, filename)
-                if tool.is_executable(full_path, as_package=False):
+                if tool.is_signable(full_path, as_package=True):
                     result.append(full_path)
 
         return result
@@ -142,9 +142,8 @@ class SignMsi(SignBase):
 
 class SignInit(init.InitStep):
     def postprocess(self, rt: env.Runtime, context: dict):
-        if sys.platform == "win32":
-            with open(".gitignore", "ab") as ignoref:
-                ignoref.write("\n/signature.key\n".encode("UTF-8"))
+        with open(".gitignore", "ab") as ignoref:
+            ignoref.write("\n/signature.key\n".encode("UTF-8"))
 
 
 init.register_init_step(SignInit())

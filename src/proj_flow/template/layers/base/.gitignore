@@ -37,3 +37,5 @@ build/
 web.log
 super-linter.log
 *.profraw
+
+.venv/
