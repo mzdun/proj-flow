@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.11.2 <https://github.com/mzdun/proj-flow/compare/v0.11.1...v0.11.2>`_ (2025-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- remove 'cov' from project template (`cb75e53 <https://github.com/mzdun/proj-flow/commit/cb75e5350b57aa9c9ceb8546580d0884ea54e437>`_)
+
 `0.11.1 <https://github.com/mzdun/proj-flow/compare/v0.11.0...v0.11.1>`_ (2025-02-19)
 =====================================================================================
 
