@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.13.0 <https://github.com/mzdun/proj-flow/compare/v0.12.0...v0.13.0>`_ (2025-02-22)
+=====================================================================================
+
+New Features
+------------
+
+- calculate lts.ubuntu from current date (`2bfa12e <https://github.com/mzdun/proj-flow/commit/2bfa12e87cf7b5b163ef88473d2f4779afeed938>`_)
+
 `0.12.0 <https://github.com/mzdun/proj-flow/compare/v0.11.3...v0.12.0>`_ (2025-02-22)
 =====================================================================================
 
