@@ -130,8 +130,9 @@ def add_release(
     git.annotated_tag(setup.curr_tag, commit_message)
 
     if hosting.is_active:
-        draft_url = hosting.add_release(changelog, setup, git, draft).draft_url
-        if draft_url:
-            rt.message("Visit draft at", draft_url, level=env.Msg.ALWAYS)
+        info = hosting.add_release(changelog, setup, git, draft)
+        if info.url:
+            msg = "Visit draft at" if info.is_draft else "Visit release at"
+            rt.message(msg, info.url, level=env.Msg.ALWAYS)
 
     return setup.curr_tag

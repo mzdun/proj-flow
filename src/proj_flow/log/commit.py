@@ -188,7 +188,10 @@ def _sem_ver(tag: str):
 
 @dataclass
 class ReleaseInfo:
-    draft_url: Optional[str]
+    url: Optional[str] = None
+    is_draft: Optional[bool] = None
+    ref: Optional[str] = None
+    tag: Optional[str] = None
 
 
 class Hosting(ABC):
@@ -241,6 +244,32 @@ class Hosting(ABC):
         """
         ...
 
+    @abstractmethod
+    def locate_release(self, release_name: str) -> Optional[ReleaseInfo]:
+        """
+        Locate a release by its name.
+        """
+        ...
+
+    @abstractmethod
+    def upload_to_release(
+        self,
+        release: ReleaseInfo,
+        directory: str,
+        names: list[str],
+    ):
+        """
+        Upload package artifacts to the release.
+        """
+        ...
+
+    @abstractmethod
+    def publish(self, release: ReleaseInfo) -> ReleaseInfo:
+        """
+        Publish given release, return updated release info.
+        """
+        ...
+
 
 class NoHosting(Hosting):
     """
@@ -266,7 +295,21 @@ class NoHosting(Hosting):
     def add_release(
         self, log: ChangeLog, setup: "LogSetup", git: "Git", draft: bool
     ) -> ReleaseInfo:
-        return ReleaseInfo(draft_url=None)
+        return ReleaseInfo(is_draft=False)
+
+    def locate_release(self, release_name: str) -> Optional[ReleaseInfo]:
+        return None
+
+    def upload_to_release(
+        self,
+        release: ReleaseInfo,
+        directory: str,
+        names: list[str],
+    ):
+        return None
+
+    def publish(self, release: ReleaseInfo):
+        return ReleaseInfo(is_draft=False)
 
 
 @dataclass

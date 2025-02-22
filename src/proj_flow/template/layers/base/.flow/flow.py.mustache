@@ -10,7 +10,7 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 CXX_FLOW_VERSION = "{{__flow_version__}}"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -52,7 +52,7 @@ PYTHON_EXECUTABLE = sys.executable
 
 
 def python(
-    *args: List[str],
+    *args: str,
     module: Optional[str] = None,
     capture_output: bool = True,
 ) -> subprocess.CompletedProcess:
@@ -67,11 +67,11 @@ def python(
     )
 
 
-def pip(*args: List[str], capture_output: bool = False):
+def pip(*args: str, capture_output: bool = False):
     return python(*args, module="pip", capture_output=capture_output)
 
 
-def venv(*args: List[str], capture_output: bool = False):
+def venv(*args: str, capture_output: bool = False):
     return python(*args, module="venv", capture_output=capture_output)
 
 
@@ -126,13 +126,18 @@ def activate_virtual_env():
             venv(".venv")
             bindir = get_venv_path()
 
-        os.environ["PATH"] = (
-            f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
-        )
-        PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
+        if bindir is not None:
+            os.environ["PATH"] = (
+                f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
+            )
+            PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
 
 
 def bootstrap_cxx_flow():
+    if proj_flow is None:
+        print('Cannot parse version "{CXX_FLOW_VERSION}"', file=sys.stderr)
+        return False
+
     if proj_flow.compatible_with(cxx_flow_version()):
         return True
 
@@ -159,13 +164,15 @@ def bootstrap_cxx_flow():
 
 def main():
     if not bootstrap_cxx_flow():
-        print("Cannot find a working copy of proj-flow", file=sys.stderr)
+        print("Cannot find a working copy of proj-flow package", file=sys.stderr)
         return 1
 
     with cd(PROJECT_ROOT):
-        return subprocess.run(
-            [shutil.which("proj-flow"), *sys.argv[1:]], shell=False
-        ).returncode
+        executable = shutil.which("proj-flow")
+        if executable is None:
+            print("Cannot find a working copy of proj-flow executable", file=sys.stderr)
+            return 1
+        return subprocess.run([executable, *sys.argv[1:]]).returncode
 
 
 if __name__ == "__main__":

@@ -25,13 +25,6 @@ def _package_name(config: env.Config, pkg: str, group: str):
     return f"{pkg}-{_system}{_version}-{_arch}{debug}{suffix}"
 
 
-def _get_project(rt: env.Runtime):
-    def wrap(suite: release.ProjectSuite):
-        return suite.get_project(rt)
-
-    return wrap
-
-
 @step.register
 class StorePackages(step.Step):
     """Stores archives and installers build for ``preset`` config value."""
@@ -52,10 +45,7 @@ class StorePackages(step.Step):
 
         global _project_pkg
         if _project_pkg is None:
-            _, project = release.project_suites.find(_get_project(rt))
-            if project is None:
-                rt.fatal(f"Cannot get project information from {rt.root}")
-            _project_pkg = project.archive_name
+            _project_pkg = release.get_project(rt).archive_name
 
         main_group = cast(str, rt._cfg.get("package", {}).get("main-group"))
         if main_group is not None and not rt.dry_run:
