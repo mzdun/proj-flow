@@ -24,16 +24,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-{{#with_conan}}
+{{#with.conan}}
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/conan" "${PROJECT_SOURCE_DIR}/.flow/cmake")
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/conan")
-{{/with_conan}}
-{{^with_conan}}
+{{/with.conan}}
+{{^with.conan}}
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/.flow/cmake")
-{{/with_conan}}
+{{/with.conan}}
 
 include(common)
-{{#with_conan}}
+{{#with.conan}}
 include(output_dirs_setup)
 
 set(CONAN_CMAKE_SILENT_OUTPUT ON)
@@ -41,14 +41,14 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_package(fmt REQUIRED)
 find_package(GTest REQUIRED)
 find_package(mbits-args REQUIRED)
-{{/with_conan}}
+{{/with.conan}}
 
 if ({{NAME_PREFIX}}_TESTING)
   enable_testing()
 
-{{#with_conan}}
+{{#with.conan}}
   find_package(GTest REQUIRED)
-{{/with_conan}}
+{{/with.conan}}
 
   set(TEST_REPORT_DIR "${PROJECT_BINARY_DIR}/test-results")
   set(TEST_SANITIZER_TAG "")
@@ -58,10 +58,10 @@ if ({{NAME_PREFIX}}_TESTING)
   set(TEST_REPORT_FILE "${CMAKE_SYSTEM_NAME}-${CMAKE_CXX_COMPILER_ID}-${CMAKE_BUILD_TYPE}${TEST_SANITIZER_TAG}.xml")
 endif()
 
-{{#with_conan}}
+{{#with.conan}}
 include(output_dirs_setup)
 old_conan_output_dirs_setup()
-{{/with_conan}}
+{{/with.conan}}
 
 # See <https://github.com/lefticus/cppbestpractices/blob/v1.0.0/02-Use_the_Tools_Available.md#compilers>
 
@@ -177,7 +177,7 @@ target_include_directories(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}/src
 )
-target_link_libraries(${PROJECT_NAME}{{#with_conan}} fmt::fmt mbits::args{{/with_conan}})
+target_link_libraries(${PROJECT_NAME}{{#with.conan}} fmt::fmt mbits::args{{/with.conan}})
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 {{#cmake.dynamic-library}}

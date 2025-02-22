@@ -7,7 +7,12 @@ projects.
 
 from proj_flow.api import ctx
 
-ctx.register_common_switch("with_github_actions", "Use Github Actions", True)
+ctx.register_common_switch("with.github.actions", "Use Github Actions", True)
 ctx.register_common_switch(
-    "with_github_social", "Use Github ISSUE_TEMPLATE, CONTRIBUTING.md, etc.", True
+    "with.github.auto-release",
+    "Make a GitHub release automatically on each closed PR",
+    False,
+)
+ctx.register_common_switch(
+    "with.github.social", "Use Github ISSUE_TEMPLATE, CONTRIBUTING.md, etc.", True
 )

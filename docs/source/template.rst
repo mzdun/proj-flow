@@ -190,21 +190,26 @@ Interactive switches
 ::::::::::::::::::::
 
 Switches are used mostly to guard inclusion of various template layers. Each of
-them allows true/false answers and all are ``true`` by default. The interactive
+them allows true/false answers and all are ``true`` by default, with only
+exception set to ``false`` being ``with.github.auto-release``. The interactive
 prompts accept ``yes``, ``on`` and ``1`` for true value, and ``no``, ``off``
 and ``0`` for false value.
 
-+-------------------------+--------------------------------------------------+
-| Context switch          | Interactive label                                |
-+=========================+==================================================+
-| ``with_conan``          | Use Conan for dependency manager                 |
-+-------------------------+--------------------------------------------------+
-| ``with_cmake``          | Use CMake                                        |
-+-------------------------+--------------------------------------------------+
-| ``with_github_actions`` | Use Github Actions                               |
-+-------------------------+--------------------------------------------------+
-| ``with_github_social``  | Use Github ISSUE_TEMPLATE, CONTRIBUTING.md, etc. |
-+-------------------------+--------------------------------------------------+
++------------------------------+---------------------------------------------+
+| Context switch               | Interactive label                           |
++==============================+=============================================+
+| ``with.conan``               | Use Conan for dependency manager            |
++------------------------------+---------------------------------------------+
+| ``with.cmake``               | Use CMake                                   |
++------------------------------+---------------------------------------------+
+| ``with.github.actions``      | Use Github Actions                          |
++------------------------------+---------------------------------------------+
+| ``with.github.auto-release`` | Make a GitHub release automatically on each |
+|                              | closed PR                                   |
++------------------------------+---------------------------------------------+
+| ``with.github.social``       | Use Github ISSUE_TEMPLATE, CONTRIBUTING.md, |
+|                              | etc.                                        |
++------------------------------+---------------------------------------------+
 
 .. _non-interactive-settings:
 

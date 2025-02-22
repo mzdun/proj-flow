@@ -20,7 +20,7 @@ class CPlusPlus(api.ProjectType):
         super().__init__("C++ plus CMake plus Conan", "cxx")
 
     def get_extension_list(self, context: dict):
-        with_github_actions = not not context.get("with_github_actions")
+        with_github_actions = not not context.get("with.github.actions")
         if with_github_actions:
             return [*CPP_EXTENSIONS, "proj_flow.ext.github"]
         return CPP_EXTENSIONS
