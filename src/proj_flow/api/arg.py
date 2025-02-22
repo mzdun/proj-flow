@@ -27,6 +27,15 @@ class _Completable(typing.Protocol):
 
 
 @dataclass
+class ExclusiveArgumentGroup:
+    opt: bool = False
+
+    def visit(self, parser: argparse._ActionsContainer) -> argparse._ActionsContainer:
+        self.opt
+        return parser.add_mutually_exclusive_group(required=not self.opt)
+
+
+@dataclass
 class Argument:
     help: LazyArgument[str] = ""
     pos: bool = False
@@ -38,8 +47,9 @@ class Argument:
     default: LazyArgument[typing.Optional[typing.Any]] = None
     choices: LazyArgument[typing.Optional[typing.List[str]]] = None
     completer: typing.Optional[_inspect.Function] = None
+    group: typing.Optional[ExclusiveArgumentGroup] = None
 
-    def visit(self, parser: argparse.ArgumentParser, name: str):
+    def visit(self, parser: argparse._ActionsContainer, name: str):
         kwargs = {}
 
         self_help = _eval(self.help)
@@ -82,9 +92,19 @@ class Argument:
 
 
 class FlagArgument(Argument):
-    def __init__(self, help: str = "", names: typing.List[str] = []):
+    def __init__(
+        self,
+        help: str = "",
+        names: typing.List[str] = [],
+        group: typing.Optional[ExclusiveArgumentGroup] = None,
+    ):
         super().__init__(
-            help=help, names=names, opt=True, action="store_true", default=False
+            help=help,
+            names=names,
+            group=group,
+            opt=True,
+            action="store_true",
+            default=False,
         )
 
 
