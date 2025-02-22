@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.13.1 <https://github.com/mzdun/proj-flow/compare/v0.13.0...v0.13.1>`_ (2025-02-22)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- allow GitHub Actions' GH to access drafts (`da81eff <https://github.com/mzdun/proj-flow/commit/da81eff2a9bb6e83f13a4cca276508715e1c0f97>`_)
+
 `0.13.0 <https://github.com/mzdun/proj-flow/compare/v0.12.0...v0.13.0>`_ (2025-02-22)
 =====================================================================================
 
