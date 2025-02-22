@@ -61,11 +61,11 @@ def main(
             group=_output_group,
         ),
     ],
-    no_output: Annotated[
-        bool,
-        arg.FlagArgument(
-            help="Do not create project. In connection with --ctx, only save project context.",
-            names=["--store"],
+    store: Annotated[
+        Optional[str],
+        arg.Argument(
+            help="Do not create project, store the context in given file.",
+            meta="context-file",
             group=_output_group,
         ),
     ],
@@ -85,15 +85,26 @@ def main(
 ):
     """Initialize new project"""
 
+    setup = interact.ContextSetup(
+        dest_path=path,
+        interactive=not non_interactive and answers is None,
+        simple=store is not None,
+        load=answers,
+    )
+
+    context_file = store or ".context.yaml"
+    save_context = save_context or store is not None
+
     try:
         current_project = api.get_project_type(project)
     except api.ProjectNotFound:
         print(f"proj-flow init: error: project type `{project}` is not known")
         return 1
 
-    if path is not None:
+    if path is not None and store is None:
         os.makedirs(path, exist_ok=True)
         os.chdir(path)
+        setup.dest_path = None
 
     errors = dependency.verify(dependency.gather(init.__steps))
     if len(errors) > 0:
@@ -102,7 +113,7 @@ def main(
                 print(f"proj-flow: {error}", file=sys.stderr)
         return 1
 
-    context = current_project.get_context(not non_interactive, rt)
+    context = current_project.get_context(setup, rt)
     if not non_interactive and not rt.silent:
         print()
 
@@ -112,8 +123,14 @@ def main(
             rt.message("[CONTEXT]", line)
 
     if save_context and not rt.dry_run:
-        with open(".context.yaml", "w", encoding="UTF-8") as jsonf:
-            yaml.dump(context, jsonf, indent=4)
+        with open(context_file, "w", encoding="UTF-8") as jsonf:
+            if os.path.splitext(context_file)[1] == ".json":
+                json.dump(context, jsonf, indent=4)
+            else:
+                yaml.dump(context, jsonf, indent=4)
+
+    if store is not None:
+        return 0
 
     flow.layer.copy_license(rt, context)
     if not rt.silent:
