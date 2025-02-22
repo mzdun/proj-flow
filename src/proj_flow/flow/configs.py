@@ -9,7 +9,9 @@ using ``-D`` switches.
 
 
 import argparse
+import datetime
 import os
+import sys
 from typing import Any, Callable, Dict, List
 
 from proj_flow.api import env
@@ -90,9 +92,43 @@ def _expand_one(config: dict, github_os: str, os_in_name: str):
     return config
 
 
+__printed_lts_ubuntu_warning = False
+
+
+def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
+    year = today.year
+    for y in range(year - lts_years, year + 1):
+        if y % 2 != 0:
+            continue
+        release = datetime.date(y, 4, 1)
+        end_of_life = datetime.date(y + lts_years, 1, 31)
+        if release > today or end_of_life < today:
+            continue
+        yield f"ubuntu-{y % 100}.04"
+
+
+def _lts_list(config: dict, lts_list: Dict[str, List[str]]):
+    os = config["os"]
+    raw = lts_list.get(os)
+    if os == "ubuntu":
+        if raw is not None:
+            global __printed_lts_ubuntu_warning
+            if not __printed_lts_ubuntu_warning:
+                __printed_lts_ubuntu_warning = True
+                print(
+                    "\033[1;33m-- lts.ubuntu in config.yaml is deprecated; "
+                    "please remove it, so it can be calculated base on "
+                    "current date\033[m",
+                    file=sys.stderr,
+                )
+        else:
+            raw = list(_ubuntu_lts())
+    return raw or []
+
+
 def _expand_config(config: dict, spread_lts: bool, lts_list: Dict[str, List[str]]):
     if spread_lts:
-        spread = lts_list.get(config["os"], [])
+        spread = _lts_list(config, lts_list)
         if len(spread):
             return [
                 _expand_one({key: config[key] for key in config}, lts, lts)
@@ -135,6 +171,11 @@ class Configs:
 
         # from commands/github
         spread_lts = hasattr(args, "matrix") and not not args.matrix
+
+        if not spread_lts:
+            # allow "run" to see the warning about "lts.ubuntu"
+            for config in configs:
+                _lts_list(config, rt.lts_list)
 
         turned = matrix.flatten(
             [

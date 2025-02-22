@@ -73,7 +73,7 @@ def release_cmd(
         typing.Optional[str],
         arg.Argument(
             help="Ignore the version change from changelog and instead use this value. "
-            f"Allowed values are: {name_list(FORCED_LEVEL_CHOICES)}",
+            f"Allowed values are: {name_list(FORCED_LEVEL_CHOICES)}.",
             meta="level",
             choices=FORCED_LEVEL_CHOICES,
         ),
@@ -142,8 +142,8 @@ def publish(
     upload: typing.Annotated[
         typing.Optional[str],
         arg.Argument(
-            help="If present, will upload files from the directory to "
-            "the referenced release before publishing.",
+            help="If present, upload files from the directory to the referenced "
+            "release before publishing.",
             meta="directory",
         ),
     ],
