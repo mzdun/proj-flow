@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, cast
 
 from proj_flow.api import env, step
+from proj_flow.base import cmd
 
 
 @step.register
@@ -172,16 +173,6 @@ _job_listing = [
 ]
 
 
-@contextmanager
-def _cd(path: str):
-    prev = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(prev)
-
-
 def _get_venv_path(root: str):
     bindir = os.path.join(".venv", "bin")
     scripts = os.path.join(".venv", "Scripts")
@@ -198,7 +189,7 @@ def _get_venv_path(root: str):
 def _activate_virtual_env(venv, root: str):
     global PYTHON_EXECUTABLE
 
-    with _cd(root):
+    with cmd.cd(root):
         exec_ext = ".exe" if sys.platform == "win32" else ""
         python_exec = f"python{exec_ext}"
         bindir = _get_venv_path(root)

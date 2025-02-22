@@ -23,7 +23,7 @@ jobs:
 
     - name: Find builds
       id: flow
-      run: python ./.flow/flow.py ci matrix
+      run: python ./.flow/flow.py github matrix
 
   build:
     needs: M
@@ -137,8 +137,6 @@ jobs:
     - name: Install Conan
       id: conan
       uses: turtlebrowser/get-conan@main
-      with:
-        version: 1.66.0
 
     - name: Conan cache
       uses: actions/cache@v4
@@ -237,5 +235,5 @@ jobs:
         name: Packages
         path: ${{github.workspace}}/build/download/packages
 
-    - name: Upload to release
-      run: python ./.flow/flow.py ci upload --ref "${{github.action_ref}}" "${{github.workspace}}/build/download/packages"
+    - name: Publish the release
+      run: python ./.flow/flow.py github publish --upload "${{github.workspace}}/build/download/packages"

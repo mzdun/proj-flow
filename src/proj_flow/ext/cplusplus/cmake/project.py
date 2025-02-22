@@ -5,11 +5,7 @@
 The **proj_flow.ext.cplusplus.cmake.version** provides project suite plugin.
 """
 
-import os
-import re
 from typing import NamedTuple, Optional
-
-import toml
 
 from proj_flow.api import env, release
 from proj_flow.ext.cplusplus.cmake.parser import get_project

@@ -23,6 +23,21 @@ class _GitHub(NamedTuple):
 _NO_GITHUB = _GitHub("", "", "")
 
 
+class ReleaseInfo(commit.ReleaseInfo):
+    id: int
+
+    def __init__(
+        self,
+        url: Optional[str],
+        is_draft: Optional[bool],
+        id: int,
+        ref: Optional[str] = None,
+        tag: Optional[str] = None,
+    ):
+        super().__init__(url, is_draft, ref, tag)
+        self.id = id
+
+
 class GitHub(commit.Hosting):
     """
     Generates links to GitHub.
@@ -78,6 +93,7 @@ class GitHub(commit.Hosting):
         *args: str,
         method: Optional[str] = None,
         capture_output: bool = True,
+        ro_call: bool = False,
         **kwargs,
     ):
         url = f"{self.root}{res}"
@@ -94,15 +110,18 @@ class GitHub(commit.Hosting):
             call.extend(["--method", method.upper()])
 
         if capture_output:
-            if self.rt.dry_run:
+            if not ro_call and self.rt.dry_run:
                 self.rt.print(*call, url, *args)
                 return None
             return self.rt.capture(*call, url, *args)
 
-        self.rt.print(*call, url, *args)
+        return self._run(*call, url, *args)
+
+    def _run(self, *args: str):
+        self.rt.print(*args)
         if self.rt.dry_run:
             return None
-        return cmd.run(*call, url, *args)
+        return cmd.run(*args)
 
     def json_from(
         self,
@@ -111,8 +130,9 @@ class GitHub(commit.Hosting):
         method: Optional[str] = None,
         server: Optional[str] = None,
         default: Any = {},
+        ro_call: bool = False,
     ):
-        proc = self.gh(res, *args, method=method, server=server)
+        proc = self.gh(res, *args, method=method, server=server, ro_call=ro_call)
         if proc is None:
             return default
 
@@ -130,6 +150,15 @@ class GitHub(commit.Hosting):
                 self.rt.message(proc.stdout)
 
         return json.loads(proc.stdout)
+
+    def _release_from_json(self, data: dict, draft: bool = False):
+        html_url = cast(Optional[str], data.get("html_url"))
+        draft = cast(bool, data.get("draft", draft))
+        id = cast(int, data.get("id", 0))
+        name = cast(str, data.get("name"))
+        tag_name = cast(str, data.get("tag_name"))
+
+        return ReleaseInfo(url=html_url, is_draft=draft, id=id, ref=name, tag=tag_name)
 
     def add_release(
         self,
@@ -162,9 +191,46 @@ class GitHub(commit.Hosting):
             flags.append(f"{name}={value}")
 
         data = self.json_from("/releases", *flags, method="POST", default={})
-        html_url = cast(Optional[str], data.get("html_url"))
+        return self._release_from_json(data, draft)
 
-        return commit.ReleaseInfo(draft_url=html_url)
+    def locate_release(self, release_name: str) -> Optional[commit.ReleaseInfo]:
+        releases = self.json_from("/releases", default=[], ro_call=True)
+        for release in releases:
+            if release.get("name") == release_name:
+                return self._release_from_json(release)
+
+        return None
+
+    def upload_to_release(
+        self,
+        release: commit.ReleaseInfo,
+        directory: str,
+        names: list[str],
+    ):
+        with cmd.cd(directory):
+            return self._run(
+                "gh",
+                "release",
+                "upload",
+                release.tag or release.ref or "",
+                *names,
+                "--clobber",
+            )
+
+    def publish(self, release: commit.ReleaseInfo) -> commit.ReleaseInfo:
+        if not isinstance(release, ReleaseInfo):
+            return commit.ReleaseInfo(is_draft=False)
+
+        release_id = release.id
+        data = self.json_from(
+            f"/releases/{release_id}",
+            "-f",
+            "draft=false",
+            "-F",
+            "make_latest=legacy",
+            method="PATCH",
+        )
+        return self._release_from_json(data)
 
     @staticmethod
     def from_repo(git: commit.Git, remote: Optional[str] = None):

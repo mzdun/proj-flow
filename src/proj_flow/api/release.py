@@ -56,6 +56,14 @@ class Project:
     def tag_name(self):
         return f"v{self.version}"
 
+    @property
+    def package_prefix(self):
+        return f"{self.archive_name}-"
+
+    @property
+    def package_suffix(self):
+        return ""
+
 
 class ProjectSuite(ABC):
     @abstractmethod
@@ -97,3 +105,13 @@ class ProjectSuite(ABC):
 
 
 project_suites = registry.Registry[ProjectSuite]("ProjectSuite")
+
+
+def get_project(rt: env.Runtime):
+    def wrap(suite: ProjectSuite):
+        return suite.get_project(rt)
+
+    _, project = project_suites.find(wrap)
+    if project is None:
+        rt.fatal(f"Cannot get project information from {rt.root}")
+    return project

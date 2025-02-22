@@ -5,8 +5,10 @@
 The **proj_flow.base.cmd** defines environment for `proj_flow.api.env.Runtime`.
 """
 
+import os
 import shutil
 import subprocess
+from contextlib import contextmanager
 from typing import Optional
 
 
@@ -48,3 +50,13 @@ def run(app: str, *args: str, capture_output=False):
     return subprocess.run(
         [cmd, *args], shell=False, encoding="UTF-8", capture_output=capture_output
     )
+
+
+@contextmanager
+def cd(path: str):
+    prev = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev)
