@@ -221,9 +221,9 @@ jobs:
     if: ${{ fromJson(needs.merge.outputs.RELEASE) }}
     needs: merge
     runs-on: ubuntu-latest
-
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+      packages: write
 
     steps:
     - name: Checkout
@@ -237,3 +237,5 @@ jobs:
 
     - name: Publish the release
       run: python ./.flow/flow.py github publish --upload "${{github.workspace}}/build/download/packages"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
