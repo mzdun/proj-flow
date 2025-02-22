@@ -17,13 +17,13 @@ from proj_flow.project import data
 from proj_flow.project.cplusplus import project
 
 config_json_mustache = """
-{{#with_cmake}}
+{{#with.cmake}}
 cmake:
   vars:
     {{NAME_PREFIX}}_COVERAGE: "?config:coverage"
     {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer"
     {{NAME_PREFIX}}_CUTDOWN_OS: "?runtime:cutdown_os"
-{{/with_cmake}}
+{{/with.cmake}}
 """
 
 
@@ -64,7 +64,7 @@ project.cxx.register_init_setting(
     api.ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
     is_hidden=True,
 )
-project.cxx.register_switch("with_cmake", "Use CMake", True)
+project.cxx.register_switch("with.cmake", "Use CMake", True)
 project.cxx.register_internal(
     "cmake",
     {

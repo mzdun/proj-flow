@@ -1,6 +1,6 @@
 # Project Flow
 
-[![Python package workflow badge](https://github.com/mzdun/proj-flow/actions/workflows/python-publish.yml/badge.svg)](https://github.com/mzdun/proj-flow/actions)
+[![Python package workflow badge](https://github.com/mzdun/proj-flow/actions/workflows/release.yml/badge.svg)](https://github.com/mzdun/proj-flow/actions)
 [![PyPI version badge](https://img.shields.io/pypi/v/proj-flow.svg)](https://pypi.python.org/pypi/proj-flow)
 [![PyPI License: MIT](https://img.shields.io/pypi/l/proj-flow.svg)](https://pypi.python.org/pypi/proj-flow)
 

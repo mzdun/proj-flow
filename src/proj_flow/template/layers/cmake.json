@@ -1,5 +1,5 @@
 {
-    "when": "with_cmake",
+    "when": "with.cmake",
     "filelist": {
         "src/main.cc.mustache": {
             "path": "{{SRCDIR}}/main{{EXT.cxx}}",
