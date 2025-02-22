@@ -1,6 +1,6 @@
-.. _command-ci-matrix:
+.. _command-github-matrix:
 
-``./flow ci matrix``
+``./flow github matrix``
 ====================
 
 Synopsis
@@ -8,9 +8,9 @@ Synopsis
 
 .. code-block::
 
-   $ ./flow ci matrix [--official]
-   $ GITHUB_ACTIONS=true ./flow ci matrix [--official]
-   $ GITHUB_ACTIONS=true GITHUB_OUTPUT=<file path> ./flow ci matrix [--official]
+   $ ./flow github matrix [--official]
+   $ GITHUB_ACTIONS=true ./flow github matrix [--official]
+   $ GITHUB_ACTIONS=true GITHUB_OUTPUT=<file path> ./flow github matrix [--official]
 
 Description
 -----------
@@ -28,6 +28,13 @@ project the config contains Ubuntu LTS versions from 2020 till 2024:
        - ubuntu-20.04
        - ubuntu-22.04
        - ubuntu-24.04
+
+.. note::
+
+   This particular expansion, ``lts.ubuntu``, is deprecated in favor of
+   automatically calculating the active Ubuntu LTS releases, with any given
+   LTS being present, if the expansion is calculated after April 30th of
+   the LTS release year and before February 1st five years after LTS release.
 
 ``--official``
    Cut matrix to release builds only by merging matrix definition in

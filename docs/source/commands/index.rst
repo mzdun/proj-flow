@@ -55,6 +55,8 @@ See also
    init
    bootstrap
    run
-   ci-matrix
+   github-matrix
+   github-release
+   github-publish
    system
    list
