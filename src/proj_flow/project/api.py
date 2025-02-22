@@ -30,8 +30,8 @@ class ProjectType(ABC):
     def register_init_setting(self, *settings: ctx.Setting, is_hidden=False):
         ctx.register_init_setting(*settings, is_hidden=is_hidden, project=self.id)
 
-    def get_context(self, interactive: bool, rt: env.Runtime):
-        return interact.get_context(interactive, self.id, rt)
+    def get_context(self, setup: interact.ContextSetup, rt: env.Runtime):
+        return interact.get_context(setup, self.id, rt)
 
     def append_extensions(self, context: dict):
         extensions = self.get_extension_list(context)
