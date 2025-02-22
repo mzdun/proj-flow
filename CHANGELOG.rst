@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.12.0 <https://github.com/mzdun/proj-flow/compare/v0.11.3...v0.12.0>`_ (2025-02-22)
+=====================================================================================
+
+New Features
+------------
+
+- add ``github publish`` (`2f6ef1e <https://github.com/mzdun/proj-flow/commit/2f6ef1eaf4053f25633bf3f5037991fa4567023b>`_)
+
 `0.11.3 <https://github.com/mzdun/proj-flow/compare/v0.11.2...v0.11.3>`_ (2025-02-19)
 =====================================================================================
 
