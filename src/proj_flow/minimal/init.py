@@ -29,6 +29,9 @@ def _project_help():
     )
 
 
+_output_group = arg.ExclusiveArgumentGroup(opt=True)
+
+
 @arg.command("init")
 def main(
     project: Annotated[
@@ -52,11 +55,31 @@ def main(
     ],
     non_interactive: Annotated[
         bool,
-        arg.FlagArgument(help="Selects all the default answers", names=["-y", "--yes"]),
+        arg.FlagArgument(
+            help="Selects all the default answers.",
+            names=["-y", "--yes"],
+            group=_output_group,
+        ),
+    ],
+    no_output: Annotated[
+        bool,
+        arg.FlagArgument(
+            help="Do not create project. In connection with --ctx, only save project context.",
+            names=["--store"],
+            group=_output_group,
+        ),
+    ],
+    answers: Annotated[
+        Optional[str],
+        arg.Argument(
+            help="Take all the answers from the answer sheet.",
+            meta="context-file",
+            group=_output_group,
+        ),
     ],
     save_context: Annotated[
         bool,
-        arg.FlagArgument(help="Save the mustache context as JSON", names=["--ctx"]),
+        arg.FlagArgument(help="Save the mustache context as YAML.", names=["--ctx"]),
     ],
     rt: env.Runtime,
 ):

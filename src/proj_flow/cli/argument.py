@@ -135,7 +135,11 @@ class AnnotatedArgument:
     name: str
     argument: arg.Argument
 
-    def argparse_visit(self, parser: argparse.ArgumentParser):
+    @property
+    def group(self):
+        return self.argument.group
+
+    def argparse_visit(self, parser: argparse._ActionsContainer):
         return self.argument.visit(parser, self.name)
 
 
@@ -186,8 +190,21 @@ class Command:
         if has_config:
             _argparse_config_visit(parser)
 
-        for arg in self.annotated:
-            arg.argparse_visit(parser)
+        groups: typing.Set[int] = set()
+        for arg_index in range(len(self.annotated)):
+            annotated = self.annotated[arg_index]
+            group = annotated.group
+            if group is not None:
+                if id(group) in groups:
+                    continue
+                groups.add(id(group))
+                group_container = group.visit(parser)
+                for sub_index in range(arg_index, len(self.annotated)):
+                    sub = self.annotated[sub_index]
+                    if sub.group is group:
+                        sub.argparse_visit(group_container)
+                continue
+            annotated.argparse_visit(parser)
 
         if len(self.children):
             subparsers = parser.add_subparsers(
@@ -257,7 +274,7 @@ def _argparse_visit_all(
         dest="command", metavar="command", help="Known command name, see below"
     )
 
-    subparsers.parent = parser  # type: ignore
+    subparsers.parent = parser
 
     run: typing.Optional[Command] = None
     for entry in menu:
