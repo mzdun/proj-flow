@@ -31,7 +31,22 @@ dependencies = [
 ]
 description = "C++ project maintenance, automated"
 dynamic = ["version"]
-keywords = ['C/C++', 'developer', 'manager', 'dependency', 'tool', 'ci', 'c++', 'cpp']
+keywords = [
+  'C/C++',
+  'build-tool',
+  'c++',
+  'ci-cd',
+  'continuous-integration',
+  'cpp',
+  'dependencies',
+  'dependency-manager',
+  'developer',
+  'developer-tools',
+  'development',
+  'meta-build-tool',
+  'pipeline',
+  'tools-and-automation',
+]
 name = "proj-flow"
 readme = "README.md"
 requires-python = ">=3.10"
