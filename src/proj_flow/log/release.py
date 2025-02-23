@@ -57,6 +57,7 @@ def _get_project(rt: env.Runtime):
 
 def add_release(
     rt: env.Runtime,
+    dbg_changelog: bool,
     forced_level: typing.Optional[commit.Level],
     take_all: bool,
     draft: bool,
@@ -103,7 +104,7 @@ def add_release(
         rt.fatal(f"Tag {setup.curr_tag} already exists.")
 
     files_to_commit: typing.List[str] = []
-    if not rt.dry_run:
+    if dbg_changelog or not rt.dry_run:
         generator.update_changelog(changelog, setup, rt)
         files_to_commit.append(generator.filename)
 
