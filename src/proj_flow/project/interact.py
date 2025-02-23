@@ -218,6 +218,7 @@ def _fixup_context(settings: ctx.SettingsType, wanted: Callable[[ctx.Setting], b
 
     return _split_keys(settings)
 
+
 def _split_keys(settings: dict):
     result = {}
     for key in settings:
@@ -230,21 +231,24 @@ def _split_keys(settings: dict):
         path_ctx[path[-1]] = settings[key]
     return result
 
-def _flatten_keys(settings: Any, prefix = ""):
+
+def _flatten_keys(settings: Any, prefix=""):
     if not isinstance(settings, dict):
         yield (prefix, settings)
         return
-    
+
     for key in settings:
         next = f"{prefix}{key}."
         for name, value in _flatten_keys(settings[key], next):
             yield (cast(str, name), cast(Any, value))
+
 
 def _flatten_dict(settings: dict):
     result = {}
     for name, value in _flatten_keys(settings):
         result[name[:-1]] = value
     return result
+
 
 @dataclass
 class ContextSetup:
@@ -287,7 +291,7 @@ def get_context(setup: ContextSetup, project: Optional[str], rt: env.Runtime):
     overrides = rt._cfg.get("defaults", {})
     if setup.dest_path is not None:
         overrides["PROJECT.NAME"] = os.path.basename(setup.dest_path)
-    
+
     if setup.load is not None:
         data = plugins.load_data(setup.load)
         data = _flatten_dict(_split_keys(data))

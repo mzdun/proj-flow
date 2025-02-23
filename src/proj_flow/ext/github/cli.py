@@ -88,7 +88,9 @@ def release_cmd(
     ],
     changelog: typing.Annotated[
         bool,
-        arg.FlagArgument(help="Even with --dry-run, write changes in project files, changelog, etc."),
+        arg.FlagArgument(
+            help="Even with --dry-run, write changes in project files, changelog, etc."
+        ),
     ],
 ):
     """
