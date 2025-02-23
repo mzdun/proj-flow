@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.14.1 <https://github.com/mzdun/proj-flow/compare/v0.14.0...v0.14.1>`_ (2025-02-23)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- unbound variables in no-release (`e908e2b <https://github.com/mzdun/proj-flow/commit/e908e2b5a35b9f6c330855a25aa819dd73879fd0>`_)
+
 `0.14.0 <https://github.com/mzdun/proj-flow/compare/v0.13.1...v0.14.0>`_ (2025-02-23)
 =====================================================================================
 
