@@ -144,6 +144,7 @@ def _get_commit(hash: str, short_hash: str, message: str) -> Optional[Commit]:
         breaking_change = [
             re.sub(r"\s+", " ", para.strip()) for para in body.split("\n\n")
         ]
+        is_breaking = True
 
     return Commit(
         type_scope[0].strip(),
