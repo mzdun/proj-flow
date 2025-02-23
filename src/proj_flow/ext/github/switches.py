@@ -16,3 +16,11 @@ ctx.register_common_switch(
 ctx.register_common_switch(
     "with.github.social", "Use Github ISSUE_TEMPLATE, CONTRIBUTING.md, etc.", True
 )
+
+ctx.register_common_init_setting(
+    ctx.Setting(
+        "with.github.no-auto-release",
+        value=lambda settings: not settings.get("with.github.auto-release"),
+    ),
+    is_hidden=True,
+)

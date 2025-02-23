@@ -109,7 +109,7 @@ def release_cmd(
     released = False
 
     released = False
-    next_tag = ''
+    next_tag = ""
     try:
         next_tag = log.release.add_release(
             rt=rt,

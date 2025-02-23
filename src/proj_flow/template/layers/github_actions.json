@@ -1,3 +1,13 @@
 {
-    "when": "with.github.actions"
+    "when": "with.github.actions",
+    "filelist": {
+        ".github/workflows/build.yml.basic": {
+            "path": ".github/workflows/build.yml",
+            "when": "with.github.no-auto-release"
+        },
+        ".github/workflows/build.yml.auto-release": {
+            "path": ".github/workflows/build.yml",
+            "when": "with.github.auto-release"
+        }
+    }
 }

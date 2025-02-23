@@ -94,6 +94,8 @@ def main(
 
     context_file = store or ".context.yaml"
     save_context = save_context or store is not None
+    if path is not None and os.path.basename(path) == "":
+        setup.dest_path = os.path.dirname(path)
 
     try:
         current_project = api.get_project_type(project)
