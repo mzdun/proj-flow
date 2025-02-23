@@ -85,6 +85,10 @@ def release_cmd(
             choices=["ON", "OFF"],
         ),
     ],
+    changelog: typing.Annotated[
+        bool,
+        arg.FlagArgument(help="Even with --dry-run, write changes in project files, changelog, etc."),
+    ],
 ):
     """
     Bump the project version based on current git logs, create a "chore"
@@ -104,6 +108,7 @@ def release_cmd(
     try:
         next_tag = log.release.add_release(
             rt=rt,
+            dbg_changelog=changelog,
             forced_level=forced_level,
             take_all=all,
             draft=publish != "ON",
