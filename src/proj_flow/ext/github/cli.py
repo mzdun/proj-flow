@@ -16,6 +16,7 @@ import typing
 
 from proj_flow import log
 from proj_flow.api import arg, env, release
+from proj_flow.base import cmd
 from proj_flow.base.name_list import name_list
 from proj_flow.ext.github import publishing
 from proj_flow.flow.configs import Configs
@@ -105,6 +106,8 @@ def release_cmd(
     gh_links = hosting.github.GitHub.from_repo(git) or commit.NoHosting()
     released = False
 
+    released = False
+    next_tag = ''
     try:
         next_tag = log.release.add_release(
             rt=rt,
