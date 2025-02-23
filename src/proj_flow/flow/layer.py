@@ -14,6 +14,7 @@ from typing import List, Optional, cast
 import chevron
 
 from proj_flow.api import ctx, env
+from proj_flow.base import path_get
 
 
 @dataclass
@@ -81,7 +82,7 @@ class LayerInfo:
     def from_fs(cls, layer_dir: str, context: ctx.SettingsType):
         with open(f"{layer_dir}.json", encoding="UTF-8") as f:
             layer_info: dict = json.load(f)
-        when = cast(Optional[bool], layer_info.get("when"))
+        when = cast(Optional[str], layer_info.get("when"))
         filelist = cast(dict, layer_info.get("filelist", {}))
 
         sources: List[str] = []
@@ -150,7 +151,7 @@ class LayerInfo:
 
 
 def copy_license(rt: env.Runtime, context: ctx.SettingsType):
-    license = context.get("COPY", {}).get("LICENSE")
+    license = path_get(context, "COPY.LICENSE")
     if not license:
         return
 

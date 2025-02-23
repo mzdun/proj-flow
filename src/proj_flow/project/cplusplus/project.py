@@ -5,6 +5,7 @@
 The **proj_flow.project.cplusplus** registers a ``"C++"`` projects support.
 """
 
+from proj_flow.base import path_get
 from proj_flow.project import api
 
 CPP_EXTENSIONS = [
@@ -20,7 +21,7 @@ class CPlusPlus(api.ProjectType):
         super().__init__("C++ plus CMake plus Conan", "cxx")
 
     def get_extension_list(self, context: dict):
-        with_github_actions = not not context.get("with.github.actions")
+        with_github_actions = not not path_get(context, "with.github.actions")
         if with_github_actions:
             return [*CPP_EXTENSIONS, "proj_flow.ext.github"]
         return CPP_EXTENSIONS
