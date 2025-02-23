@@ -12,11 +12,12 @@ env:
 
 jobs:
   M:
-    name: Select builds
+    name: Prepare builds
     runs-on: ubuntu-latest
     outputs:
-      RELEASE: ${{env.RELEASE}}
+      release: ${{fromJson(env.RELEASE)}}
       matrix: ${{steps.flow.outputs.matrix}}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,11 +38,12 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ARTIFACT_SUFFIX: ${{ matrix.github_os }}-${{ matrix.build_type }}-${{ matrix.compiler }}${{ matrix.sanitizer && '-sanitize' || '' }}
       CONAN_CACHE: ${{ matrix.github_os }}-${{ matrix.build_type }}-${{ matrix.compiler }}
+      RELEASE: ${{needs.M.outputs.release}}
 
     runs-on: ${{ matrix.github_os }}
     name: ${{ matrix.build_name }}
     outputs:
-      RELEASE: ${{ fromJson(needs.M.outputs.RELEASE) }}
+      release: ${{fromJson(env.RELEASE)}}
 
     steps:
       - name: Checkout
@@ -166,7 +168,7 @@ jobs:
 
       - name: Pack
         id: artifacts
-        if: ${{ fromJson(needs.M.outputs.RELEASE) }}
+        if: ${{ fromJson(env.RELEASE) }}
         run: ${{ env.FLOW_COMMAND }} -s Sign,Pack,SignPackages,StorePackages
         env:
           SIGN_TOKEN: ${{ secrets.SIGN_TOKEN }}
@@ -197,13 +199,15 @@ jobs:
     name: Merge artifacts
     runs-on: ubuntu-latest
     needs: build
+    env:
+      RELEASE: ${{needs.build.outputs.release}}
     outputs:
-      RELEASE: ${{ fromJson(needs.build.outputs.RELEASE) }}
+      release: ${{fromJson(env.RELEASE)}}
 
     steps:
       - name: Merge packages
         uses: actions/upload-artifact/merge@v4
-        if: ${{ fromJson(needs.build.outputs.RELEASE) }}
+        if: ${{ fromJson(env.RELEASE) }}
         with:
           name: Packages
           pattern: _packages-*
@@ -218,12 +222,15 @@ jobs:
 
   publish:
     name: Upload packages
-    if: ${{ fromJson(needs.merge.outputs.RELEASE) }}
+    if: ${{ fromJson(needs.merge.outputs.release) }}
     needs: merge
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
+
+    env:
+      RELEASE: ${{needs.merge.outputs.release}}
 
     steps:
       - name: Checkout

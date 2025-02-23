@@ -43,8 +43,8 @@ class FileInfo:
         open_mstch = "{{"
         close_mstch = "}}"
         if self.when:
-            return f"{open_mstch}#{self.when}{close_mstch}\n{self.dst}\n{open_mstch}/{self.when}{close_mstch}\n"
-        return f"{self.dst}\n"
+            return f"{open_mstch}#{self.when}{close_mstch}\n{self.src}\n{open_mstch}/{self.when}{close_mstch}\n"
+        return f"{self.src}\n"
 
     def run(self, root: str, rt: env.Runtime, context: ctx.SettingsType):
         if not rt.silent:
@@ -111,7 +111,7 @@ class LayerInfo:
                 chevron.render(result.template(), context).split("\n"),
             )
         )
-        result.files = list(filter(lambda file: file.dst in allowed_files, files))
+        result.files = list(filter(lambda file: file.src in allowed_files, files))
 
         return result
 
