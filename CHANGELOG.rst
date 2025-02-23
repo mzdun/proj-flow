@@ -4,6 +4,22 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.15.0 <https://github.com/mzdun/proj-flow/compare/v0.14.1...v0.15.0>`_ (2025-02-23)
+=====================================================================================
+
+New Features
+------------
+
+- create auto-release GitHub workflow (`c604390 <https://github.com/mzdun/proj-flow/commit/c60439051fc1fa13657188cfddef6a399a9b6f80>`_)
+- support file-based answers (`bc82f42 <https://github.com/mzdun/proj-flow/commit/bc82f429ff511166f0a4ec0a2d86fa36ce46af54>`_)
+- add exclusive groups to command arguments (`9ed050f <https://github.com/mzdun/proj-flow/commit/9ed050f7b63ce308a626c1e6b9f7f29a3115bb92>`_)
+- setup context for auto-release (`be63643 <https://github.com/mzdun/proj-flow/commit/be63643fb0eb103adaee20a32f643984942ad614>`_)
+
+Bug Fixes
+---------
+
+- support dotted paths in config.get (`c6be45e <https://github.com/mzdun/proj-flow/commit/c6be45ea44b4da2c645abec75ea0b9851a00fcdf>`_)
+
 `0.14.1 <https://github.com/mzdun/proj-flow/compare/v0.14.0...v0.14.1>`_ (2025-02-23)
 =====================================================================================
 
