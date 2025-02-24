@@ -3,7 +3,7 @@
 - [x] GitHub setup
 - [x] Auto-release
 - [x] Breaking change works
-- [ ] `chmod +x`, but on Windows
+- [x] `chmod +x`, but on Windows
 - [ ] bug_report's `version.options`: change to
   1. Current (vX.Y.Z)
   2. Previous (vX.Y-1.Z)
