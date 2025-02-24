@@ -15,6 +15,7 @@ import yaml
 from proj_flow import dependency, flow
 from proj_flow.api import arg, ctx, env, init
 from proj_flow.base.name_list import name_list
+from proj_flow.minimal import base
 from proj_flow.project import api, interact
 
 
@@ -147,6 +148,8 @@ def main(
             ignoref.write("\n/.context.yaml\n".encode("UTF-8"))
 
     current_project.append_extensions(context)
+
+    base.GitInit.layers = layers
 
     steps = sorted((step.priority(), i, step) for i, step in enumerate(init.__steps))
     for _, _, step in steps:

@@ -7,11 +7,14 @@ new projects.
 """
 
 import sys
+from typing import List
 
 from proj_flow import __version__, api
-
+from proj_flow.flow import layer
 
 class GitInit(api.init.InitStep):
+    layers: List[layer.LayerInfo] = []
+
     def priority(self):
         return sys.maxsize
 
@@ -24,6 +27,17 @@ class GitInit(api.init.InitStep):
 
         git("init")
         git("add", ".")
+        
+        executables: List[str] = []
+
+        for fs_layer in GitInit.layers:
+            for info in fs_layer.get_git_checks():
+                if info.is_executable:
+                    executables.append(info.dst)
+
+        if len(executables):
+            git("update-index", "--chmod=+x", *executables)
+
         git("commit", "-m", "Initial commit")
 
 

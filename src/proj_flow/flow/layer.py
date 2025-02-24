@@ -22,6 +22,7 @@ class FileInfo:
     src: str
     dst: str
     is_mustache: bool
+    is_executable: bool
     when: Optional[str] = None
 
     @classmethod
@@ -32,12 +33,19 @@ class FileInfo:
         json_file = cast(dict, filelist.get(key, {}))
         path = cast(Optional[str], json_file.get("path"))
         when = cast(Optional[str], json_file.get("when"))
+        is_executable = cast(bool, json_file.get("executable"))
         dst = (
             chevron.render(path, context).replace("/", os.sep)
             if path is not None
             else basename if is_mustache else src
         )
-        return cls(src=src, dst=dst, is_mustache=is_mustache, when=when)
+        return cls(
+            src=src,
+            dst=dst,
+            is_mustache=is_mustache,
+            is_executable=is_executable,
+            when=when,
+        )
 
     def template(self):
         open_mstch = "{{"
@@ -70,6 +78,10 @@ class FileInfo:
             shutil.copystat(src, dst, follow_symlinks=False)
         else:
             shutil.copy2(src, dst, follow_symlinks=False)
+
+    def get_git_checks(self):
+        if self.is_executable:
+            yield self
 
 
 @dataclass
@@ -149,6 +161,11 @@ class LayerInfo:
         if not rt.silent:
             print()
 
+    def get_git_checks(self):
+        for file in self.files:
+            for special in file.get_git_checks():
+                yield special
+
 
 def copy_license(rt: env.Runtime, context: ctx.SettingsType):
     license = path_get(context, "COPY.LICENSE")
@@ -159,7 +176,7 @@ def copy_license(rt: env.Runtime, context: ctx.SettingsType):
         os.path.join(ctx.package_root, ctx.template_dir, "licenses")
     )
     license_file = f"{license}.mustache"
-    info = FileInfo(license_file, "LICENSE", is_mustache=True)
+    info = FileInfo(license_file, "LICENSE", is_mustache=True, is_executable=False)
     info.run(licenses_dir, rt, context)
 
 
