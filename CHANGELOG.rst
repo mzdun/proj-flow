@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.15.2 <https://github.com/mzdun/proj-flow/compare/v0.15.1...v0.15.2>`_ (2025-02-24)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- carry +x on Windows (`846f6a1 <https://github.com/mzdun/proj-flow/commit/846f6a1b8d71d682e04dbd12b31ba9a6311b3d0b>`_)
+
 `0.15.1 <https://github.com/mzdun/proj-flow/compare/v0.15.0...v0.15.1>`_ (2025-02-23)
 =====================================================================================
 
