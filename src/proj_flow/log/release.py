@@ -6,8 +6,7 @@ The **proj_flow.log.release** performs a relase on the hosting service.
 """
 
 import typing
-from abc import ABC, abstractmethod
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 from proj_flow import api
 from proj_flow.api import env
@@ -18,9 +17,14 @@ from proj_flow.log.error import NoProjectError, VersionNotAdvancing
 OneOrMoreStrings = Union[str, Iterable[str]]
 
 
-class VersionUpdater(ABC):
-    @abstractmethod
-    def on_version_change(self, new_version: str) -> OneOrMoreStrings: ...
+class VersionUpdater:
+    def on_version_change(self, new_version: str) -> Optional[OneOrMoreStrings]:
+        return None
+
+    def on_version_change_tags(
+        self, new_version: str, tags: list[str]
+    ) -> Optional[OneOrMoreStrings]:
+        return self.on_version_change(new_version)
 
 
 version_updaters = registry.Registry[VersionUpdater]("VersionUpdater")
@@ -114,8 +118,10 @@ def add_release(
             files_to_commit.append(version_path)
 
         for updater in version_updaters.get():
-            modified = updater.on_version_change(next_version)
-            if isinstance(modified, str):
+            modified = updater.on_version_change_tags(next_version, tags)
+            if modified is None:
+                continue
+            elif isinstance(modified, str):
                 files_to_commit.append(modified)
             else:
                 files_to_commit.extend(modified)

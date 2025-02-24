@@ -12,6 +12,7 @@ from typing import List
 from proj_flow import __version__, api
 from proj_flow.flow import layer
 
+
 class GitInit(api.init.InitStep):
     layers: List[layer.LayerInfo] = []
 
@@ -27,7 +28,7 @@ class GitInit(api.init.InitStep):
 
         git("init")
         git("add", ".")
-        
+
         executables: List[str] = []
 
         for fs_layer in GitInit.layers:

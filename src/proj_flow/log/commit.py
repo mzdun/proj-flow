@@ -139,7 +139,11 @@ def _get_commit(hash: str, short_hash: str, message: str) -> Optional[Commit]:
 
     breaking_change = None
     body = "\n".join(lines).strip().split("BREAKING CHANGE", 1)
-    if len(body) > 1:
+    if (
+        len(body) > 1
+        and (len(body[0]) == 0 or body[0][-1:] == "\n")
+        and (len(body[1]) == 1 or body[1][:1] == ":")
+    ):
         body = body[1].lstrip(":").strip()
         breaking_change = [
             re.sub(r"\s+", " ", para.strip()) for para in body.split("\n\n")
