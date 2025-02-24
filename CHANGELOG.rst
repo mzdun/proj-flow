@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.15.3 <https://github.com/mzdun/proj-flow/compare/v0.15.2...v0.15.3>`_ (2025-02-24)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- only use two most-recent minor versions in YAML (`24e4b05 <https://github.com/mzdun/proj-flow/commit/24e4b05c6bb6c3dc2a7db534e49f7ba542d396da>`_)
+
 `0.15.2 <https://github.com/mzdun/proj-flow/compare/v0.15.1...v0.15.2>`_ (2025-02-24)
 =====================================================================================
 
