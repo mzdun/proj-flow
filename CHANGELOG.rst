@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.16.0 <https://github.com/mzdun/proj-flow/compare/v0.15.3...v0.16.0>`_ (2025-03-02)
+=====================================================================================
+
+New Features
+------------
+
+- add bootstrap action (`57cf99b <https://github.com/mzdun/proj-flow/commit/57cf99bad7c34aa22d357746824647499d70eb07>`_)
+
 `0.15.3 <https://github.com/mzdun/proj-flow/compare/v0.15.2...v0.15.3>`_ (2025-02-24)
 =====================================================================================
 
