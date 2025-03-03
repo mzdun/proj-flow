@@ -47,9 +47,7 @@ def run(app: str, *args: str, capture_output=False):
     cmd = which(app)
     if cmd is None:
         return None
-    return subprocess.run(
-        [cmd, *args], shell=False, encoding="UTF-8", capture_output=capture_output
-    )
+    return subprocess.run([cmd, *args], encoding="UTF-8", capture_output=capture_output)
 
 
 @contextmanager

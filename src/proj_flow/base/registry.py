@@ -6,6 +6,7 @@ The **proj_flow.base.registry** allows building extension points, with ability
 to register the plugins with a decorator.
 """
 
+import sys
 import typing
 from collections import OrderedDict
 
@@ -48,7 +49,7 @@ class Registry(typing.Generic[T]):
 
     .. code-block:: python
 
-        class Animal(ABC)
+        class Animal(ABC):
             @abstractmethod
             def speak(self): ...
 
@@ -107,7 +108,7 @@ def quoted(s: str) -> str:
     return s
 
 
-def verbose_info():
+def verbose_info(file: typing.TextIO = sys.stdout):
     for registry in _debug_copies:
         for item in registry.container:
             full_name = f"{item.__module__}.{item.__class__.__name__}"
@@ -125,4 +126,4 @@ def verbose_info():
             items = ", ".join([f"{key}={value}" for key, value in kw.items()])
             if len(items) > 0:
                 items = f" ({items})"
-            print(f"-- {registry.name}: adding `{full_name}`{items}")
+            print(f"-- {registry.name}: adding `{full_name}`{items}", file=file)

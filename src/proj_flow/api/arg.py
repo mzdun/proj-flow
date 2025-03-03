@@ -157,8 +157,7 @@ def command(*name: str):
         _known_commands.add(list(name), entry, orig_doc)
 
         doc = orig_doc or ""
-        if doc:
-            doc += "\n\n"
+        add_para_sep = not not doc
 
         for arg in _inspect.signature(entry):
             help = ""
@@ -171,6 +170,10 @@ def command(*name: str):
             if not help:
                 full_name = f"{arg.type.__module__}.{arg.type.__name__}"
                 help = _autodoc.get(full_name, "")
+
+            if add_para_sep:
+                add_para_sep = False
+                doc += "\n\n"
 
             doc += f":param {_inspect.type_name(arg.type)} {arg.name}: {help}\n"
 

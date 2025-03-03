@@ -54,10 +54,6 @@ def signature(call: Function) -> typing.Generator[Argument, None, None]:
             continue
 
         anno_args = typing.get_args(annotation)
-        if len(anno_args) == 0:
-            yield Argument(name=param_name, type=type(None), metadata=[])
-            continue
-
         origin = anno_args[0]
         metadata = list(anno_args[1:])
 
@@ -75,10 +71,10 @@ def type_name(t: type) -> str:
     if t == type(None):
         return "None"
 
-    if type(t) == type:
-        return t.__name__
-
     origin = typing.get_origin(t)
+
+    if origin is None:
+        return str(t.__name__)
 
     if origin is typing.Union:
         args = typing.get_args(t)
@@ -88,17 +84,9 @@ def type_name(t: type) -> str:
             names.append(name)
         return " | ".join(names)
 
-    if origin is None:
-        return "?"
-
-    if origin in [list, type, dict]:
-        args = typing.get_args(t)
-        arg_list = ", ".join(type_name(arg) for arg in args)
-        return f"{origin.__name__}[{arg_list}]"
-
     args = typing.get_args(t)
     arg_list = ", ".join(type_name(arg) for arg in args)
     if arg_list:
         return f"{origin.__name__}[{arg_list}]"
 
-    return typing.cast(str, origin.__name__)
+    return str(origin.__name__)

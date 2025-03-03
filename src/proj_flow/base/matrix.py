@@ -25,15 +25,13 @@ def find_compiler(
     Locates the C and C++ names of compilers corresponding to the current
     compiler.
 
-    :param compiler: Name ofthe compiuler to map, taken from the ``"compiler"``
-        entry in run :class:`config<proj_flow.api.env.Config>`.
+    :param compiler: Name of the compiler to map, taken from the
+        ``"compiler"`` entry in run :class:`config<proj_flow.api.env.Config>`.
     :param config_names: Dictionary of mapping from compiler name to C/C++
         names, taken from ``"compiler.names"`` entry in flow config file.
     """
     dirname = os.path.dirname(compiler)
     filename = os.path.basename(compiler)
-    if sys.platform == "win32":
-        filename = os.path.splitext(filename)[0]
     chunks = filename.split("-", 1)
     if len(chunks) == 1:
         version = None
@@ -136,18 +134,18 @@ def cartesian(input: Dict[str, list]) -> List[dict]:
         :caption: Possible output
 
         [
-            { "key-1": "value-1", "key-2": [True], "key-3": 1 },
-            { "key-1": "value-1", "key-2": [True], "key-3": 2 },
-            { "key-1": "value-1", "key-2": [True], "key-3": 3 },
-            { "key-1": "value-1", "key-2": [False], "key-3":  1 },
-            { "key-1": "value-1", "key-2": [False], "key-3":  2 },
-            { "key-1": "value-1", "key-2": [False], "key-3":  3 },
-            { "key-1": "value-2", "key-2": [True], "key-3":  1 },
-            { "key-1": "value-2", "key-2": [True], "key-3":  2 },
-            { "key-1": "value-2", "key-2": [True], "key-3":  3 },
-            { "key-1": "value-2", "key-2": [False], "key-3":  1 },
-            { "key-1": "value-2", "key-2": [False], "key-3":  2 },
-            { "key-1": "value-2", "key-2": [False], "key-3":  3 },
+            { "key-1": "value-1", "key-2": True, "key-3": 1 },
+            { "key-1": "value-1", "key-2": True, "key-3": 2 },
+            { "key-1": "value-1", "key-2": True, "key-3": 3 },
+            { "key-1": "value-1", "key-2": False, "key-3":  1 },
+            { "key-1": "value-1", "key-2": False, "key-3":  2 },
+            { "key-1": "value-1", "key-2": False, "key-3":  3 },
+            { "key-1": "value-2", "key-2": True, "key-3":  1 },
+            { "key-1": "value-2", "key-2": True, "key-3":  2 },
+            { "key-1": "value-2", "key-2": True, "key-3":  3 },
+            { "key-1": "value-2", "key-2": False, "key-3":  1 },
+            { "key-1": "value-2", "key-2": False, "key-3":  2 },
+            { "key-1": "value-2", "key-2": False, "key-3":  3 },
         ]
     """
     product = [{}]
@@ -214,9 +212,12 @@ def load_matrix(*matrix_paths: str) -> Tuple[List[dict], List[str]]:
         for key, value in additional.get("matrix", {}).items():
             old = src_matrix.get(key)
             if isinstance(old, list) and isinstance(value, list):
-                old.extend(value)
+                for new_val in value:
+                    if new_val not in old:
+                        old.append(new_val)
             elif isinstance(old, list):
-                old.append(value)
+                if value not in old:
+                    old.append(value)
             else:
                 src_matrix[key] = value
         src_exclude.extend(additional.get("exclude", []))
