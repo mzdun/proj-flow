@@ -8,7 +8,7 @@ user prompts.
 
 import os
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from prompt_toolkit import prompt as tk_prompt
 from prompt_toolkit.completion import WordCompleter
@@ -35,7 +35,7 @@ class _Question:
     ):
         value = default.calc_value(previous)
         if override is not None:
-            if isinstance(value, (str, bool)) and type(value) == type(override):
+            if isinstance(value, (str, bool)) and type(value) is type(override):
                 value = override
             elif isinstance(value, list) and isinstance(override, str):
                 value = ctx.move_to_front(override, value)
@@ -59,7 +59,7 @@ class _Question:
             return [
                 ("", f"[{counter}/{size}] {self.ps} ["),
                 ("bold", default),
-                ("", f"]: "),
+                ("", "]: "),
             ]
         if isinstance(default, bool):
             b = "bold"
@@ -71,7 +71,7 @@ class _Question:
                 on_true,
                 ("", " / "),
                 on_false,
-                ("", f"]: "),
+                ("", "]: "),
             ]
         return [
             ("", f"[{counter}/{size}] {self.ps} ["),
@@ -124,10 +124,10 @@ class _Question:
 def _project_filter(project: Optional[str]):
     if project is None:
 
-        def impl(setting: ctx.Setting):
+        def impl_none(setting: ctx.Setting):
             return setting.project is None
 
-        return impl
+        return impl_none
 
     def impl(setting: ctx.Setting):
         return setting.project is None or setting.project == project
@@ -219,8 +219,8 @@ def _fixup_context(settings: ctx.SettingsType, wanted: Callable[[ctx.Setting], b
     return _split_keys(settings)
 
 
-def _split_keys(settings: dict):
-    result = {}
+def _split_keys(settings: Dict[str, Any]):
+    result: dict = {}
     for key in settings:
         path = key.split(".")
         path_ctx = result
@@ -238,8 +238,8 @@ def _flatten_keys(settings: Any, prefix=""):
         return
 
     for key in settings:
-        next = f"{prefix}{key}."
-        for name, value in _flatten_keys(settings[key], next):
+        next_prefix = f"{prefix}{key}."
+        for name, value in _flatten_keys(settings[key], next_prefix):
             yield (cast(str, name), cast(Any, value))
 
 

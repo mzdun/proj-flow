@@ -23,19 +23,20 @@ class _GitHub(NamedTuple):
 _NO_GITHUB = _GitHub("", "", "")
 
 
-class ReleaseInfo(commit.ReleaseInfo):
+class ReleaseInfo(commit.ReleaseInfo):  # pylint: disable=too-few-public-methods
     id: int
 
     def __init__(
         self,
+        *,
         url: Optional[str],
         is_draft: Optional[bool],
-        id: int,
+        github_id: int,
         ref: Optional[str] = None,
         tag: Optional[str] = None,
     ):
         super().__init__(url, is_draft, ref, tag)
-        self.id = id
+        self.id = github_id
 
 
 class GitHub(commit.Hosting):
@@ -53,7 +54,7 @@ class GitHub(commit.Hosting):
 
     @property
     def is_active(self):
-        return not not self._info.remote
+        return self._info.remote != ""
 
     @property
     def remote(self):
@@ -83,7 +84,7 @@ class GitHub(commit.Hosting):
 
     def reference_link(self, ref: str) -> Optional[str]:
         if ref[:1] == "#" and ref[1:].isdigit():
-            f"{self.host_link}/issues/{ref[1:]}"
+            return f"{self.host_link}/issues/{ref[1:]}"
 
         return None
 
@@ -129,7 +130,7 @@ class GitHub(commit.Hosting):
         *args: str,
         method: Optional[str] = None,
         server: Optional[str] = None,
-        default: Any = {},
+        default: Any = None,
         ro_call: bool = False,
     ):
         proc = self.gh(res, *args, method=method, server=server, ro_call=ro_call)
@@ -154,11 +155,13 @@ class GitHub(commit.Hosting):
     def _release_from_json(self, data: dict, draft: bool = False):
         html_url = cast(Optional[str], data.get("html_url"))
         draft = cast(bool, data.get("draft", draft))
-        id = cast(int, data.get("id", 0))
+        github_id = cast(int, data.get("id", 0))
         name = cast(str, data.get("name"))
         tag_name = cast(str, data.get("tag_name"))
 
-        return ReleaseInfo(url=html_url, is_draft=draft, id=id, ref=name, tag=tag_name)
+        return ReleaseInfo(
+            url=html_url, is_draft=draft, github_id=github_id, ref=name, tag=tag_name
+        )
 
     def add_release(
         self,
@@ -168,7 +171,7 @@ class GitHub(commit.Hosting):
         draft: bool,
     ) -> commit.ReleaseInfo:
         if setup.curr_tag is None:
-            git.rt.fatal(f"New tag is needed.")
+            git.rt.fatal("New tag is needed.")
 
         git.push_with_refs(self.remote, "main")
 
@@ -229,6 +232,7 @@ class GitHub(commit.Hosting):
             "-F",
             "make_latest=legacy",
             method="PATCH",
+            default={},
         )
         return self._release_from_json(data)
 

@@ -14,8 +14,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 from proj_flow.base import cmd
 from proj_flow.base import inspect as _inspect
 
-package_root = os.path.dirname(os.path.dirname(__file__))
-template_dir = "template"
+PACKAGE_ROOT = os.path.dirname(os.path.dirname(__file__))
+TEMPLATE_DIR = "template"
 
 
 StrOrBool = Union[str, bool]
@@ -107,11 +107,11 @@ def _as_mustache(basename: str):
 
 
 def _enum_licenses():
-    root = os.path.abspath(os.path.join(package_root, template_dir, "licenses"))
+    root = os.path.abspath(os.path.join(PACKAGE_ROOT, TEMPLATE_DIR, "licenses"))
     for _, dirnames, filenames in os.walk(root):
         dirnames[:] = []
-        iter = map(_as_mustache, filenames)
-        return move_to_front("MIT", iter)
+        iterator = map(_as_mustache, filenames)
+        return move_to_front("MIT", iterator)
     return []
 
 
@@ -148,7 +148,7 @@ def _get_key(key: str):
 
 def _build_fixup(settings: SettingsType, fixup: str):
     fixup_refs = fixup.split("{")
-    result = fixup_refs.pop(0)
+    result: StrOrBool = fixup_refs.pop(0)
     for ref_expr in fixup_refs:
         ref_text, verbose = ref_expr.split("}")
         filter_path = ref_text.split("$")

@@ -8,10 +8,11 @@ documenting.
 
 import importlib
 import os
+from typing import List
 
 from proj_flow.api import env, release, step
 
-from . import rtdocs
+from . import rtdocs  # noqa: F401, pylint: disable=unused-import
 
 
 @step.register
@@ -21,7 +22,7 @@ class Install:
     def platform_dependencies(self):
         return ["python -m pip"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, _: env.Config, rt: env.Runtime) -> int:
         return rt.cmd("python", "-m", "pip", "install", rt.root)
 
 
@@ -32,7 +33,7 @@ class Build:
     def platform_dependencies(self):
         return ["python -m build"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, _config: env.Config, _rt: env.Runtime) -> int:
         build_main = importlib.import_module("build.__main__")
         build_main.main([], "proj-flow build")
         return 0
@@ -47,8 +48,9 @@ class CheckTwine:
     def platform_dependencies(self):
         return ["twine"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
-        filenames = []
+    def run(self, _config: env.Config, rt: env.Runtime) -> int:
+        root: str = "dist"
+        filenames: List[str] = []
         for root, dirnames, filenames in os.walk("dist"):
             dirnames[:] = []
 

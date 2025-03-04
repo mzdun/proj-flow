@@ -7,7 +7,6 @@ The **proj_flow.minimal.init** implements ``proj-flow init`` command.
 
 import json
 import os
-import sys
 from typing import Annotated, Optional
 
 import yaml
@@ -35,6 +34,7 @@ _output_group = arg.ExclusiveArgumentGroup(opt=True)
 
 @arg.command("init")
 def main(
+    *,
     project: Annotated[
         str,
         arg.Argument(
@@ -86,6 +86,12 @@ def main(
 ):
     """Initialize new project"""
 
+    try:
+        current_project = api.get_project_type(project)
+    except api.ProjectNotFound:
+        print(f"proj-flow init: error: project type `{project}` is not known")
+        return 1
+
     setup = interact.ContextSetup(
         dest_path=path,
         interactive=not non_interactive and answers is None,
@@ -93,32 +99,46 @@ def main(
         load=answers,
     )
 
-    context_file = store or ".context.yaml"
+    dependency.verify(dependency.gather(init.__steps), rt)
+
+    save_context = _prepare_directory(setup, store, save_context)
+
+    context = current_project.get_context(setup, rt)
+    if not non_interactive and not rt.silent:
+        print()
+
+    _save_context(context, store, save_context, rt)
+
+    if store is not None:
+        return 0
+
+    _copy_layers(context, store, save_context, rt, current_project)
+    return 0
+
+
+def _prepare_directory(
+    setup: interact.ContextSetup,
+    store: Optional[str],
+    save_context: bool,
+):
+    path = setup.dest_path
     save_context = save_context or store is not None
+
     if path is not None and os.path.basename(path) == "":
         setup.dest_path = os.path.dirname(path)
-
-    try:
-        current_project = api.get_project_type(project)
-    except api.ProjectNotFound:
-        print(f"proj-flow init: error: project type `{project}` is not known")
-        return 1
 
     if path is not None and store is None:
         os.makedirs(path, exist_ok=True)
         os.chdir(path)
         setup.dest_path = None
 
-    errors = dependency.verify(dependency.gather(init.__steps))
-    if len(errors) > 0:
-        if not rt.silent:
-            for error in errors:
-                print(f"proj-flow: {error}", file=sys.stderr)
-        return 1
+    return save_context
 
-    context = current_project.get_context(setup, rt)
-    if not non_interactive and not rt.silent:
-        print()
+
+def _save_context(
+    context: dict, store: Optional[str], save_context: bool, rt: env.Runtime
+):
+    context_file = store or ".context.yaml"
 
     if save_context and rt.verbose:
         lines = yaml.dump(context, indent=4).rstrip().split("\n")
@@ -132,20 +152,27 @@ def main(
             else:
                 yaml.dump(context, jsonf, indent=4)
 
-    if store is not None:
-        return 0
+
+def _copy_layers(
+    context: dict,
+    store: Optional[str],
+    save_context: bool,
+    rt: env.Runtime,
+    current_project: api.ProjectType,
+):
+    context_file = store or ".context.yaml"
 
     flow.layer.copy_license(rt, context)
     if not rt.silent:
         print()
 
-    layers = flow.layer.gather_package_layers(ctx.package_root, context)
+    layers = flow.layer.gather_package_layers(ctx.PACKAGE_ROOT, context)
     for fs_layer in layers:
         fs_layer.run(rt, context)
 
     if save_context and not rt.dry_run:
         with open(".gitignore", "ab") as ignoref:
-            ignoref.write("\n/.context.yaml\n".encode("UTF-8"))
+            ignoref.write(f"\n/{context_file}\n".encode("UTF-8"))
 
     current_project.append_extensions(context)
 

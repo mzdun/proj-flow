@@ -25,7 +25,7 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
-python enum-mods.py
+python enum_mods.py
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 

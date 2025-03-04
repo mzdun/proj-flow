@@ -36,7 +36,7 @@ class GitInit(api.init.InitStep):
                 if info.is_executable:
                     executables.append(info.dst)
 
-        if len(executables):
+        if executables:
             git("update-index", "--chmod=+x", *executables)
 
         git("commit", "-m", "Initial commit")

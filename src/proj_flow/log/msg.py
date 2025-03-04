@@ -16,7 +16,7 @@ class ChangelogMessage:
     def intro_lines(self) -> List[str]:
         return []
 
-    def section_header(self, lines: List[str], header):
+    def section_header(self, lines: List[str], header: str):
         lines.extend([f"### {header}", ""])
 
     def issue_link(self, ref: str) -> str:
@@ -47,15 +47,15 @@ class ChangelogMessage:
 
     def link_str(self, link: commit.Link, show_breaking: bool):
         scope = ""
-        if len(link.scope):
+        if link.scope:
             scope = link.scope
 
         if show_breaking:
             if link.is_breaking:
-                if len(scope):
+                if scope:
                     scope = f"breaking, {scope}"
                 else:
-                    scope = f"breaking"
+                    scope = "breaking"
         scope = self.scope_text(scope)
 
         refs = ""
@@ -87,7 +87,7 @@ class ChangelogMessage:
         result = []
         for scope in sorted(issues.keys()):
             result.extend(issues[scope])
-        if len(result):
+        if result:
             result.append("")
         return result
 
@@ -109,20 +109,20 @@ class ChangelogMessage:
             lines.extend(self.show_links(type_section, show_breaking))
             breaking.extend(_find_breaking_notes(type_section))
 
-        for section in sorted(log.keys()):
-            if section in commit.KNOWN_TYPES:
+        for section_type in sorted(log.keys()):
+            if section_type in commit.KNOWN_TYPES:
                 continue
-            type_section = log[section]
+            type_section = log[section_type]
             try:
-                section_header = commit.ALL_TYPES[section]
+                section_header = commit.ALL_TYPES[section_type]
             except KeyError:
-                section_header = section
+                section_header = section_type
 
             self.section_header(lines, section_header)
             lines.extend(self.show_links(type_section, True))
             breaking.extend(_find_breaking_notes(type_section))
 
-        if len(breaking):
+        if breaking:
             self.section_header(lines, "BREAKING CHANGES")
             lines.extend(breaking)
 
@@ -145,7 +145,7 @@ class CommitMessage(ChangelogMessage):
         paras = "\n".join(lines).strip().split("\n\n")
 
         text = "\n\n".join(CommitMessage.wrap_at_78(para) for para in paras)
-        if len(text):
+        if text:
             text = f"\n\n{text}"
         return text
 
@@ -160,27 +160,27 @@ class CommitMessage(ChangelogMessage):
         return CommitMessage._wrap_at(78, para, "", "")
 
     @staticmethod
-    def _wrap_at(length: int, para: str, firstLine: str, nextLines: str):
+    def _wrap_at(length: int, para: str, first_line: str, next_lines: str):
         result = ""
-        line = firstLine
-        lineIsDirty = False
+        line = first_line
+        line_is_dirty = False
         words = para.strip().split(" ")
         for word in words:
-            wordLen = len(word)
-            if wordLen == 0:
+            word_len = len(word)
+            if word_len == 0:
                 continue
 
-            lineIsDirty = True
-            lineLen = len(line)
-            space = " " if lineLen > 0 and line[-1] != " " else ""
-            resultingLen = lineLen + len(space) + wordLen
-            if resultingLen <= length:
+            line_is_dirty = True
+            line_len = len(line)
+            space = " " if line_len > 0 and line[-1] != " " else ""
+            resulting_len = line_len + len(space) + word_len
+            if resulting_len <= length:
                 line = f"{line}{space}{word}"
                 continue
             result = f"{result}{line}\n"
-            line = f"{nextLines}{word}"
+            line = f"{next_lines}{word}"
 
-        if lineIsDirty:
+        if line_is_dirty:
             result = f"{result}{line}"
         return result
 

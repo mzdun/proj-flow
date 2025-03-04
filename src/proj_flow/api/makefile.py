@@ -10,7 +10,7 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 from proj_flow.api.env import Runtime
 
@@ -58,7 +58,7 @@ class Statement:
         if out_mtime is None:
             return True
 
-        dep_mtime = 0
+        dep_mtime = 0.0
         for deps in [self.inputs, self.implicit_deps]:
             for dep in deps:
                 try:
@@ -73,14 +73,17 @@ class Rule(ABC):
     @abstractmethod
     def command(self, statement: Statement) -> List[str]: ...
 
-    def run(self, statement: Statement, rt: Runtime):
+    def run(self, _statement: Statement, _rt: Runtime):
         return 1
 
     @classmethod
     def statement(
-        cls, outputs: List[str], inputs: List[str], implicit_deps: List[str] = []
+        cls,
+        outputs: List[str],
+        inputs: List[str],
+        implicit_deps: Optional[List[str]] = None,
     ):
-        return Statement(cls(), outputs, inputs, implicit_deps)
+        return Statement(cls(), outputs, inputs, implicit_deps or [])
 
 
 @dataclass(init=False)
@@ -100,8 +103,12 @@ class Makefile:
             )
             for st in statements
         ]
-        sorted: List[Statement] = []
 
+        Makefile._unlink_missing(unsorted)
+        self.statements = Makefile._sort(unsorted)
+
+    @staticmethod
+    def _unlink_missing(unsorted: List["Makefile.Sorted"]):
         for st in unsorted:
             copy = [*st.deps]
             for dep in copy:
@@ -113,18 +120,22 @@ class Makefile:
                 if not found:
                     st.deps.remove(dep)
 
+    @staticmethod
+    def _sort(unsorted: List["Makefile.Sorted"]):
+        result: List[Statement] = []
+
         while len(unsorted):
-            next = [st for st in unsorted if len(st.deps) == 0]
+            next_step_layer = [st for st in unsorted if len(st.deps) == 0]
             unsorted = [st for st in unsorted if len(st.deps) > 0]
 
-            sorted.extend(st.ref for st in next)
-            for st in next:
+            result.extend(st.ref for st in next_step_layer)
+            for st in next_step_layer:
                 for output in st.outputs:
                     for left in unsorted:
                         if output in left.deps:
                             left.deps.remove(output)
 
-        self.statements = sorted
+        return result
 
     def run(self, rt: Runtime):
         counter = 0

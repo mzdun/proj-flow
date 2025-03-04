@@ -41,7 +41,7 @@ class CMakeProject(NamedTuple):
 
 
 def _token_stream(text: str) -> Iterator[Token]:
-    tok_regex = "|".join("(?P<%s>%s)" % pair for pair in TOKENS)
+    tok_regex = "|".join(f"(?P<{pair}>{pair})" for pair in TOKENS)
     get_token = re.compile(tok_regex).match
     offset = 0
 
@@ -64,9 +64,9 @@ def _command(cmd: Token, stream: Iterator[Token]):
     for tok in stream:
         if tok.type == "CLOSE":
             break
-        elif tok.type == "OPEN":
+        if tok.type == "OPEN":
             continue
-        elif tok.type == "STR":
+        if tok.type == "STR":
             result.args.append(Arg(value=tok.value[1:-1], offset=tok.offset + 1))
         elif tok.type == "IDENT":
             result.args.append(Arg(value=tok.value, offset=tok.offset))
@@ -91,15 +91,38 @@ def _cmake(filename: str):
 def _patch(directory: str, arg: Arg, value: str):
     with open(
         os.path.join(directory, "CMakeLists.txt"), "r", encoding="UTF-8"
-    ) as input:
-        text = input.read()
+    ) as in_file:
+        text = in_file.read()
 
     patched = text[: arg.offset] + value + text[arg.offset + len(arg.value) :]
 
     with open(
         os.path.join(directory, "CMakeLists.txt"), "w", encoding="UTF-8"
-    ) as input:
-        input.write(patched)
+    ) as out_file:
+        out_file.write(patched)
+
+
+class Handler:
+    def __init__(self):
+        self.project_name: Optional[Arg] = None
+        self.version = Arg("0.1.0", -1)
+        self.version_stability: Optional[Arg] = None
+        self.description = NO_ARG
+
+    def handle_project(self, cmd: Command):
+        self.project_name = cmd.args[0]
+        args = cmd.args[1:]
+        project_dict = {name.value: value for name, value in zip(args[::2], args[1::2])}
+        self.version = project_dict.get("VERSION", self.version)
+        self.description = project_dict.get("DESCRIPTION", self.description)
+        return self.version_stability is not None
+
+    def handle_set(self, cmd: Command):
+        var_name = cmd.args[0]
+        if var_name.value == "PROJECT_VERSION_STABILITY":
+            self.version_stability = cmd.args[1]
+            return self.project_name is not None
+        return False
 
 
 def get_project(dirname: str) -> Optional[CMakeProject]:
@@ -108,37 +131,24 @@ def get_project(dirname: str) -> Optional[CMakeProject]:
     except FileNotFoundError:
         return None
 
-    project_name: Optional[Arg] = None
-    version = Arg("0.1.0", -1)
-    version_stability: Optional[Arg] = None
-    description = NO_ARG
+    handler = Handler()
 
     for cmd in commands:
         if cmd.name == "project":
-            project_name = cmd.args[0]
-            args = cmd.args[1:]
-            project_dict = {
-                name.value: value for name, value in zip(args[::2], args[1::2])
-            }
-            version = project_dict.get("VERSION", version)
-            description = project_dict.get("DESCRIPTION", description)
-            if version_stability is not None:
+            if handler.handle_project(cmd):
                 break
         elif cmd.name == "set":
-            var_name = cmd.args[0]
-            if var_name.value == "PROJECT_VERSION_STABILITY":
-                version_stability = cmd.args[1]
-                if project_name is not None:
-                    break
+            if handler.handle_set(cmd):
+                break
 
-    if project_name is None:
+    if handler.project_name is None:
         return None
-    if version_stability is None:
-        version_stability = NO_ARG
+    if handler.version_stability is None:
+        handler.version_stability = NO_ARG
 
     return CMakeProject(
-        name=project_name,
-        version=version,
-        stability=version_stability,
-        description=description,
+        name=handler.project_name,
+        version=handler.version,
+        stability=handler.version_stability,
+        description=handler.description,
     )

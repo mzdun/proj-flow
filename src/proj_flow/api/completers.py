@@ -14,7 +14,7 @@ import yaml
 from proj_flow import api
 
 
-def cd_completer(prefix, **kwargs):
+def cd_completer(prefix, **_kwargs):
     target_dir = os.path.dirname(prefix)
     incomplete_part = os.path.basename(prefix)
     try:
@@ -32,7 +32,7 @@ def cd_completer(prefix, **kwargs):
         yield f"{full}{os.sep}"
 
 
-def step_completer(prefix: str, parser, **kwargs):
+def step_completer(prefix: str, parser, **_kwargs):
     flow_cfg = cast(api.env.FlowConfig, parser.flow)
 
     comma_sep = prefix.split(",")
@@ -54,7 +54,7 @@ def _str_arg(arg: Union[bool, str]):
     return str(arg)
 
 
-def matrix_completer(prefix: str, parser, **kwargs):
+def matrix_completer(prefix: str, parser, **_kwargs):
     flow_cfg = cast(api.env.FlowConfig, parser.flow)
 
     matrix_yml = os.path.join(flow_cfg.root, ".flow", "matrix.yml")
@@ -71,19 +71,19 @@ def matrix_completer(prefix: str, parser, **kwargs):
     current = comma_sep[-1].split("=", 1)
 
     if len(current) == 1:
-        completions: List[str] = []
+        filtered_completions: List[str] = []
         for key in data:
             if key.startswith(current[0]):
-                completions.append(f"{start}{key}=")
-        if len(completions) != 1:
-            return completions
+                filtered_completions.append(f"{start}{key}=")
+        if len(filtered_completions) != 1:
+            return filtered_completions
 
-        current = completions[0].split("=", 1)
+        current = filtered_completions[0].split("=", 1)
 
     try:
         args = data[current[0]]
     except KeyError:
-        return
+        return []
 
     completions: List[str] = []
     for arg in map(_str_arg, args):

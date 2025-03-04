@@ -48,9 +48,9 @@ def _get_key_from_contents(key: str, rt: env.Runtime):
 
 def get_key(rt: env.Runtime) -> Optional[Key]:
     rt.message(f"sign: trying ${ENV_KEY}")
-    env = os.environ.get(ENV_KEY)
-    if env:
-        key = _get_key_from_contents(env, rt)
+    env_value = os.environ.get(ENV_KEY)
+    if env_value:
+        key = _get_key_from_contents(env_value, rt)
         if key is not None:
             return key
     local_signature = os.path.join(".", "signature.key")

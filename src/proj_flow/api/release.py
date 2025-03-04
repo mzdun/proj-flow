@@ -9,7 +9,7 @@ import os
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import NamedTuple, Optional, Union
+from typing import NamedTuple, Optional
 
 from proj_flow.api import env
 from proj_flow.base import registry
@@ -21,18 +21,6 @@ class Arg(NamedTuple):
 
 
 NO_ARG = Arg("", -1)
-
-
-class Decl(NamedTuple):
-    name: str
-    value: str
-    offset: int
-
-    def __str__(self):
-        return self.value
-
-    def asArg(self):
-        return Arg(self.value, self.offset)
 
 
 class Version(NamedTuple):
@@ -89,19 +77,19 @@ class ProjectSuite(ABC):
     @abstractmethod
     def get_version_file_path(self, rt: env.Runtime) -> Optional[str]: ...
 
-    def patch_project(self, rt: env.Runtime, pos: Arg, newValue: str):
+    def patch_project(self, rt: env.Runtime, pos: Arg, new_value: str):
         path = self.get_version_file_path(rt)
 
         if not path or not os.path.isfile(path):
             return
 
-        with open(path, "r", encoding="UTF-8") as input:
-            text = input.read()
+        with open(path, "r", encoding="UTF-8") as in_file:
+            text = in_file.read()
 
-        patched = text[: pos.offset] + newValue + text[pos.offset + len(pos.value) :]
+        patched = text[: pos.offset] + new_value + text[pos.offset + len(pos.value) :]
 
-        with open(path, "w", encoding="UTF-8") as input:
-            input.write(patched)
+        with open(path, "w", encoding="UTF-8") as out_file:
+            out_file.write(patched)
 
 
 project_suites = registry.Registry[ProjectSuite]("ProjectSuite")

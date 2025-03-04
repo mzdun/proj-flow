@@ -15,11 +15,12 @@ from proj_flow.base import uname
 
 @arg.command("system")
 def main(
-    format: Annotated[
+    result_format: Annotated[
         str,
         arg.Argument(
             help="Select, what format should be returned",
             choices=["props", "platform", "debug"],
+            names=["--format"],
         ),
     ],
 ):
@@ -28,18 +29,18 @@ def main(
     node = platform.node()
     system, version, arch = uname.uname()
 
-    if format == "props":
+    if result_format == "props":
         print(f"-phost.name='{node}'")
         print(f"-pos='{system}'")
         if version is not None:
             print(f"-pos.version='{version}'")
         print(f"-parch='{arch}'")
 
-    if format == "platform":
+    if result_format == "platform":
         version = "" if version is None else f"-{version}"
         print(f"{system}{version}-{arch}")
 
-    if format == "debug":
+    if result_format == "debug":
         for name in [
             "uname",
             "machine",

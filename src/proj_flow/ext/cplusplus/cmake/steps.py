@@ -15,32 +15,8 @@ from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 from proj_flow.ext.cplusplus.cmake.presets import get_binary_dirs
 
 
-class CMakeBase(api.step.Step):
-    _name: str
-    _runs_after: List[str] = []
-    _runs_before: List[str] = []
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def runs_after(self):
-        return self._runs_after
-
-    @property
-    def runs_before(self):
-        return self._runs_before
-
-    def __init__(
-        self, name: str, runs_after: List[str] = [], runs_before: List[str] = []
-    ):
-        super().__init__()
-        self._name = name
-        self._runs_after = runs_after
-        self._runs_before = runs_before
-
-    def is_active(self, config: api.env.Config, rt: api.env.Runtime) -> bool:
+class CMakeBase(api.step.PropContainerStep):
+    def is_active(self, _config: api.env.Config, _rt: api.env.Runtime) -> bool:
         return os.path.isfile("CMakeLists.txt") and os.path.isfile("CMakePresets.json")
 
     def platform_dependencies(self):
@@ -58,7 +34,7 @@ class CMakeConfig(CMakeBase):
         super().__init__(name="CMake")
         self.binary_dirs = get_binary_dirs()
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
+    def is_active(self, _config: env.Config, _rt: env.Runtime) -> bool:
         return os.path.isfile("CMakeLists.txt") and os.path.isfile("CMakePresets.json")
 
     def directories_to_remove(self, config: env.Config) -> List[str]:
@@ -82,7 +58,7 @@ class CMakeConfig(CMakeBase):
                 value = config.get_path(value)
             elif value.startswith("runtime:"):
                 value = value[len("runtime:")]
-                value = getattr(rt, value, None)
+                value = getattr(rt, value, "")
 
             if is_flag:
                 value = "ON" if value else "OFF"

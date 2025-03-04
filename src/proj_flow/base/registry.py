@@ -82,17 +82,17 @@ class Registry(typing.Generic[T]):
         return self.container
 
     def find(
-        self, filter: typing.Callable[[T], K]
+        self, filter_cb: typing.Callable[[T], K]
     ) -> typing.Tuple[typing.Optional[T], typing.Optional[K]]:
         for item in self.container:
-            candidate = filter(item)
+            candidate = filter_cb(item)
             if candidate is not None:
                 return item, candidate
         return None, None
 
     def first(self) -> typing.Optional[T]:
         try:
-            return next(self.container.__iter__())
+            return next(iter(self.container))
         except StopIteration:
             return None
 
@@ -102,9 +102,10 @@ _debug_copies: typing.List[Registry] = []
 
 def quoted(s: str) -> str:
     if '"' in s:
-        return "'{}'".format(s.replace("\\", r"\\").replace("'", r"\'"))
+        s = s.replace("\\", "\\\\").replace("'", "\\'")
+        return f"'{s}'"
     if "'" in s or " " in s:
-        return '"{}"'.format(s)
+        return f'"{s}"'
     return s
 
 

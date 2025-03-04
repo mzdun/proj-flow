@@ -27,11 +27,7 @@ class Sorted:
         return Sorted(plugin, name, runs_after, runs_before)
 
 
-def _sort_steps():
-    steps = step.__steps
-    unsorted = [Sorted.from_step(step) for step in steps]
-    known_names = [step.name for step in unsorted]
-
+def _rewire_runs_before(unsorted: List[Sorted]):
     for plugin in unsorted:
         for name in plugin.runs_before:
             for successor in unsorted:
@@ -40,6 +36,8 @@ def _sort_steps():
                 successor.runs_after.append(plugin.name)
                 break
 
+
+def _clean_runs_before(unsorted: List[Sorted], known_names: List[str]):
     for plugin in unsorted:
         runs_after: List[str] = []
         for name in plugin.runs_after:
@@ -47,6 +45,8 @@ def _sort_steps():
                 runs_after.append(name)
         plugin.runs_after = runs_after
 
+
+def _sort(unsorted: List[Sorted]):
     result: List[step.Step] = []
 
     while len(unsorted) > 0:
@@ -64,6 +64,16 @@ def _sort_steps():
             break
 
     return result
+
+
+def _sort_steps():
+    steps = step.__steps
+    unsorted = [Sorted.from_step(step) for step in steps]
+    known_names = [step.name for step in unsorted]
+
+    _rewire_runs_before(unsorted)
+    _clean_runs_before(unsorted, known_names)
+    return _sort(unsorted)
 
 
 def clean_aliases(cfg: env.FlowConfig):
@@ -87,9 +97,9 @@ def clean_aliases(cfg: env.FlowConfig):
             keys_to_remove.append(key)
             continue
         rewritten: List[str] = []
-        for step in steps:
-            if step in step_names:
-                rewritten.append(step)
+        for s in steps:
+            if s in step_names:
+                rewritten.append(s)
         steps[:] = rewritten
 
         if not steps:

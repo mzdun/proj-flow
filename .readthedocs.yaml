@@ -11,7 +11,7 @@ build:
     python: "3"
   jobs:
     pre_build:
-      - python docs/enum-mods.py
+      - python docs/enum_mods.py
 
 sphinx:
    configuration: docs/source/conf.py

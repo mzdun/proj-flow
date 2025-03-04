@@ -9,7 +9,7 @@ manipulation.
 import abc
 import os
 import re
-from typing import Dict, List, Type
+from typing import Dict, List, Optional, Type
 
 from proj_flow import base
 from proj_flow.api import env
@@ -70,18 +70,23 @@ class ChangelogGenerator(abc.ABC):
 
     def create_changelog(
         self,
+        *,
         tags: List[str],
         git: commit.Git,
         links: commit.Hosting,
         rt: env.Runtime,
-        scope_fix: Dict[str, str] = {},
+        scope_fix: Optional[Dict[str, str]] = None,
         take_all: bool = False,
     ):
         prev_tag = None
         entire_log: List[str] = []
         for curr_tag in tags:
             setup = commit.LogSetup(
-                links, prev_tag, curr_tag, scope_fix=scope_fix, take_all=take_all
+                links,
+                prev_tag,
+                curr_tag,
+                scope_fix=(scope_fix or {}),
+                take_all=take_all,
             )
             log, _ = git.get_log(setup)
             text = self.format_changelog(log, setup, rt)

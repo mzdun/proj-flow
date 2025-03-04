@@ -59,8 +59,7 @@ class Module:
 
 def package_tree():
     modules = {
-        mod: Module(name=mod, underline=("=" * len(mod)))
-        for mod in sorted(all_modules())
+        mod: Module(name=mod, underline="=" * len(mod)) for mod in sorted(all_modules())
     }
 
     modules["proj_flow"] = Module("", "")

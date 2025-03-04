@@ -16,7 +16,6 @@ import typing
 
 from proj_flow import log
 from proj_flow.api import arg, env, release
-from proj_flow.base import cmd
 from proj_flow.base.name_list import name_list
 from proj_flow.ext.github import publishing
 from proj_flow.flow.configs import Configs
@@ -54,9 +53,9 @@ def matrix(
 
     if "GITHUB_ACTIONS" in os.environ:
         var = json.dumps({"include": usable})
-        GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
-        if GITHUB_OUTPUT is not None:
-            with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
+        github_output_path = os.environ.get("GITHUB_OUTPUT")
+        if github_output_path is not None:
+            with open(github_output_path, "a", encoding="UTF-8") as github_output:
                 print(f"matrix={var}", file=github_output)
         else:
             print(f"matrix={var}")
@@ -67,8 +66,8 @@ def matrix(
 @arg.command("github", "release")
 def release_cmd(
     rt: env.Runtime,
-    all: typing.Annotated[
-        bool, arg.FlagArgument(help="Take all Conventional Commits.")
+    take_all: typing.Annotated[  # noqa: W0622
+        bool, arg.FlagArgument(help="Take all Conventional Commits.", names=["--all"])
     ],
     force: typing.Annotated[
         typing.Optional[str],
@@ -115,13 +114,13 @@ def release_cmd(
             rt=rt,
             dbg_changelog=changelog,
             forced_level=forced_level,
-            take_all=all,
+            take_all=take_all,
             draft=publish != "ON",
             generator=generator,
             git=git,
             hosting=gh_links,
         )
-        released = not not next_tag
+        released = next_tag == "" or next_tag is None
     except log.release.VersionNotAdvancing as err:
         rt.message(err.message, level=env.Msg.STATUS)
         return
@@ -129,15 +128,15 @@ def release_cmd(
         rt.fatal(err.message)
     finally:
         if "GITHUB_ACTIONS" in os.environ:
-            GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
-            if GITHUB_OUTPUT is not None:
-                with open(GITHUB_OUTPUT, "a", encoding="UTF-8") as github_output:
+            github_output_path = os.environ.get("GITHUB_OUTPUT")
+            if github_output_path is not None:
+                with open(github_output_path, "a", encoding="UTF-8") as github_output:
                     print(f"tag={next_tag}", file=github_output)
                     print(f"released={json.dumps(released)}", file=github_output)
 
 
 @arg.command("github", "publish")
-def publish(
+def publish_cmd(
     rt: env.Runtime,
     ref: typing.Annotated[
         typing.Optional[str],
@@ -169,6 +168,7 @@ def publish(
 
     tag_name = ref or project.tag_name
 
+    # pylint: disable-next=assignment-from-none
     release_info = gh_links.locate_release(tag_name)
     if release_info is None and not rt.dry_run:
         rt.fatal(f"No release matches {tag_name}")
@@ -176,7 +176,7 @@ def publish(
     if upload is not None:
         matcher = publishing.build_regex(project)
         directory, names = publishing.gather_artifacts(upload, matcher)
-        if not len(names):
+        if not names:
             rt.fatal(f"No artifact matches {matcher.pattern}")
 
         publishing.checksums(rt, directory, names, "sha256sum.txt")
@@ -184,7 +184,7 @@ def publish(
         if release_info is not None:
             gh_links.upload_to_release(release_info, directory, names)
         else:
-            rt.message(f"Would upload:", level=env.Msg.STATUS)
+            rt.message("Would upload:", level=env.Msg.STATUS)
             for name in names:
                 rt.message(f"  * {name}", level=env.Msg.STATUS)
 

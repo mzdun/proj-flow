@@ -7,7 +7,7 @@ The **proj_flow.api.step** exposes APIs used by run extensions.
 
 import os
 from abc import ABC, abstractmethod
-from typing import List, cast
+from typing import List, Optional, cast
 
 from proj_flow.api.env import Config, Runtime
 from proj_flow.base import inspect as _inspect
@@ -31,10 +31,10 @@ class Step(ABC):
     def platform_dependencies(self) -> List[str]:
         return []
 
-    def is_active(self, config: Config, rt: Runtime) -> bool:
+    def is_active(self, _config: Config, _rt: Runtime) -> bool:
         return True
 
-    def directories_to_remove(self, config: Config) -> List[str]:
+    def directories_to_remove(self, _config: Config) -> List[str]:
         return []
 
     @abstractmethod
@@ -72,12 +72,39 @@ class SerialStep(Step):
         return 0
 
 
+class PropContainerStep(Step):
+    _name: str
+    _runs_after: List[str] = []
+    _runs_before: List[str] = []
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def runs_after(self):
+        return self._runs_after
+
+    @property
+    def runs_before(self):
+        return self._runs_before
+
+    def __init__(
+        self,
+        name: str,
+        runs_after: Optional[List[str]] = None,
+        runs_before: Optional[List[str]] = None,
+    ):
+        super().__init__()
+        self._name = name
+        self._runs_after = runs_after or []
+        self._runs_before = runs_before or []
+
+
 __steps: List[Step] = []
 
 
 def _register_step(step: Step):
-    global __steps
-
     name = step.name
     if name in [step.name for step in __steps]:
         if "READTHEDOCS" not in os.environ:

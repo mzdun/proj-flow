@@ -6,6 +6,6 @@ The **proj_flow.minimal** defines minimal extension package: ``bootstrap``
 and ``run`` commands, with basic set of steps.
 """
 
-from . import base, bootstrap, init, list, run, system
+from . import base, bootstrap, init, list_cmd, run, system
 
-__all__ = ["base", "bootstrap", "init", "list", "run", "system"]
+__all__ = ["base", "bootstrap", "init", "list_cmd", "run", "system"]

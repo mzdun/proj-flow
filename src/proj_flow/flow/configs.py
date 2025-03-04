@@ -12,10 +12,12 @@ import argparse
 import datetime
 import os
 import sys
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, Iterable, List, TypeVar
 
 from proj_flow.api import env
 from proj_flow.base import matrix
+
+T = TypeVar("T")
 
 
 def _compiler_inner(
@@ -59,7 +61,7 @@ def _types(
 
 
 def _config(config: List[str], only_host: bool, types: Dict[str, Callable[[str], Any]]):
-    args = {}
+    args: Dict[str, List[str]] = {}
     for arg in config:
         if arg[:1] == "-":
             continue
@@ -92,7 +94,7 @@ def _expand_one(config: dict, github_os: str, os_in_name: str):
     return config
 
 
-__printed_lts_ubuntu_warning = False
+PRINTED_LTS_UBUNTU_WARNING = False
 
 
 def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
@@ -108,13 +110,13 @@ def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
 
 
 def _lts_list(config: dict, lts_list: Dict[str, List[str]]):
-    os = config["os"]
-    raw = lts_list.get(os)
-    if os == "ubuntu":
+    os_name = config["os"]
+    raw = lts_list.get(os_name)
+    if os_name == "ubuntu":
         if raw is not None:
-            global __printed_lts_ubuntu_warning
-            if not __printed_lts_ubuntu_warning:
-                __printed_lts_ubuntu_warning = True
+            global PRINTED_LTS_UBUNTU_WARNING
+            if not PRINTED_LTS_UBUNTU_WARNING:
+                PRINTED_LTS_UBUNTU_WARNING = True
                 print(
                     "\033[1;33m-- lts.ubuntu in config.yaml is deprecated; "
                     "please remove it, so it can be calculated base on "
@@ -152,7 +154,12 @@ def _load_flow_data(rt: env.Runtime):
     return configs, keys
 
 
-class Configs:
+def _each(cb: Callable[[T], Any], items: Iterable[T]):
+    for item in items:
+        cb(item)
+
+
+class Configs:  # pylint: disable=too-few-public-methods
     usable: List[env.Config] = []
 
     def __init__(
@@ -160,7 +167,7 @@ class Configs:
     ):
         configs, keys = _load_flow_data(rt)
 
-        if len(configs) == 0 and len(keys) == 0:
+        if not configs and not keys:
             self.usable = [env.Config({}, keys)]
             return
 
@@ -170,14 +177,13 @@ class Configs:
         arg_configs = matrix.cartesian(_config(args.configs, rt.only_host, types))
 
         # from commands/github
-        spread_lts = hasattr(args, "matrix") and not not args.matrix
+        spread_lts = hasattr(args, "matrix") and args.matrix
 
         if not spread_lts:
             # allow "run" to see the warning about "lts.ubuntu"
-            for config in configs:
-                _lts_list(config, rt.lts_list)
+            _each(lambda config: _lts_list(config, rt.lts_list), configs)
 
-        turned = matrix.flatten(
+        config_list = matrix.flatten(
             [
                 _expand_config(config, spread_lts, rt.lts_list)
                 for config in configs
@@ -185,20 +191,19 @@ class Configs:
             ]
         )
 
-        postproc_exclude = rt.postproc_exclude
-        usable = [
+        config_list = [
             config
-            for config in turned
-            if len(postproc_exclude) == 0
-            or not matrix.matches_any(config, postproc_exclude)
+            for config in config_list
+            if not rt.postproc_exclude
+            or not matrix.matches_any(config, rt.postproc_exclude)
         ]
 
         if not expand_compilers:
-            self.usable = [env.Config(conf, keys) for conf in usable]
+            self.usable = [env.Config(conf, keys) for conf in config_list]
             return
 
         self.usable = []
-        for conf in usable:
+        for conf in config_list:
             try:
                 compilers = used_compilers[conf["compiler"]]
             except KeyError:

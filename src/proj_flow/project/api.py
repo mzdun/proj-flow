@@ -6,7 +6,7 @@ The **proj_flow.project.api** defines an extension point for project suites.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, List, NamedTuple, Optional
+from typing import Any, List
 
 from proj_flow import base
 from proj_flow.api import ctx, env
@@ -17,9 +17,9 @@ class ProjectType(ABC):
     name: str
     id: str
 
-    def __init__(self, name: str, id: str):
+    def __init__(self, name: str, proj_id: str):
         self.name = name
-        self.id = id
+        self.id = proj_id
 
     def register_switch(self, key: str, prompt: str, enabled: bool):
         ctx.register_switch(key, prompt, enabled, self.id)
@@ -61,8 +61,8 @@ class ProjectNotFound(Exception):
         self.name = name
 
 
-def get_project_type(id: str):
-    result, _ = project_type.find(lambda proj: proj.id == id)
+def get_project_type(proj_id: str):
+    result, _ = project_type.find(lambda proj: proj.id == proj_id)
     if result is None:
-        raise ProjectNotFound(id)
+        raise ProjectNotFound(proj_id)
     return result

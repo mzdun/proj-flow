@@ -13,12 +13,12 @@ import yaml
 
 
 def load_yaml(filename: str):
-    with open(filename) as src:
+    with open(filename, "rb") as src:
         return cast(dict, yaml.load(src, Loader=yaml.Loader))
 
 
 def load_json(filename: str):
-    with open(filename) as src:
+    with open(filename, "rb") as src:
         return cast(dict, json.load(src))
 
 

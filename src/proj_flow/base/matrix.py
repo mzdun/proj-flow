@@ -10,12 +10,13 @@ resulting set of configurations.
 """
 
 import os
-import sys
-from typing import Dict, Iterable, List, Tuple, TypeVar
+from typing import Dict, Iterable, List, Tuple, TypeVar, Union, cast
 
 import yaml
 
 T = TypeVar("T")
+MatrixItem = Union[str, bool, int]
+MatrixDict = Dict[str, Union[List[MatrixItem], MatrixItem]]
 
 
 def find_compiler(
@@ -41,7 +42,7 @@ def find_compiler(
 
     try:
         compiler_names = config_names[filename]
-    except:
+    except Exception:
         compiler_names = [filename]
 
     compilers = [
@@ -102,7 +103,7 @@ def matches_any(tested: dict, tests: List[dict]):
     return False
 
 
-def cartesian(input: Dict[str, list]) -> List[dict]:
+def cartesian(separated_axes: Dict[str, list]) -> List[dict]:
     """
     Calculates the cartesian product of all axes in `input`.
 
@@ -148,9 +149,9 @@ def cartesian(input: Dict[str, list]) -> List[dict]:
             { "key-1": "value-2", "key-2": False, "key-3":  3 },
         ]
     """
-    product = [{}]
+    product: List[dict] = [{}]
 
-    for key, values in input.items():
+    for key, values in separated_axes.items():
         next_level = []
         for value in values:
             for obj in product:
@@ -172,6 +173,46 @@ def _split_keys(includes: List[dict], keys: List[str]) -> List[Tuple[dict, dict]
                 expand_value[key] = value
         result.append((expand_key, expand_value))
     return result
+
+
+def _merge_matrix(setup: dict, additional: dict):
+    src_matrix = cast(MatrixDict, setup["matrix"])
+    for key, value in cast(MatrixDict, additional.get("matrix", {})).items():
+        old = src_matrix.get(key)
+        if isinstance(old, list) and isinstance(value, list):
+            for new_val in value:
+                if new_val not in old:
+                    old.append(new_val)
+        elif isinstance(old, list) and not isinstance(value, list):
+            if value not in old:
+                old.append(value)
+        else:
+            src_matrix[key] = value
+
+    src_exclude = cast(list, setup["exclude"])
+    src_exclude.extend(additional.get("exclude", []))
+
+    src_include = cast(list, setup["include"])
+    src_include.extend(additional.get("include", []))
+
+
+def _organize_matrix(setup: dict) -> Tuple[List[dict], List[str]]:
+    raw = cast(Dict[str, list], setup.get("matrix", {}))
+    keys = list(raw.keys())
+    full = cartesian(raw)
+
+    includes = _split_keys(setup.get("include", []), keys)
+    for obj in full:
+        for include_key, include_value in includes:
+            if not matches(obj, include_key):
+                continue
+            for key, value in include_value.items():
+                obj[key] = value
+
+    excludes = setup.get("exclude", [])
+    matrix = [obj for obj in full if not matches_any(obj, excludes)]
+
+    return matrix, keys
 
 
 def load_matrix(*matrix_paths: str) -> Tuple[List[dict], List[str]]:
@@ -204,38 +245,15 @@ def load_matrix(*matrix_paths: str) -> Tuple[List[dict], List[str]]:
         return [], []
 
     setup = setups[0]
+
+    if "matrix" not in setup:
+        setup["matrix"] = {}
+    if "exclude" not in setup:
+        setup["exclude"] = []
+    if "include" not in setup:
+        setup["include"] = []
+
     for additional in setups[1:]:
-        src_matrix = setup.get("matrix", {})
-        src_exclude = setup.get("exclude", [])
-        src_include = setup.get("include", [])
+        _merge_matrix(setup, additional)
 
-        for key, value in additional.get("matrix", {}).items():
-            old = src_matrix.get(key)
-            if isinstance(old, list) and isinstance(value, list):
-                for new_val in value:
-                    if new_val not in old:
-                        old.append(new_val)
-            elif isinstance(old, list):
-                if value not in old:
-                    old.append(value)
-            else:
-                src_matrix[key] = value
-        src_exclude.extend(additional.get("exclude", []))
-        src_include.extend(additional.get("include", []))
-
-    raw = setup.get("matrix", {})
-    keys = list(raw.keys())
-    full = cartesian(raw)
-
-    includes = _split_keys(setup.get("include", []), keys)
-    for obj in full:
-        for include_key, include_value in includes:
-            if not matches(obj, include_key):
-                continue
-            for key, value in include_value.items():
-                obj[key] = value
-
-    excludes = setup.get("exclude", [])
-    matrix = [obj for obj in full if not matches_any(obj, excludes)]
-
-    return matrix, keys
+    return _organize_matrix(setup)

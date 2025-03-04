@@ -5,16 +5,10 @@
 The **proj_flow.ext.cplusplus.cmake.version** provides project suite plugin.
 """
 
-from typing import NamedTuple, Optional
+from typing import Optional
 
 from proj_flow.api import env, release
 from proj_flow.ext.cplusplus.cmake.parser import get_project
-
-
-class QuickProjectInfo(NamedTuple):
-    name: Optional[str] = None
-    path: Optional[str] = None
-    pattern: Optional[str] = None
 
 
 @release.project_suites.add

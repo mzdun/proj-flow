@@ -45,25 +45,20 @@ def main(
     step_names = set(steps)
     program = [step for step in rt_steps if step.name.lower() in step_names]
 
-    errors = gather_dependencies_for_all_configs(configs, rt, program)
-    if len(errors) > 0:
-        if not rt.silent:
-            for error in errors:
-                print(f"proj-flow: {error}", file=sys.stderr)
-        return 1
+    verify_dependencies_for_all_configs(configs, rt, program)
 
     printed = refresh_directories(configs, rt, program)
     return run_steps(configs, rt, program, printed)
 
 
-def gather_dependencies_for_all_configs(
+def verify_dependencies_for_all_configs(
     configs: Configs, rt: api.env.Runtime, steps: List[api.step.Step]
 ):
     deps: List[dependency.Dependency] = []
     for config in configs.usable:
         active_steps = [step for step in steps if step.is_active(config, rt)]
         deps.extend(dependency.gather(active_steps))
-    return dependency.verify(deps)
+    dependency.verify(deps, rt)
 
 
 def refresh_directories(

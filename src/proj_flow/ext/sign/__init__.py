@@ -8,13 +8,12 @@ steps.
 
 import fnmatch
 import os
-import sys
 from abc import abstractmethod
 from typing import List, cast
 
 from proj_flow.api import env, init, step
 
-from . import api, win32
+from . import api, win32  # noqa: F401
 
 
 def should_exclude(filename: str, exclude: List[str], config_os: str):
@@ -27,34 +26,10 @@ def should_exclude(filename: str, exclude: List[str], config_os: str):
     return False
 
 
-class SignBase(step.Step):
-    _name: str
-    _runs_after: List[str] = []
-    _runs_before: List[str] = []
-
+class SignBase(step.PropContainerStep):
     _active_tools: List[api.SigningTool] = []
 
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def runs_after(self):
-        return self._runs_after
-
-    @property
-    def runs_before(self):
-        return self._runs_before
-
-    def __init__(
-        self, name: str, runs_after: List[str] = [], runs_before: List[str] = []
-    ):
-        super().__init__()
-        self._name = name
-        self._runs_after = runs_after
-        self._runs_before = runs_before
-
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         self._active_tools = [
             tool for tool in api.signing_tool.get() if tool.is_active(config, rt)
         ]
@@ -120,7 +95,7 @@ class SignMsi(SignBase):
             runs_before=["StorePackages", "Store"],
         )
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         return super().is_active(config, rt) and "WIX" in config.items.get(
             "cpack_generator", []
         )

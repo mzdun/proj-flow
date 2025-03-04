@@ -47,9 +47,9 @@ class VersionUpdater(release.VersionUpdater):
     def on_version_change_tags(self, new_version: str, tags: List[str]):
         old_version = _prev_version(new_version, tags)
 
-        range = [f"      - Current (v{new_version})\n"]
+        reportable_range = [f"      - Current (v{new_version})\n"]
         if old_version:
-            range.extend(
+            reportable_range.extend(
                 [
                     f"      - Previous (v{old_version})\n",
                     f"      - Older, than v{old_version}\n",
@@ -67,7 +67,7 @@ class VersionUpdater(release.VersionUpdater):
                 "      - "
             ):
                 option_index_end += 1
-            lines[option_index:option_index_end] = range
+            lines[option_index:option_index_end] = reportable_range
         except ValueError as e:
             print(e, file=sys.stderr)
 

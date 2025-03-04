@@ -10,7 +10,6 @@ import textwrap
 from typing import List
 
 from proj_flow.api import env, step
-from proj_flow.project import cplusplus
 
 from ._conan import conan_api
 
@@ -29,10 +28,10 @@ class ConanConfig:
     def platform_dependencies(self):
         return ["conan"]
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, _config: env.Config, _rt: env.Runtime) -> int:
         return os.path.isfile("conanfile.txt") or os.path.isfile("conanfile.py")
 
-    def directories_to_remove(self, _: env.Config) -> List[str]:
+    def directories_to_remove(self, _config: env.Config) -> List[str]:
         return [CONAN_DIR]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:

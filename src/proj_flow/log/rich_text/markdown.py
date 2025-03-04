@@ -8,14 +8,10 @@ changelogs.
 
 from typing import List
 
-from proj_flow.log import commit
 from proj_flow.log.rich_text import api
 
 
 class FileUpdate(api.FileUpdate):
-    def __init__(self, setup: commit.LogSetup, commit_date: str):
-        super().__init__(setup, commit_date)
-
     def intro_lines(self) -> List[str]:
         version = (self.setup.curr_tag or " *unknown*")[1:]
         compare = self.setup.commit_listing_link()

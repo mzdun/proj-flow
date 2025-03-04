@@ -35,9 +35,9 @@ def uname() -> Tuple[NameStr, VersionStr, ArchStr]:
     :see: :ref:`command-system` command
     """
     _platform = platform.uname()
-    platform_name = _platform.system.lower()
-    platform_version = _platform.version
-    platform_arch = _platform.machine.lower()
+    platform_name: NameStr = _platform.system.lower()
+    platform_version: VersionStr = _platform.version
+    platform_arch: ArchStr = _platform.machine.lower()
 
     if platform_arch == "amd64":
         platform_arch = "x86_64"
@@ -56,7 +56,7 @@ def uname() -> Tuple[NameStr, VersionStr, ArchStr]:
             os_release = {"ID": "linux", "NAME": "Linux"}
 
         platform_id = os_release.get("ID", os_release.get("NAME"))
-        version_id = os_release.get("VERSION_ID", platform_version)
+        version_id = os_release.get("VERSION_ID", platform_version or "")
         if platform_id is not None:
             if platform_id[:9] == "opensuse-":
                 platform_id = "opensuse"

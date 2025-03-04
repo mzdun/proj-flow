@@ -6,21 +6,19 @@ The **proj_flow.ext.sign.win32** provides code signing with SignTool
 from Windows SDKs.
 """
 
-import base64
-import json
-import os
-import platform
-import struct
-import subprocess
 import sys
-from typing import Iterable, List, Optional, Tuple
 
-from proj_flow.api.env import Config, Msg, Runtime
+if sys.platform == "win32":  # noqa: C901
+    import os
+    import platform
+    import struct
+    import subprocess
+    import winreg  # pylint: disable=import-error
+    from typing import Iterable, List, Optional, Tuple
 
-from .api import ENV_KEY, SigningTool, get_key, signing_tool
+    from proj_flow.api.env import Config, Msg, Runtime
 
-if sys.platform == "win32":
-    import winreg
+    from .api import SigningTool, get_key, signing_tool
 
     @signing_tool.add
     class Win32SigningTool(SigningTool):
@@ -91,28 +89,28 @@ if sys.platform == "win32":
         )
 
     _IMAGE_DOS_HEADER = "HHHHHHHHHHHHHH8sHH20sI"
-    _IMAGE_NT_HEADERS_Signature = "H"
-    _IMAGE_DOS_HEADER_size = struct.calcsize(_IMAGE_DOS_HEADER)
-    _IMAGE_NT_HEADERS_Signature_size = struct.calcsize(_IMAGE_NT_HEADERS_Signature)
+    _IMAGE_NT_HEADERS_SIGNATURE = "H"
+    _IMAGE_DOS_HEADER_SIZE = struct.calcsize(_IMAGE_DOS_HEADER)
+    _IMAGE_NT_HEADERS_SIGNATURE_SIZE = struct.calcsize(_IMAGE_NT_HEADERS_SIGNATURE)
     _MZ = 23117
     _PE = 17744
 
     def _is_pe_exec(path: str):
         with open(path, "rb") as exe:
-            mz_header = exe.read(_IMAGE_DOS_HEADER_size)
+            mz_header = exe.read(_IMAGE_DOS_HEADER_SIZE)
             dos_header = struct.unpack(_IMAGE_DOS_HEADER, mz_header)
             if dos_header[0] != _MZ:
                 return False
 
-            PE_offset = dos_header[-1]
-            if PE_offset < _IMAGE_DOS_HEADER_size:
+            pe_offset = dos_header[-1]
+            if pe_offset < _IMAGE_DOS_HEADER_SIZE:
                 return False
 
-            if PE_offset > _IMAGE_DOS_HEADER_size:
-                exe.read(PE_offset - _IMAGE_DOS_HEADER_size)
+            if pe_offset > _IMAGE_DOS_HEADER_SIZE:
+                exe.read(pe_offset - _IMAGE_DOS_HEADER_SIZE)
 
-            pe_header = exe.read(_IMAGE_NT_HEADERS_Signature_size)
-            signature = struct.unpack(_IMAGE_NT_HEADERS_Signature, pe_header)[0]
+            pe_header = exe.read(_IMAGE_NT_HEADERS_SIGNATURE_SIZE)
+            signature = struct.unpack(_IMAGE_NT_HEADERS_SIGNATURE, pe_header)[0]
             return signature == _PE
 
     def _sign(files: Iterable[str], rt: Runtime):
@@ -147,7 +145,7 @@ if sys.platform == "win32":
 
         result = 1
         try:
-            result = subprocess.run(args, shell=False).returncode
+            result = subprocess.run(args, check=False).returncode
         finally:
             os.remove("temp.pfx")
 

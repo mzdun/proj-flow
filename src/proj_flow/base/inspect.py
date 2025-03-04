@@ -19,6 +19,14 @@ class Function(typing.Protocol):
     def __call__(self, **kwarg) -> typing.Any: ...
 
 
+class ArgsFunction(typing.Protocol):
+    """Replacement for :py:func:`callable` as universal argument type."""
+
+    __name__: str
+
+    def __call__(self, *args) -> typing.Any: ...
+
+
 @dataclass
 class Argument:
     """Extracted argument type"""
@@ -44,9 +52,7 @@ def signature(call: Function) -> typing.Generator[Argument, None, None]:
     :returns: List of the parameters, in order they appeared in the definition.
     """
 
-    signature = inspect.signature(call)
-
-    for param_name, param in signature.parameters.items():
+    for param_name, param in inspect.signature(call).parameters.items():
         annotation = param.annotation
 
         if typing.get_origin(annotation) is not typing.Annotated:
@@ -68,7 +74,7 @@ def type_name(t: type) -> str:
     :returns: String representing the type.
     """
 
-    if t == type(None):
+    if t is type(None):
         return "None"
 
     origin = typing.get_origin(t)

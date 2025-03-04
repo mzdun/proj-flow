@@ -10,8 +10,9 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from importlib.metadata import version as package_version
-from typing import Callable, List, Set, Tuple, cast
+from typing import Callable, List, Optional, Set, Tuple, cast
 
+from proj_flow.api import env
 from proj_flow.base import cmd
 
 VER_REGEX = re.compile(r"((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))")
@@ -64,9 +65,10 @@ class Dependency:
             return self.name < rhs.name
         return self.version_expression < rhs.version_expression
 
-    def __eq__(self, rhs: "Dependency"):
+    def __eq__(self, rhs: object):
         return (
-            self.kind == rhs.kind
+            isinstance(rhs, Dependency)
+            and self.kind == rhs.kind
             and self.name == rhs.name
             and self.version_expression == rhs.version_expression
         )
@@ -111,7 +113,44 @@ def gather(steps: list):
     return result
 
 
-def verify(deps: List[Dependency]):
+def _check_python_pkg(pkg: Dependency, errors: Set[str]):
+    try:
+        pkg_version = package_version(pkg.name)
+    except Exception as ex:
+        errors.add(f"{pkg.name}: Python package is missing: {ex}")
+        return
+
+    msg = pkg.match_version(pkg_version)
+    if msg is not None:
+        errors.add(msg)
+
+
+def _check_native_app(app: Dependency, errors: Set[str]):
+    app_version: Optional[str] = None
+    if not cmd.is_tool(app.name):
+        errors.add(f"{app.name}: tool is missing")
+        return
+
+    proc = cmd.run(app.name, "--version", capture_output=True)
+    if not proc:
+        pass
+    elif proc.returncode:
+        if proc.stderr:
+            print(proc.stderr.rstrip(), file=sys.stderr)
+    else:
+        m = VER_REGEX.search(proc.stdout)
+        app_version = m.group(0) if m is not None else None
+
+    if app_version is None and app.version_expression != "":
+        errors.add(f"{app.name}: could not read version for `{app.version_expression}`")
+        return
+
+    msg = app_version and app.match_version(app_version)
+    if msg is not None:
+        errors.add(msg)
+
+
+def verify(deps: List[Dependency], rt: env.Runtime):
     uniq: List[Dependency] = []
     errors: Set[str] = set()
     for dep in sorted(deps):
@@ -119,37 +158,17 @@ def verify(deps: List[Dependency]):
             uniq.append(dep)
 
     for pkg in (dep for dep in uniq if dep.kind == DepKind.PYTHON_PKG):
-        try:
-            version = package_version(pkg.name)
-        except Exception as ex:
-            errors.add(f"{pkg.name}: Python package is missing: {ex}")
-            continue
-        msg = pkg.match_version(version)
-        if msg is not None:
-            errors.add(msg)
+        _check_python_pkg(pkg, errors)
 
     for app in (dep for dep in uniq if dep.kind == DepKind.APP):
-        if not cmd.is_tool(app.name):
-            errors.add(f"{app.name}: tool is missing")
-            continue
-        proc = cmd.run(app.name, "--version", capture_output=True)
-        if not proc:
-            version = None
-        elif proc.returncode:
-            if proc.stderr:
-                print(proc.stderr.rstrip(), file=sys.stderr)
-            version = None
-        else:
-            m = VER_REGEX.search(proc.stdout)
-            version = m.group(0) if m is not None else None
+        _check_native_app(app, errors)
 
-        if version is None and app.version_expression != "":
-            errors.add(
-                f"{app.name}: could not read version for `{app.version_expression}`"
-            )
-            continue
-        msg = version and app.match_version(version)
-        if msg is not None:
-            errors.add(msg)
+    lines = list(sorted(errors))
+    if not lines:
+        return
 
-    return list(sorted(errors))
+    if not rt.silent:
+        for error in lines:
+            print(f"proj-flow: {error}", file=sys.stderr)
+
+    raise SystemExit(1)

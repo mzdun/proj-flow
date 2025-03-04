@@ -22,14 +22,14 @@ class Completer(typing.Protocol):
     def __call__(self, **kwarg) -> typing.Any: ...
 
 
-class Action(typing.Protocol):
+class Action(typing.Protocol):  # pylint: disable=too-few-public-methods
     completer: Completer
 
 
 class Subparsers(typing.Protocol):
     parent: "Parser"
 
-    def add_parser(*args, **kwargs) -> "Parser": ...
+    def add_parser(self, *args, **kwargs) -> "Parser": ...
 
 
 class Parser(argparse.ArgumentParser):
@@ -40,7 +40,7 @@ class Parser(argparse.ArgumentParser):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def add_subparsers(self, **kwargs) -> Subparsers:
+    def add_subparsers(self, **kwargs) -> Subparsers:  # type:ignore[override]
         return typing.cast(Subparsers, super().add_subparsers(**kwargs))
 
     def find_and_run_command(self, args: argparse.Namespace):
@@ -55,10 +55,13 @@ class Parser(argparse.ArgumentParser):
             registry.verbose_info()
 
         if args.command in commands:
+
             command = _first(lambda command: command.name == args.command, self.menu)
             if command:
                 return command.run(args, rt)
+
         elif args.command in {alias.name for alias in aliases}:
+
             command = _first(lambda command: command.name == "run", self.menu)
             alias = _first(lambda alias: alias.name == args.command, aliases)
             if command and alias:
@@ -72,6 +75,7 @@ class Parser(argparse.ArgumentParser):
             lines.append(f"  - {alias.name}: {alias.doc}")
 
         self.error("\n".join(lines))
+        return None
 
 
 def build_argparser(flow_cfg: env.FlowConfig):
@@ -120,7 +124,7 @@ def expand_shortcuts(parser: Parser, args: argparse.Namespace):
 @dataclass
 class AdditionalArgument:
     name: str
-    ctor: callable  # type: ignore
+    ctor: _inspect.ArgsFunction
 
     def create(self, rt: env.Runtime, args: argparse.Namespace, menu: "Command"):
         if self.ctor == env.Runtime:
@@ -150,7 +154,7 @@ AnyArgument = typing.Union[AdditionalArgument, AnnotatedArgument]
 class Command:
     name: str
     doc: str
-    entry: callable  # type: ignore
+    entry: _inspect.Function
     annotated: typing.List[AnnotatedArgument]
     additional: typing.List[AdditionalArgument]
     parent: typing.Optional["Command"]
@@ -190,9 +194,12 @@ class Command:
         if has_config:
             _argparse_config_visit(parser)
 
+        self._argparse_visit_parameters(parser)
+        self._argparse_visit_subcommands(parser, level)
+
+    def _argparse_visit_parameters(self, parser: Parser):
         groups: typing.Set[int] = set()
-        for arg_index in range(len(self.annotated)):
-            annotated = self.annotated[arg_index]
+        for arg_index, annotated in enumerate(self.annotated):
             group = annotated.group
             if group is not None:
                 if id(group) in groups:
@@ -206,7 +213,8 @@ class Command:
                 continue
             annotated.argparse_visit(parser)
 
-        if len(self.children):
+    def _argparse_visit_subcommands(self, parser: Parser, level: int):
+        if self.children:
             subparsers = parser.add_subparsers(
                 dest=f"command_{level}",
                 metavar="command",
@@ -223,7 +231,7 @@ class Command:
 
         subcommand_name = None
 
-        if len(self.children):
+        if self.children:
             subcommand_attribute = f"command_{level}"
             if hasattr(args, subcommand_attribute):
                 subcommand_name = getattr(args, subcommand_attribute)
@@ -232,18 +240,19 @@ class Command:
             subcommand = _first(
                 lambda command: command.name == subcommand_name, self.children
             )
-            if not subcommand:
+            if subcommand is None:
                 rt.fatal(f"cannot find {subcommand_name}")
 
             return subcommand.run(args, rt, level=level + 1)
+        # type:ignore[union-attr]
 
         kwargs = {}
-        for arg in self.annotated:
-            kwargs[arg.name] = getattr(args, arg.name, None)
+        for anno in self.annotated:
+            kwargs[anno.name] = getattr(args, anno.name, None)
 
         for additional in self.additional:
-            arg = additional.create(rt, args, self)
-            kwargs[additional.name] = arg
+            anno = additional.create(rt, args, self)
+            kwargs[additional.name] = anno
 
         result = self.entry(**kwargs)
         return 0 if result is None else result
@@ -290,13 +299,11 @@ def _argparse_visit_all(
     else:
         cfg.aliases = []
 
-    pass
-
 
 def _build_menu(cmd: arg._Command, parent: typing.Optional[Command]):
     name = cmd.name
     doc = cmd.doc or ""
-    entry = cmd.entry or (lambda: 0)
+    entry = cmd.entry or typing.cast(_inspect.Function, lambda: 0)
 
     args = _extract_args(entry)
     additional = [entry for entry in args if isinstance(entry, AdditionalArgument)]
@@ -319,7 +326,9 @@ def _build_menu(cmd: arg._Command, parent: typing.Optional[Command]):
 def _extract_arg(argument: _inspect.Argument):
     for ctor in [configs.Configs, env.Runtime, Command]:
         if argument.type is ctor:
-            return AdditionalArgument(argument.name, ctor)
+            return AdditionalArgument(
+                argument.name, typing.cast(_inspect.ArgsFunction, ctor)
+            )
 
     metadata: typing.Optional[arg.Argument] = _first(
         lambda meta: isinstance(meta, arg.Argument), argument.metadata
@@ -363,10 +372,10 @@ def _build_run_shortcuts(cfg):
                     config.append(f"{key}={_shortcut_value(v)}")
             else:
                 config.append(f"{key}={_shortcut_value(value)}")
-        if len(config) > 0:
+        if config:
             args.append((shortcut_name, config, has_os, has_compiler))
 
-    if len(args):
+    if args:
         os_prefix = f"os={env.platform}"
         compiler_prefix = f"compiler={env.default_compiler()}"
 

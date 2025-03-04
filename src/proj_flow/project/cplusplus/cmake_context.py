@@ -11,12 +11,12 @@ import uuid
 
 import chevron
 
-from proj_flow import api, project
+from proj_flow import api
 from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 from proj_flow.project import data
 from proj_flow.project.cplusplus import project
 
-config_json_mustache = """
+CONFIG_JSON_MUSTACHE = """
 {{#with.cmake}}
 cmake:
   vars:
@@ -29,7 +29,7 @@ cmake:
 
 class CMakeInit(api.init.InitStep):
     def postprocess(self, rt: api.env.Runtime, context: dict):
-        patch = chevron.render(config_json_mustache, context).rstrip()
+        patch = chevron.render(CONFIG_JSON_MUSTACHE, context).rstrip()
         if not patch:
             return
 

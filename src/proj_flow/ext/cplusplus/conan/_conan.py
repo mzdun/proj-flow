@@ -16,7 +16,7 @@ from proj_flow.base import cmd
 from proj_flow.dependency import VER_REGEX
 
 
-class conan(ABC):
+class Conan(ABC):
     version: int
 
     def __init__(self, version: int = 1):
@@ -42,7 +42,7 @@ class conan(ABC):
     ) -> int: ...
 
 
-class conan_1(conan):
+class ConanVer1(Conan):
     def __init__(self):
         super().__init__(1)
 
@@ -80,7 +80,7 @@ class conan_1(conan):
         )
 
 
-class conan_2(conan):
+class ConanVer2(Conan):
     def __init__(self):
         super().__init__(2)
 
@@ -137,13 +137,13 @@ def _conan_version():
     return chunks[0]
 
 
-ctors: List[Callable[[], conan]] = [
-    conan_1,
-    conan_2,
+ctors: List[Callable[[], Conan]] = [
+    ConanVer1,
+    ConanVer2,
 ]
 
 
-def conan_api() -> conan:
+def conan_api() -> Conan:
     version = _conan_version()
     index = version - 1
     if index >= len(ctors):

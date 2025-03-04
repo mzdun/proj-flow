@@ -25,5 +25,4 @@ __steps: List[InitStep] = []
 
 
 def register_init_step(step: InitStep):
-    global __steps
     __steps.append(step)

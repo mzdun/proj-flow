@@ -14,8 +14,8 @@ from proj_flow.api import arg
 def main():
     """Finish bootstrapping on behalf of flow.py"""
 
-    GITHUB_ENV = os.environ.get("GITHUB_ENV")
-    if GITHUB_ENV is not None:
-        with open(GITHUB_ENV, "a", encoding="UTF-8") as github_env:
-            PATH = os.environ["PATH"]
-            print(f"PATH={PATH}", file=github_env)
+    github_env_path = os.environ.get("GITHUB_ENV")
+    if github_env_path is not None:
+        with open(github_env_path, "a", encoding="UTF-8") as github_env:
+            path = os.environ["PATH"]
+            print(f"PATH={path}", file=github_env)

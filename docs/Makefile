@@ -15,7 +15,7 @@ help:
 .PHONY: help Makefile __api
 
 __api:
-	@python enum-mods.py
+	@python enum_mods.py
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

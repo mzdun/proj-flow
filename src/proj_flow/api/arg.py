@@ -22,7 +22,7 @@ def _eval(arg: LazyArgument[T]) -> T:
     return arg
 
 
-class _Completable(typing.Protocol):
+class _Completable(typing.Protocol):  # pylint: disable=too-few-public-methods
     completer: _inspect.Function
 
 
@@ -31,7 +31,6 @@ class ExclusiveArgumentGroup:
     opt: bool = False
 
     def visit(self, parser: argparse._ActionsContainer) -> argparse._ActionsContainer:
-        self.opt
         return parser.add_mutually_exclusive_group(required=not self.opt)
 
 
@@ -50,7 +49,7 @@ class Argument:
     group: typing.Optional[ExclusiveArgumentGroup] = None
 
     def visit(self, parser: argparse._ActionsContainer, name: str):
-        kwargs = {}
+        kwargs: typing.Dict[str, typing.Any] = {}
 
         self_help = _eval(self.help)
         self_names = _eval(self.names)
@@ -75,7 +74,7 @@ class Argument:
             kwargs["choices"] = self_choices
 
         names = (
-            [name] if self.pos else self_names if len(self_names) > 0 else [f"--{name}"]
+            ([self_names[0]] if self_names else [name]) if self.pos else (self_names if self_names else [f"--{name}"])
         )
 
         if self.pos:
@@ -94,13 +93,13 @@ class Argument:
 class FlagArgument(Argument):
     def __init__(
         self,
-        help: str = "",
-        names: typing.List[str] = [],
+        help: str = "",  # pylint: disable=redefined-builtin
+        names: typing.Optional[typing.List[str]] = None,
         group: typing.Optional[ExclusiveArgumentGroup] = None,
     ):
         super().__init__(
             help=help,
-            names=names,
+            names=names or [],
             group=group,
             opt=True,
             action="store_true",
@@ -152,30 +151,29 @@ _autodoc = {
 def command(*name: str):
     def wrap(function: object):
         entry = typing.cast(_inspect.Function, function)
-        global _known_commands
         orig_doc = inspect.getdoc(entry)
         _known_commands.add(list(name), entry, orig_doc)
 
         doc = orig_doc or ""
-        add_para_sep = not not doc
+        add_para_sep = doc != ""
 
         for arg in _inspect.signature(entry):
-            help = ""
+            help_arg: str = ""
             for meta in arg.metadata:
                 if isinstance(meta, Argument):
-                    help = meta.help
-                    if help:
+                    help_arg = _eval(meta.help)
+                    if help_arg:
                         break
 
-            if not help:
+            if not help_arg:
                 full_name = f"{arg.type.__module__}.{arg.type.__name__}"
-                help = _autodoc.get(full_name, "")
+                help_arg = _autodoc.get(full_name, "")
 
             if add_para_sep:
                 add_para_sep = False
                 doc += "\n\n"
 
-            doc += f":param {_inspect.type_name(arg.type)} {arg.name}: {help}\n"
+            doc += f":param {_inspect.type_name(arg.type)} {arg.name}: {help_arg}\n"
 
         entry.__doc__ = doc
 

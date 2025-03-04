@@ -90,6 +90,26 @@ class LayerInfo:
     files: List[FileInfo]
     when: Optional[str] = None
 
+    @staticmethod
+    def _walk(layer_dir: str):
+        result: List[str] = []
+        prefix = os.path.join(layer_dir, "")
+        for curr_dir, dirs, filenames in os.walk(layer_dir):
+            dirs[:] = [dirname for dirname in dirs if dirname not in ["__pycache__"]]
+            filenames[:] = [
+                filename
+                for filename in filenames
+                if os.path.splitext(filename) not in [".pyc", ".pyo", ".pyd"]
+            ]
+
+            for filename in filenames:
+                src = os.path.join(curr_dir, filename)
+                if src.startswith(prefix):
+                    src = src[len(prefix) :]
+                result.append(src)
+
+        return result
+
     @classmethod
     def from_fs(cls, layer_dir: str, context: ctx.SettingsType):
         with open(f"{layer_dir}.json", encoding="UTF-8") as f:
@@ -97,23 +117,10 @@ class LayerInfo:
         when = cast(Optional[str], layer_info.get("when"))
         filelist = cast(dict, layer_info.get("filelist", {}))
 
-        sources: List[str] = []
-        prefix = os.path.join(layer_dir, "")
-        for curr_dir, dirs, files in os.walk(layer_dir):
-            dirs[:] = [dirname for dirname in dirs if dirname not in ["__pycache__"]]
-            files[:] = [
-                filename
-                for filename in files
-                if os.path.splitext(filename) not in [".pyc", ".pyo", ".pyd"]
-            ]
-
-            for filename in files:
-                src = os.path.join(curr_dir, filename)
-                if src.startswith(prefix):
-                    src = src[len(prefix) :]
-                sources.append(src)
-
-        files = [FileInfo.from_json(src, filelist, context) for src in sources]
+        files = [
+            FileInfo.from_json(src, filelist, context)
+            for src in LayerInfo._walk(layer_dir)
+        ]
         files.sort(key=lambda info: info.dst)
 
         result = cls(root=layer_dir, files=files, when=when)
@@ -163,25 +170,24 @@ class LayerInfo:
 
     def get_git_checks(self):
         for file in self.files:
-            for special in file.get_git_checks():
-                yield special
+            yield from file.get_git_checks()
 
 
 def copy_license(rt: env.Runtime, context: ctx.SettingsType):
-    license = path_get(context, "COPY.LICENSE")
-    if not license:
+    license_name: Optional[str] = path_get(context, "COPY.LICENSE")
+    if not license_name:
         return
 
     licenses_dir = os.path.abspath(
-        os.path.join(ctx.package_root, ctx.template_dir, "licenses")
+        os.path.join(ctx.PACKAGE_ROOT, ctx.TEMPLATE_DIR, "licenses")
     )
-    license_file = f"{license}.mustache"
+    license_file = f"{license_name}.mustache"
     info = FileInfo(license_file, "LICENSE", is_mustache=True, is_executable=False)
     info.run(licenses_dir, rt, context)
 
 
 def gather_package_layers(package_root: str, context: ctx.SettingsType):
-    layers_dir = os.path.abspath(os.path.join(package_root, ctx.template_dir, "layers"))
+    layers_dir = os.path.abspath(os.path.join(package_root, ctx.TEMPLATE_DIR, "layers"))
     for root, dirs, files in os.walk(layers_dir):
         layer_dirs = [
             os.path.abspath(os.path.join(root, dirname))

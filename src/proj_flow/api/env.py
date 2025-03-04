@@ -21,7 +21,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, NoReturn, Optional, Union, cast
 
 from proj_flow.api import ctx
 from proj_flow.base import plugins, uname
@@ -49,7 +49,7 @@ def default_compiler():
         )
         return "?"
     except TypeError:
-        print(f"-- TypeError: internal: flow config not ready yet", file=sys.stderr)
+        print("-- TypeError: internal: flow config not ready yet", file=sys.stderr)
         return "?"
 
 
@@ -260,7 +260,7 @@ def _mkdir(dirname: str):
 
 
 def _ls(dirname: str, shallow=True):
-    result = []
+    result: List[str] = []
     for root, dirnames, filenames in os.walk(dirname):
         if shallow:
             dirnames[:] = []
@@ -338,7 +338,7 @@ class Runtime(FlowConfig):
                 self.no_coverage = True
 
             if "RELEASE" in os.environ and "GITHUB_ACTIONS" in os.environ:
-                self.official = not not json.loads(os.environ["RELEASE"])
+                self.official = json.loads(os.environ["RELEASE"]) and True
 
             self.only_host = not (self.dry_run or self.official)
         else:
@@ -359,7 +359,7 @@ class Runtime(FlowConfig):
 
         print("--", *args, **kwargs, file=sys.stderr)
 
-    def fatal(self, *args: str, **kwargs):
+    def fatal(self, *args: str, **kwargs) -> NoReturn:
         print("-- FATAL:", *args, **kwargs, file=sys.stderr)
         sys.exit(1)
 
@@ -374,7 +374,7 @@ class Runtime(FlowConfig):
         if self.dry_run:
             return 0
 
-        result = subprocess.run(args)
+        result = subprocess.run(args, check=False)
         if result.returncode != 0:
             print(
                 f"proj-flow: error: {args[0]} ended in failure, exiting",
@@ -386,7 +386,7 @@ class Runtime(FlowConfig):
     def capture(self, *args: str, silent=False):
         if not silent:
             self.print(*args)
-        return subprocess.run(args, shell=False, encoding="UTF-8", capture_output=True)
+        return subprocess.run(args, check=False, encoding="UTF-8", capture_output=True)
 
     def mkdirs(self, dirname: str):
         self.print("mkdir", "-p", dirname)
@@ -425,15 +425,15 @@ class Config:
 
     def get_path(self, key: str, val: Any = None):
         path = key.split(".")
-        ctx = self.items
+        context = self.items
         for step in path:
-            if not isinstance(ctx, dict):
+            if not isinstance(context, dict):
                 return val
-            child = ctx.get(step)
+            child = context.get(step)
             if child is None:
                 return val
-            ctx = child
-        return cast(Any, ctx)
+            context = child
+        return cast(Any, context)
 
     @property
     def os(self) -> str:

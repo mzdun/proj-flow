@@ -24,9 +24,9 @@ def _safe_regex(value: str) -> str:
 
 
 def build_regex(project: release.Project):
-    regexPre = _safe_regex(project.package_prefix)
-    regexPost = _safe_regex(project.package_suffix)
-    regex = f"^{regexPre}(.*){regexPost}$"
+    regex_pre = _safe_regex(project.package_prefix)
+    regex_post = _safe_regex(project.package_suffix)
+    regex = f"^{regex_pre}(.*){regex_post}$"
     return re.compile(regex)
 
 
@@ -38,10 +38,10 @@ def gather_artifacts(directory: str, matcher: re.Pattern):
     else:
         next_directory = f"{directory}-dir"
         os.makedirs(next_directory, exist_ok=True)
-        with zipfile.ZipFile(directory) as zip:
-            names = [name for name in zip.namelist() if matcher.match(name)]
+        with zipfile.ZipFile(directory) as zipf:
+            names = [name for name in zipf.namelist() if matcher.match(name)]
             for name in names:
-                zip.extract(name, path=next_directory)
+                zipf.extract(name, path=next_directory)
         directory = next_directory
 
     return directory, names
@@ -58,7 +58,7 @@ def _hash(filename: str) -> str:
 def checksums(rt: env.Runtime, directory: str, names: typing.List[str], outname: str):
     rt.print("sha256sum", "-b")
     if not rt.dry_run:
-        with open(os.path.join(directory, outname), "w") as output:
+        with open(os.path.join(directory, outname), "w", encoding="UTF-8") as output:
             for name in names:
                 digest = _hash(os.path.join(directory, name))
                 print(f"{digest} *{name}", file=output)
