@@ -73,6 +73,22 @@ dev = [
   "types-chevron~=0.14",
   "types-toml~=0.10",
 ]
+test = [
+  "pytest~=8.0",
+  "pytest-cov~=6.0",
+  "pytest-mock~=3.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report html --cov-report term-missing --cov-fail-under 50 -s"
+# addopts = "-s"
+testpaths = ["tests"]
+
+[pytest]
+mock_use_standalone_module = true
+
+[tool.coverage.run]
+source = ["src"]
 
 [tool.black]
 target-version = ["py310", "py311", "py312", "py313"]
