@@ -8,7 +8,6 @@ release`` commands. It will soon also have ``github publish``, finishing the
 job started in ``release``.
 """
 
-import argparse
 import json
 import os
 import sys
@@ -38,11 +37,7 @@ def matrix(
 ):
     """Supply data for GitHub Actions"""
 
-    configs = Configs(
-        rt,
-        argparse.Namespace(configs=[], matrix=True, official=official),
-        expand_compilers=False,
-    )
+    configs = Configs(rt, cfgs=[], spread_lts=True, expand_compilers=False)
 
     usable = [usable.items for usable in configs.usable]
     for config in usable:

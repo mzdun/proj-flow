@@ -24,7 +24,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, NoReturn, Optional, Union, cast
 
 from proj_flow.api import ctx
-from proj_flow.base import plugins, uname
+from proj_flow.base import path_get, plugins, uname
 
 platform = uname.uname()[0]
 
@@ -47,9 +47,6 @@ def default_compiler():
             f"-- KeyError: {platform} in {flow_config_default_compiler}",
             file=sys.stderr,
         )
-        return "?"
-    except TypeError:
-        print("-- TypeError: internal: flow config not ready yet", file=sys.stderr)
         return "?"
 
 
@@ -125,10 +122,9 @@ def _merge_dicts(dst: dict, src: dict):
         src_val = src[key]
         dst_val = dst[key]
 
-        if isinstance(src_val, dict):
-            if isinstance(dst_val, dict):
-                _merge_dicts(dst_val, src_val)
-                continue
+        if isinstance(src_val, dict) and isinstance(dst_val, dict):
+            _merge_dicts(dst_val, src_val)
+            continue
 
         dst[key] = src_val
 
@@ -175,29 +171,38 @@ class FlowConfig:
     aliases: List[RunAlias] = []
     root: str
 
-    def __init__(self, cfg: Optional["FlowConfig"] = None, root: str = "."):
-        if cfg is not None:
-            self._cfg = cfg._cfg
-            self.steps = cfg.steps
-            self.aliases = cfg.aliases
-            self.root = cfg.root
-        else:
-            self.root = os.path.abspath(root)
-            defaults: ctx.SettingsType = {}
-            dest: dict = {}
+    @classmethod
+    def load(cls, root: str = "."):
+        root = os.path.abspath(root)
+        defaults: ctx.SettingsType = {}
+        dest: dict = {}
 
-            _merge(
-                dest,
-                defaults,
-                os.path.join(os.path.expanduser("~"), ".config", "proj-flow.json"),
-            )
-            _merge(dest, defaults, os.path.join(self.root, ".flow", "config.json"))
+        _merge(
+            dest,
+            defaults,
+            os.path.join(os.path.expanduser("~"), ".config", "proj-flow.json"),
+        )
+        _merge(dest, defaults, os.path.join(root, ".flow", "config.json"))
 
-            self._cfg = dest
-            self._cfg["defaults"] = defaults
+        _cfg = dest
+        _cfg["defaults"] = defaults
 
-            self._propagate_compilers()
-            self._load_extensions()
+        result = cls(_cfg, root=root)
+        result._propagate_compilers()
+        result._load_extensions()
+        return result
+
+    def __init__(
+        self,
+        cfg: dict,
+        steps: Optional[list] = None,
+        aliases: Optional[List[RunAlias]] = None,
+        root: str = ".",
+    ):
+        self._cfg = cfg
+        self.steps = steps or []
+        self.aliases = aliases or []
+        self.root = root
 
     def _propagate_compilers(self):
         global _flow_config_default_compiler
@@ -259,11 +264,10 @@ def _mkdir(dirname: str):
     os.makedirs(dirname, exist_ok=True)
 
 
-def _ls(dirname: str, shallow=True):
+def _ls(dirname: str):
     result: List[str] = []
     for root, dirnames, filenames in os.walk(dirname):
-        if shallow:
-            dirnames[:] = []
+        dirnames[:] = []
 
         result.extend(
             os.path.relpath(os.path.join(root, filename), start=dirname)
@@ -316,42 +320,112 @@ class Runtime(FlowConfig):
     no_coverage: bool
     use_color: bool
     only_host: bool
-    platform: str
-    secrets: List[str] = []
+    secrets: List[str]
 
-    def __init__(
-        self, argsOrRuntime: Union[argparse.Namespace, "Runtime"], cfg: FlowConfig
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        /,
+        *,
+        flow_cfg: Optional[FlowConfig] = None,
+        cfg: Optional[dict] = None,
+        steps: Optional[list] = None,
+        aliases: Optional[List[RunAlias]] = None,
+        root: str = ".",
+        dry_run: bool = False,
+        silent: bool = False,
+        verbose: bool = False,
+        official: bool = False,
+        no_coverage: bool = False,
+        use_color: bool = True,
+        only_host: bool = False,
+        secrets: Optional[List[str]] = None,
     ):
-        super().__init__(cfg=cfg)
-
-        if isinstance(argsOrRuntime, argparse.Namespace):
-            args = argsOrRuntime
-            self.dry_run = getattr(args, "dry_run", False)
-            self.silent = getattr(args, "silent", False)
-            self.verbose = getattr(args, "verbose", False)
-            self.official = getattr(args, "official", False)
-            self.use_color = True
-            self.no_coverage = False
-            self.platform = platform
-
-            if "NO_COVERAGE" in os.environ:
-                self.no_coverage = True
-
-            if "RELEASE" in os.environ and "GITHUB_ACTIONS" in os.environ:
-                self.official = json.loads(os.environ["RELEASE"]) and True
-
-            self.only_host = not (self.dry_run or self.official)
+        if flow_cfg:
+            super().__init__(
+                flow_cfg._cfg, flow_cfg.steps, flow_cfg.aliases, flow_cfg.root
+            )
         else:
-            rt = argsOrRuntime
-            self.dry_run = rt.dry_run
-            self.silent = rt.silent
-            self.verbose = rt.verbose
-            self.official = rt.official
-            self.no_coverage = rt.no_coverage
-            self.use_color = rt.use_color
-            self.only_host = rt.only_host
-            self.platform = rt.platform
-            self.secrets = [*rt.secrets]
+            super().__init__(cfg or {}, steps, aliases, root)
+        self.dry_run = dry_run
+        self.silent = silent
+        self.verbose = verbose
+        self.official = official
+        self.no_coverage = no_coverage
+        self.use_color = use_color
+        self.only_host = only_host
+        self.secrets = [*(secrets or [])]
+
+    @classmethod
+    def from_cli(cls, args: argparse.Namespace, cfg: FlowConfig):
+        dry_run = getattr(args, "dry_run", False)
+        silent = getattr(args, "silent", False)
+        verbose = getattr(args, "verbose", False)
+        official = getattr(args, "official", False)
+        use_color = True
+        no_coverage = False
+
+        if "NO_COVERAGE" in os.environ:
+            no_coverage = True
+
+        if "RELEASE" in os.environ and "GITHUB_ACTIONS" in os.environ:
+            official = json.loads(os.environ["RELEASE"]) and True
+
+        only_host = not (dry_run or official)
+
+        return cls(
+            cfg=cfg._cfg,
+            steps=cfg.steps,
+            aliases=cfg.aliases,
+            root=cfg.root,
+            dry_run=dry_run,
+            silent=silent,
+            verbose=verbose,
+            official=official,
+            no_coverage=no_coverage,
+            use_color=use_color,
+            only_host=only_host,
+        )
+
+    @classmethod
+    def from_flow_cfg(cls, cfg: FlowConfig):
+        dry_run = False
+        silent = False
+        verbose = False
+        official = False
+        use_color = True
+        no_coverage = False
+        only_host = True
+
+        return cls(
+            cfg=cfg._cfg,
+            steps=cfg.steps,
+            aliases=cfg.aliases,
+            root=cfg.root,
+            dry_run=dry_run,
+            silent=silent,
+            verbose=verbose,
+            official=official,
+            no_coverage=no_coverage,
+            use_color=use_color,
+            only_host=only_host,
+        )
+
+    @classmethod
+    def clone(cls, rt: "Runtime"):
+        return cls(
+            cfg=rt._cfg,
+            steps=rt.steps,
+            aliases=rt.aliases,
+            root=rt.root,
+            dry_run=rt.dry_run,
+            silent=rt.silent,
+            verbose=rt.verbose,
+            official=rt.official,
+            no_coverage=rt.no_coverage,
+            use_color=rt.use_color,
+            only_host=rt.only_host,
+            secrets=[*rt.secrets],
+        )
 
     def message(self, *args: str, level=Msg.DEBUG, **kwargs):
         if not MSG_GUARD[level](self):
@@ -424,16 +498,7 @@ class Config:
     keys: List[str]
 
     def get_path(self, key: str, val: Any = None):
-        path = key.split(".")
-        context = self.items
-        for step in path:
-            if not isinstance(context, dict):
-                return val
-            child = context.get(step)
-            if child is None:
-                return val
-            context = child
-        return cast(Any, context)
+        return path_get(self.items, key, val)
 
     @property
     def os(self) -> str:

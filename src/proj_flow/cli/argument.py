@@ -43,11 +43,19 @@ class Parser(argparse.ArgumentParser):
     def add_subparsers(self, **kwargs) -> Subparsers:  # type:ignore[override]
         return typing.cast(Subparsers, super().add_subparsers(**kwargs))
 
+    def add_argument(self, *args, **kwargs) -> Action:  # type:ignore[override]
+        return typing.cast(Action, super().add_argument(*args, **kwargs))
+
+    # when adding "return None" to the end of this function, the warning goes
+    # away; but there is a Parser.exit there as well, which itself ends with
+    # SystemExit(2) exception being thrown
+    #
+    # pylint: disable-next=inconsistent-return-statements
     def find_and_run_command(self, args: argparse.Namespace):
         commands = {entry.name for entry in self.menu}
         aliases = self.flow.aliases
 
-        rt = env.Runtime(args, self.flow)
+        rt = env.Runtime.from_cli(args, self.flow)
 
         if rt.verbose:
             verbose_info(self.menu)
@@ -68,20 +76,19 @@ class Parser(argparse.ArgumentParser):
                 args.cli_steps.append(",".join(alias.steps))
                 return command.run(args, rt)
 
-        lines = ["the command arguments are required; known commands:", ""]
+        lines = ["the command argument is required; known commands:", ""]
         for command in self.menu:
             lines.append(f"  - {command.name}: {command.doc}")
         for alias in aliases:
             lines.append(f"  - {alias.name}: {alias.doc}")
 
         self.error("\n".join(lines))
-        return None
 
 
 def build_argparser(flow_cfg: env.FlowConfig):
     parser = Parser(
         prog="proj-flow",
-        description="C++ project maintenance, automated",
+        description="Project maintenance, automated",
         add_help=False,
     )
     parser.add_argument(
@@ -112,26 +119,25 @@ def expand_shortcuts(parser: Parser, args: argparse.Namespace):
     args_kwargs = dict(args._get_kwargs())
     shortcuts: typing.Dict[str, typing.List[str]] = parser.shortcuts
     for key in shortcuts:
-        try:
-            if not args_kwargs[key]:
-                continue
-            typing.cast(typing.List[str], args.configs).extend(shortcuts[key])
-            break
-        except KeyError:
+        if not args_kwargs.get(key, False):
             continue
+        typing.cast(typing.List[str], args.configs).extend(shortcuts[key])
+
+
+AdditionalConstructor = typing.Union[env.Runtime, "Command", _inspect.ArgsFunction]
 
 
 @dataclass
 class AdditionalArgument:
     name: str
-    ctor: _inspect.ArgsFunction
+    ctor: AdditionalConstructor
 
     def create(self, rt: env.Runtime, args: argparse.Namespace, menu: "Command"):
         if self.ctor == env.Runtime:
             return rt
         if self.ctor == Command:
             return menu
-        return self.ctor(rt, args)
+        return typing.cast(_inspect.ArgsFunction, self.ctor)(rt, args)
 
 
 @dataclass
@@ -187,7 +193,7 @@ class Command:
 
         has_config = False
         for additional in self.additional:
-            if additional.ctor == configs.Configs:
+            if additional.ctor == configs.Configs.from_cli:
                 has_config = True
                 break
 
@@ -323,11 +329,16 @@ def _build_menu(cmd: arg._Command, parent: typing.Optional[Command]):
     return current
 
 
+def get_ctor(ctor):
+    return ctor if ctor is not configs.Configs else configs.Configs.from_cli
+
+
 def _extract_arg(argument: _inspect.Argument):
     for ctor in [configs.Configs, env.Runtime, Command]:
         if argument.type is ctor:
             return AdditionalArgument(
-                argument.name, typing.cast(_inspect.ArgsFunction, ctor)
+                argument.name,
+                typing.cast(_inspect.ArgsFunction, get_ctor(ctor)),
             )
 
     metadata: typing.Optional[arg.Argument] = _first(

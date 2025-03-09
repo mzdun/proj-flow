@@ -10,7 +10,7 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from proj_flow.api.env import Runtime
 
@@ -21,33 +21,34 @@ class Statement:
     outputs: List[str]
     inputs: List[str]
     implicit_deps: List[str] = field(default_factory=list)
+    fresh: bool = False
 
-    def run(self, rt: Runtime):
+    def run(self, rt: Runtime, statements: List["Statement"]):
         command = self.rule.command(self)
         if len(command) == 0:
-            return self._run_directly(rt)
+            return self._run_directly(rt, statements)
 
         if rt.dry_run:
             rt.print(*command)
             return 0
 
-        if not self._needed():
+        self.fresh = not self._needed(statements)
+        if self.fresh:
             return False
 
         return rt.cmd(*command)
 
-    def _run_directly(self, rt: Runtime):
+    def _run_directly(self, rt: Runtime, statements: List["Statement"]):
         if rt.dry_run:
-            copy = Runtime(rt, rt)
-            copy.dry_run = True
-            return self.rule.run(self, copy)
+            return self.rule.run(self, rt)
 
-        if not self._needed():
+        self.fresh = not self._needed(statements)
+        if self.fresh:
             return False
 
         return self.rule.run(self, rt)
 
-    def _needed(self):
+    def _out_mtime(self):
         out_mtime = None
         for out in self.outputs:
             try:
@@ -55,17 +56,31 @@ class Statement:
                 out_mtime = mtime if out_mtime is None else min(mtime, out_mtime)
             except FileNotFoundError:
                 pass
-        if out_mtime is None:
-            return True
+        return out_mtime
 
+    def _in_mtime(self, statements: List["Statement"]) -> Union[float, bool]:
         dep_mtime = 0.0
         for deps in [self.inputs, self.implicit_deps]:
             for dep in deps:
+                for statement in statements:
+                    if dep in statement.outputs and not statement.fresh:
+                        return True
                 try:
                     mtime = os.path.getmtime(dep)
                     dep_mtime = max(dep_mtime, mtime)
                 except FileNotFoundError:
                     pass
+        return dep_mtime
+
+    def _needed(self, statements: List["Statement"]):
+        out_mtime = self._out_mtime()
+        if out_mtime is None:
+            return True
+
+        dep_mtime = self._in_mtime(statements)
+        if isinstance(dep_mtime, bool):
+            return dep_mtime
+
         return dep_mtime > out_mtime
 
 
@@ -84,6 +99,14 @@ class Rule(ABC):
         implicit_deps: Optional[List[str]] = None,
     ):
         return Statement(cls(), outputs, inputs, implicit_deps or [])
+
+    def wrap(
+        self,
+        outputs: List[str],
+        inputs: List[str],
+        implicit_deps: Optional[List[str]] = None,
+    ):
+        return Statement(self, outputs, inputs, implicit_deps or [])
 
 
 @dataclass(init=False)
@@ -140,7 +163,7 @@ class Makefile:
     def run(self, rt: Runtime):
         counter = 0
         for statement in self.statements:
-            result = statement.run(rt)
+            result = statement.run(rt, self.statements)
             if isinstance(result, bool):
                 if not result:
                     counter += 1

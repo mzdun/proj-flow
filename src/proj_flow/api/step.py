@@ -41,12 +41,21 @@ class Step(ABC):
     def run(self, config: Config, rt: Runtime) -> int: ...
 
 
+def _unique(items: List[str]):
+    d = {name: None for name in items}
+    return list(d.keys())
+
+
 class SerialStep(Step):
     children: List[Step] = []
 
     @property
     def runs_after(self):
-        return matrix.flatten([child.runs_after for child in self.children])
+        return _unique(matrix.flatten([child.runs_after for child in self.children]))
+
+    @property
+    def runs_before(self):
+        return _unique(matrix.flatten([child.runs_before for child in self.children]))
 
     def platform_dependencies(self) -> List[str]:
         return matrix.flatten(

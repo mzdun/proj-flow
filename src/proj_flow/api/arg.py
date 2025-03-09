@@ -74,7 +74,9 @@ class Argument:
             kwargs["choices"] = self_choices
 
         names = (
-            ([self_names[0]] if self_names else [name]) if self.pos else (self_names if self_names else [f"--{name}"])
+            ([self_names[0]] if self_names else [name])
+            if self.pos
+            else (self_names if self_names else [f"--{name}"])
         )
 
         if self.pos:

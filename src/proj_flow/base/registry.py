@@ -86,7 +86,7 @@ class Registry(typing.Generic[T]):
     ) -> typing.Tuple[typing.Optional[T], typing.Optional[K]]:
         for item in self.container:
             candidate = filter_cb(item)
-            if candidate is not None:
+            if candidate:
                 return item, candidate
         return None, None
 

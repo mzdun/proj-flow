@@ -42,7 +42,7 @@ def _change_dir():
 def __main():
     _change_dir()
 
-    flow_cfg = env.FlowConfig(root=finder.autocomplete.find_project())
+    flow_cfg = env.FlowConfig.load(root=finder.autocomplete.find_project())
     steps.clean_aliases(flow_cfg)
 
     parser = argument.build_argparser(flow_cfg)

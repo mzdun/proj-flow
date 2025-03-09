@@ -12,7 +12,7 @@ import argparse
 import datetime
 import os
 import sys
-from typing import Any, Callable, Dict, Iterable, List, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, TypeVar, cast
 
 from proj_flow.api import env
 from proj_flow.base import matrix
@@ -38,6 +38,9 @@ def _compiler(
     return lambda value: _compiler_inner(value, used_compilers, config_names)
 
 
+_TRUE = {"true", "on", "yes", "1"}
+
+
 def _boolean_inner(value: str, with_name: str):
     v = value.lower()
     return v in _TRUE or v == with_name
@@ -47,17 +50,28 @@ def _boolean(with_name: str):
     return lambda value: _boolean_inner(value, with_name)
 
 
-_TRUE = {"true", "on", "yes", "1"}
-_boolean_sanitizer = _boolean("with-sanitizer")
+def _number(value):
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 def _types(
-    used_compilers: Dict[str, List[List[str]]], config_names: Dict[str, List[str]]
+    used_compilers: Dict[str, List[List[str]]],
+    config_names: Dict[str, List[str]],
+    bool_flags: List[str],
+    int_flags: List[str],
 ):
-    return {
+    result: Dict[str, Callable[[Any], Any]] = {
         "compiler": _compiler(used_compilers, config_names),
-        "sanitizer": _boolean_sanitizer,
     }
+    for bool_flag in bool_flags:
+        result[bool_flag] = _boolean(f"with-{bool_flag.lower()}")
+    for int_flag in int_flags:
+        result[int_flag] = _number
+
+    return result
 
 
 def _config(config: List[str], only_host: bool, types: Dict[str, Callable[[str], Any]]):
@@ -86,7 +100,7 @@ def _config(config: List[str], only_host: bool, types: Dict[str, Callable[[str],
 def _expand_one(config: dict, github_os: str, os_in_name: str):
     os_ver = github_os.split("-")[1]
     build_name = f"{config['build_type']} with {config['compiler']} on {os_in_name}"
-    if config["sanitizer"]:
+    if config.get("sanitizer"):
         build_name += " (and sanitizer)"
     config["github_os"] = github_os
     config["build_name"] = build_name
@@ -110,7 +124,7 @@ def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
 
 
 def _lts_list(config: dict, lts_list: Dict[str, List[str]]):
-    os_name = config["os"]
+    os_name = config.get("os", None)
     raw = lts_list.get(os_name)
     if os_name == "ubuntu":
         if raw is not None:
@@ -119,7 +133,7 @@ def _lts_list(config: dict, lts_list: Dict[str, List[str]]):
                 PRINTED_LTS_UBUNTU_WARNING = True
                 print(
                     "\033[1;33m-- lts.ubuntu in config.yaml is deprecated; "
-                    "please remove it, so it can be calculated base on "
+                    "please remove it, so it can be calculated based on "
                     "current date\033[m",
                     file=sys.stderr,
                 )
@@ -136,22 +150,57 @@ def _expand_config(config: dict, spread_lts: bool, lts_list: Dict[str, List[str]
                 _expand_one({key: config[key] for key in config}, lts, lts)
                 for lts in spread
             ]
-    return [_expand_one(config, f"{config['os']}-latest", config["os"])]
+    os_name = config.get("os", None)
+    if os_name is None:
+        return [config]
+    return [_expand_one(config, f"{os_name}-latest", os_name)]
 
 
 def _load_flow_data(rt: env.Runtime):
-    root = ".flow"
+    root = os.path.join(rt.root, ".flow")
     paths = [os.path.join(root, "matrix.yml")]
     if rt.official:
         paths.append(os.path.join(root, "official.yml"))
     configs, keys = matrix.load_matrix(*paths)
 
     if rt.no_coverage:
+        if "coverage" in keys:
+            keys.remove("coverage")
+
+        changed = False
         for conf in configs:
             if "coverage" in conf:
                 del conf["coverage"]
+                changed = True
+
+        if changed:
+            copy: List[dict] = []
+            for conf in configs:
+                if conf not in copy:
+                    copy.append(conf)
+            configs = copy
 
     return configs, keys
+
+
+def _separate_flags(configs: List[dict], keys: List[str]):
+    bool_flags: List[str] = []
+    int_flags: List[str] = []
+    for key in keys:
+        has_bool_values = False
+        has_int_values = False
+
+        for cfg in configs:
+            value = cfg.get(key)
+            has_bool_values = has_bool_values or isinstance(value, bool)
+            has_int_values = has_int_values or isinstance(value, int)
+
+        if has_bool_values:
+            bool_flags.append(key)
+        elif has_int_values:
+            int_flags.append(key)
+
+    return bool_flags, int_flags
 
 
 def _each(cb: Callable[[T], Any], items: Iterable[T]):
@@ -162,8 +211,16 @@ def _each(cb: Callable[[T], Any], items: Iterable[T]):
 class Configs:  # pylint: disable=too-few-public-methods
     usable: List[env.Config] = []
 
+    @classmethod
+    def from_cli(cls, rt: env.Runtime, args: argparse.Namespace, expand_compilers=True):
+        configs = cast(List[str], getattr(args, "configs", []))
+        matrix = cast(bool, getattr(args, "matrix", False))
+        return cls(
+            rt=rt, cfgs=configs, spread_lts=matrix, expand_compilers=expand_compilers
+        )
+
     def __init__(
-        self, rt: env.Runtime, args: argparse.Namespace, expand_compilers=True
+        self, rt: env.Runtime, cfgs: List[str], spread_lts=False, expand_compilers=True
     ):
         configs, keys = _load_flow_data(rt)
 
@@ -171,13 +228,17 @@ class Configs:  # pylint: disable=too-few-public-methods
             self.usable = [env.Config({}, keys)]
             return
 
+        bools, ints = _separate_flags(configs, keys)
+
         used_compilers: Dict[str, List[List[str]]] = {}
 
-        types = _types(used_compilers=used_compilers, config_names=rt.compiler_names)
-        arg_configs = matrix.cartesian(_config(args.configs, rt.only_host, types))
-
-        # from commands/github
-        spread_lts = hasattr(args, "matrix") and args.matrix
+        types = _types(
+            used_compilers=used_compilers,
+            config_names=rt.compiler_names,
+            bool_flags=bools,
+            int_flags=ints,
+        )
+        arg_configs = matrix.cartesian(_config(cfgs, rt.only_host, types))
 
         if not spread_lts:
             # allow "run" to see the warning about "lts.ubuntu"
@@ -205,10 +266,16 @@ class Configs:  # pylint: disable=too-few-public-methods
         self.usable = []
         for conf in config_list:
             try:
-                compilers = used_compilers[conf["compiler"]]
+                comp = conf["compiler"]
+            except KeyError:
+                self.usable.append(env.Config(conf, keys))
+                continue
+
+            try:
+                compilers = used_compilers[comp]
             except KeyError:
                 fallback_compiler = matrix.find_compiler(
-                    conf["compiler"], config_names=rt.compiler_names
+                    comp, config_names=rt.compiler_names
                 )
                 compilers = [fallback_compiler[1]]
             for compiler in compilers:

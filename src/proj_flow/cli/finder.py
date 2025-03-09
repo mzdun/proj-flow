@@ -19,7 +19,7 @@ def split_line(cli_text: str):
     split = shlex.shlex(cli_text, posix=True)
     split.whitespace_split = True
     args = list(split)
-    if not last_is_finished and len(args) > 2 and args[-2] == "-C":
+    if not last_is_finished and len(args) > 1 and args[-2] == "-C":
         args = args[:-2]
 
     return args

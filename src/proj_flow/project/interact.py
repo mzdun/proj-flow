@@ -263,7 +263,8 @@ class ContextSetup:
     #: Selects, if the initialization process is done through prompts, or not.
     interactive: bool
 
-    #: Do no post-processing and key expanding of the resulting context
+    #: Do not post-process the context values and do not expand dot-separated
+    #: keys to nested dictionaries
     simple: bool
 
     #: If this setup is non-interactive, use contents of this file for
@@ -274,8 +275,8 @@ class ContextSetup:
 
 def get_context(setup: ContextSetup, project: Optional[str], rt: env.Runtime):
     """
-    Prompts user to provide details of newly-crated project. If `interactive`
-    is true, however, this functions skips the prompts and chooses all the
+    Prompts user to provide details of newly-crated project. If `setup.interactive`
+    is False, however, this functions skips the prompts and chooses all the
     default answers.
 
     :param setup: Selects, if the initialization process is done through

@@ -33,7 +33,7 @@ class FileInfo:
         json_file = cast(dict, filelist.get(key, {}))
         path = cast(Optional[str], json_file.get("path"))
         when = cast(Optional[str], json_file.get("when"))
-        is_executable = cast(bool, json_file.get("executable"))
+        is_executable = cast(bool, json_file.get("executable", False))
         dst = (
             chevron.render(path, context).replace("/", os.sep)
             if path is not None
@@ -64,7 +64,7 @@ class FileInfo:
             return
 
         src = os.path.join(root, self.src)
-        dst = os.path.abspath(self.dst)
+        dst = os.path.abspath(os.path.join(rt.root, self.dst))
         dirname = os.path.dirname(dst)
         os.makedirs(dirname, exist_ok=True)
 
@@ -141,9 +141,8 @@ class LayerInfo:
     @property
     def pkg(self):
         return os.path.basename(
-            os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.dirname(self.root)))
-            )
+            # NAME ---------- LAYERS -------- TEMPLATE
+            os.path.dirname(os.path.dirname(os.path.dirname(self.root)))
         )
 
     def template(self):
@@ -157,7 +156,7 @@ class LayerInfo:
             result += f"{open_mstch}/{self.when}{close_mstch}\n"
         return result
 
-    def run(self, rt: env.Runtime, context: ctx.SettingsType):
+    def run(self, rt: env.Runtime, context: dict):
         if not rt.silent:
             if rt.use_color:
                 print(f"\033[2;30m[{self.pkg}:{self.name}]\033[m")
@@ -172,8 +171,15 @@ class LayerInfo:
         for file in self.files:
             yield from file.get_git_checks()
 
+    @staticmethod
+    def get_git_checks_in(layers: List["LayerInfo"]):
+        for layer in layers:
+            files = list(layer.get_git_checks())
+            if files:
+                yield LayerInfo(root=layer.root, files=files, when=layer.when)
 
-def copy_license(rt: env.Runtime, context: ctx.SettingsType):
+
+def copy_license(rt: env.Runtime, context: dict):
     license_name: Optional[str] = path_get(context, "COPY.LICENSE")
     if not license_name:
         return

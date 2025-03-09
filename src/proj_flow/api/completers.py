@@ -9,9 +9,8 @@ The **proj_flow.api.completers** defines :py:mod:`argcomplete` functions for
 import os
 from typing import Any, Dict, List, Union, cast
 
-import yaml
-
 from proj_flow import api
+from proj_flow.base.plugins import load_data
 
 
 def cd_completer(prefix, **_kwargs):
@@ -40,10 +39,15 @@ def step_completer(prefix: str, parser, **_kwargs):
     if len(comma_sep) > 1:
         start += ","
 
-    current = comma_sep[-1].lower()
+    used = {prev.lower() for prev in comma_sep[:-1]}
+    current = comma_sep[-1]
+    current_check = current.lower()
     for step in flow_cfg.steps:
         name = cast(str, step.name)
-        if name.lower().startswith(current):
+        lower = name.lower()
+        if lower in used:
+            continue
+        if lower.startswith(current_check):
             candidate = current + name[len(current) :]
             yield start + candidate
 
@@ -57,11 +61,9 @@ def _str_arg(arg: Union[bool, str]):
 def matrix_completer(prefix: str, parser, **_kwargs):
     flow_cfg = cast(api.env.FlowConfig, parser.flow)
 
-    matrix_yml = os.path.join(flow_cfg.root, ".flow", "matrix.yml")
-    with open(matrix_yml, "r", encoding="UTF-8") as contents:
-        data: Dict[str, List[Any]] = yaml.load(contents, Loader=yaml.Loader).get(
-            "matrix", {}
-        )
+    data: Dict[str, List[Any]] = load_data(
+        os.path.join(flow_cfg.root, ".flow", "matrix.yml")
+    ).get("matrix", {})
 
     comma_sep = prefix.split(",")
     start = ",".join(comma_sep[:-1])

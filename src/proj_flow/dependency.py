@@ -82,11 +82,14 @@ class Dependency:
     def _match_version(self, version: str, expression: str):
         if expression == "":
             return True
-        app = _ver(version)
-        for comp in _comparisons:
-            if not expression.startswith(comp.op):
-                continue
-            return comp.check(app, _ver(expression[len(comp.op) :].lstrip()))
+        try:
+            app = _ver(version)
+            for comp in _comparisons:
+                if not expression.startswith(comp.op):
+                    continue
+                return comp.check(app, _ver(expression[len(comp.op) :].lstrip()))
+        except ValueError:
+            pass
 
         return False  # there is some other permutation of "=><!~"
 

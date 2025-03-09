@@ -24,7 +24,7 @@ class ArgsFunction(typing.Protocol):
 
     __name__: str
 
-    def __call__(self, *args) -> typing.Any: ...
+    def __call__(self, *args, **kwargs) -> typing.Any: ...
 
 
 @dataclass
