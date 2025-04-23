@@ -10,7 +10,20 @@
   3. Older, than vX.Y-1.Z
 - [x] GitHub bootstrap action
 - [x] Runtime/Configs -- rewrite constructor
-- [ ] New GitHub YAMLs in template
-- [ ] GitHub bootstrap action
 - [ ] Tests
+  - [x] api
+  - [x] base
+  - [x] cli
+  - [ ] flow
+  - [ ] log
+  - [x] project
+  - ---
+  - [ ] minimal
+  - [ ] ext
+  - [ ] ext.cplusplus
+  - [ ] ext.github
+  - [ ] ext.python
+  - [ ] ext.sign
+- [ ] Move compiler stuff out of general code to C++ specific code
+- [ ] New GitHub YAMLs in template
 - [ ] `proj-flow init <lang> --update`

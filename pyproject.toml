@@ -80,7 +80,7 @@ test = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov --cov-report html --cov-report term-missing --cov-fail-under 50 -s"
+addopts = "--cov --cov-report html --cov-report term-missing --cov-fail-under 60 -s"
 # addopts = "-s"
 testpaths = ["tests"]
 

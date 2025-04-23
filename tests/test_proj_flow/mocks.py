@@ -44,22 +44,26 @@ class StringIO(io.StringIO):
         super().close()
 
 
+def _read_file(files: FsData, path: str, encoding: Optional[str] = None):
+    if path not in files:
+        raise FileNotFoundError()
+    data = files[path]
+    text = data if isinstance(data, (str, bytes)) else json.dumps(data)
+    if encoding is None:
+        return io.BytesIO(text.encode() if isinstance(text, str) else text)
+    return io.StringIO(text.decode() if isinstance(text, bytes) else text, newline="\n")
+
+
 def fs(files: FsData):
     def wrap(
         path: str, mode: Optional[str] = None, /, *, encoding: Optional[str] = None
     ):
-        if path not in files:
-            raise FileNotFoundError()
-        data = files[path]
-        text = data if isinstance(data, (str, bytes)) else json.dumps(data)
         if mode in [None, "r", "rb", "a", "ab"]:
-            if encoding is None:
-                return io.BytesIO(text.encode() if isinstance(text, str) else text)
-            return io.StringIO(
-                text.decode() if isinstance(text, bytes) else text, newline="\n"
-            )
+            return _read_file(files, path, encoding)
+
         if encoding is None:
             return BytesIO(files, path)
+
         return StringIO(files, path, newline="\n")
 
     return wrap
