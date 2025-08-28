@@ -25,6 +25,7 @@ def _version(ver: str) -> Tuple[int, int, int, str]:
         raise SystemExit(1)
     return (int(m.group(1)), int(m.group(2)), int(m.group(3)), ver)
 
+
 def _prev_version(new_version: str, tags: List[str]):
     current = _version(new_version)
     versions = [_version(tag) for tag in reversed(tags)]
@@ -39,6 +40,7 @@ def _prev_version(new_version: str, tags: List[str]):
         index = 0
 
     return None if index > len(versions) else versions[index][-1]
+
 
 @release.version_updaters.add
 class VersionUpdater(release.VersionUpdater):
