@@ -1,4 +1,5 @@
 name: Python + Project Flow bootstrap
+description: Sets up Flow for current checkout.
 author: Marcin Zdun
 
 inputs:
@@ -29,11 +30,12 @@ runs:
         import os
         import sys
 
-        ACTION_PATH = r'${{ github.action_path }}'.replace('/', os.sep)
+        ACTION_PATH = os.environ['ACTION_PATH'].replace('/', os.sep)
         sys.path.insert(0, ACTION_PATH)
 
         import version
       env:
+        ACTION_PATH: ${{ github.action_path }}
         RUNNER_CONTEXT: ${{ toJson(runner) }}
 
     - name: .flow/.venv cache

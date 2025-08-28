@@ -12,6 +12,7 @@ from typing import Dict, List, cast
 from proj_flow import api
 from proj_flow.api import env, step
 from proj_flow.base.__cmake_version__ import CMAKE_VERSION
+from proj_flow.ext.cplusplus.cmake.presets import get_binary_dirs
 
 
 class CMakeBase(api.step.Step):
@@ -39,7 +40,7 @@ class CMakeBase(api.step.Step):
         self._runs_after = runs_after
         self._runs_before = runs_before
 
-    def is_active(self, config: api.env.Config, rt: api.env.Runtime) -> int:
+    def is_active(self, config: api.env.Config, rt: api.env.Runtime) -> bool:
         return os.path.isfile("CMakeLists.txt") and os.path.isfile("CMakePresets.json")
 
     def platform_dependencies(self):
@@ -55,12 +56,16 @@ class CMakeConfig(CMakeBase):
 
     def __init__(self):
         super().__init__(name="CMake")
+        self.binary_dirs = get_binary_dirs()
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         return os.path.isfile("CMakeLists.txt") and os.path.isfile("CMakePresets.json")
 
     def directories_to_remove(self, config: env.Config) -> List[str]:
-        return [f"build/{config.build_type}"]
+        binary_dir = self.binary_dirs.get(f"{config.preset}-{config.build_generator}")
+        if not binary_dir:
+            return []
+        return [binary_dir]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         cmake_vars = cast(Dict[str, str], rt._cfg.get("cmake", {}).get("vars", {}))
@@ -130,7 +135,7 @@ class PackStep(CMakeBase):
     def platform_dependencies(self):
         return self.dep_with_tool("cpack")
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         return (
             super().is_active(config, rt)
             and len(config.items.get("cpack_generator", [])) > 0
