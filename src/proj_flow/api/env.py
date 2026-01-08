@@ -169,6 +169,16 @@ def _merge(cfg: dict, defaults: ctx.SettingsType, path: str):
         _flatten_dict(defaults, stored_defaults)
 
 
+def load_extensions(extensions: List[str]):
+    for extension in extensions:
+        try:
+            importlib.import_module(extension)
+        except ModuleNotFoundError:
+            print(
+                f"-- error: module `{extension}` was no found, ignoring",
+                file=sys.stderr,
+            )
+
 class FlowConfig:
     _cfg: dict
     steps: list = []
@@ -213,14 +223,7 @@ class FlowConfig:
         if os.path.isdir(local_extensions):
             sys.path.insert(0, local_extensions)
 
-        for extension in extensions:
-            try:
-                importlib.import_module(extension)
-            except ModuleNotFoundError:
-                print(
-                    f"-- error: module `{extension}` was no found, ignoring",
-                    file=sys.stderr,
-                )
+        load_extensions(extensions)
 
     @property
     def entry(self) -> Dict[str, dict]:
