@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.17.1 <https://github.com/mzdun/proj-flow/compare/v0.17.0...v0.17.1>`_ (2026-01-08)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- bring back github actions (`37c9cee <https://github.com/mzdun/proj-flow/commit/37c9cee75e3e415ed9a9cfd3951a6767f2ff53da>`_)
+
 `0.17.0 <https://github.com/mzdun/proj-flow/compare/v0.16.0...v0.17.0>`_ (2025-08-28)
 =====================================================================================
 
