@@ -86,6 +86,8 @@ def main(
 ):
     """Initialize new project"""
 
+    api.load_common_init_setting_extensions()
+
     setup = interact.ContextSetup(
         dest_path=path,
         interactive=not non_interactive and answers is None,
