@@ -75,10 +75,20 @@ class SerialStep(Step):
 __steps: List[Step] = []
 
 
-def _register_step(step: Step):
+def _register_step(step: Step, replace: bool):
     global __steps
 
     name = step.name
+
+    if replace:
+        for index, prev in enumerate(__steps):
+            if prev.name == name:
+                __steps[index] = step
+                return
+
+        if "READTHEDOCS" not in os.environ:
+            raise NameError(f"Step {name} is marked as replacing, but there is no previous step with that name")
+        
     if name in [step.name for step in __steps]:
         if "READTHEDOCS" not in os.environ:
             raise NameError(f"Step {name} already registered")
@@ -159,11 +169,11 @@ def _extend_docstring(conv, step: Step):
     _make_private(conv.directories_to_remove)
 
 
-def register(cls=None):
+def register(cls=None, replace=False):
     def impl(cls):
         conv = _extend(cls, Step)
         step = cast(Step, conv())
-        _register_step(step)
+        _register_step(step, replace)
         _extend_docstring(conv, step)
 
         return conv
