@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.18.0 <https://github.com/mzdun/proj-flow/compare/v0.17.2...v0.18.0>`_ (2026-01-11)
+=====================================================================================
+
+New Features
+------------
+
+- allow overriding predefined set of steps (`f325e41 <https://github.com/mzdun/proj-flow/commit/f325e41f972073be7e8bb206b03ddf351c2c89b4>`_)
+
 `0.17.2 <https://github.com/mzdun/proj-flow/compare/v0.17.1...v0.17.2>`_ (2026-01-11)
 =====================================================================================
 
