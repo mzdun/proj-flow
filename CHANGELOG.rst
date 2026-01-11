@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.17.2 <https://github.com/mzdun/proj-flow/compare/v0.17.1...v0.17.2>`_ (2026-01-11)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- take the whole CMake var name (`f72991d <https://github.com/mzdun/proj-flow/commit/f72991d391c7bb488c0203fb4d7fd921b186ab08>`_)
+
 `0.17.1 <https://github.com/mzdun/proj-flow/compare/v0.17.0...v0.17.1>`_ (2026-01-08)
 =====================================================================================
 
