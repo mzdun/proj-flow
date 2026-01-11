@@ -78,10 +78,10 @@ class CMakeConfig(CMakeBase):
                 value = value[1:]
 
             if value.startswith("config:"):
-                value = value[len("config:")]
+                value = value[len("config:"):]
                 value = config.get_path(value)
             elif value.startswith("runtime:"):
-                value = value[len("runtime:")]
+                value = value[len("runtime:"):]
                 value = getattr(rt, value, None)
 
             if is_flag:
