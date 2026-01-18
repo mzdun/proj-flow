@@ -28,6 +28,7 @@ dependencies = [
   "prompt_toolkit",
   "PyYAML",
   "toml",
+  "pywebidl2",
 ]
 description = "C++ project maintenance, automated"
 dynamic = ["version"]

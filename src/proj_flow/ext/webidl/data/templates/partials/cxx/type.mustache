@@ -1,0 +1,6 @@
+{{# nullable}}std::optional<{{/nullable}}{{!
+    }}{{{name}}}{{!
+    }}{{# generic}}<{{#arguments}}{{!
+        }}{{^first}}, {{/first}}{{#arg_type}}{{> pkg-cxx:type}}{{/arg_type}}{{!
+    }}{{/arguments}}>{{/generic}}{{!
+}}{{# nullable}}>{{/nullable}}
