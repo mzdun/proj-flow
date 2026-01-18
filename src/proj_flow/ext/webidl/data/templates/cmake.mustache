@@ -1,0 +1,45 @@
+macro(__webidl_config EXT COMMAND)
+    add_custom_command(
+        OUTPUT "{{{config.binary}}}.${EXT}"
+        MAIN_DEPENDENCY "{{{config.source}}}"
+        COMMAND "${Python3_EXECUTABLE}"
+            "${PROJECT_SOURCE_DIR}/.flow/flow.py" webidl ${COMMAND}
+            --cfg "{{{config.source}}}"
+            --binary-dir "${PROJECT_BINARY_DIR}"
+             ${ARGN}
+    )
+    target_sources(__webidl_cmake PRIVATE "{{{config.binary}}}.${EXT}")
+endmacro()
+
+if(NOT TARGET __webidl_cmake)
+    add_custom_target(__webidl_cmake ALL)
+endif()
+
+__webidl_config(deps depfile)
+{{# target}}
+__webidl_config(cmake cmake --target "{{{.}}}")
+{{/ target}}
+{{^ target}}
+__webidl_config(cmake cmake)
+{{/ target}}
+
+SET(GEN_SRCS
+{{# output}}
+    "{{{.}}}"
+{{/ output}}
+)
+{{# target}}
+
+source_group(TREE ${CMAKE_CURRENT_BINARY_DIR} PREFIX gen FILES ${GEN_SRCS})
+target_sources("{{{.}}}" PRIVATE ${GEN_SRCS})
+{{/target}}
+
+add_custom_command(
+    OUTPUT ${GEN_SRCS}
+    DEPFILE "{{{depfile}}}"
+    COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/.flow/flow.py" webidl gen
+        --cfg "{{{config.source}}}"
+        --binary-dir "${PROJECT_BINARY_DIR}"
+    COMMENT "Generating code for {{{config.basename}}}"
+)

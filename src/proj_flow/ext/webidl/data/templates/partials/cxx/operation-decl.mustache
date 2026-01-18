@@ -1,0 +1,12 @@
+{{# static}}static {{/static}}{{#type}}{{> pkg-cxx:type}}{{/type}}{{> pkg-cxx:in-out}} {{!
+}}{{name}}({{#arguments}}{{!
+	}}{{^ first}}, {{/first}}{{#type}}{{> pkg-cxx:type}}{{/type}}{{> pkg-cxx:in-out}}{{!
+	}} {{name}}{{#ext_attrs}}{{!
+		}}{{#default}} = {{{.}}}{{/default}}{{!
+		}}{{^default}}{{#defaulted}} = {}{{/defaulted}}{{/default}}{{!
+	}}{{/ext_attrs}}{{!
+}}{{/arguments}}){{!
+}}{{^ext_attrs.mutable}}{{^ static}} const{{/static}}{{/ext_attrs.mutable}}{{!
+}}{{^ext_attrs.throws}} noexcept{{/ext_attrs.throws}}{{!
+}}{{#ext_attrs.defaulted}} = default{{/ext_attrs.defaulted}}{{!
+}};
