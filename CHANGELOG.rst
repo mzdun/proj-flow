@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.19.0 <https://github.com/mzdun/proj-flow/compare/v0.18.0...v0.19.0>`_ (2026-01-18)
+=====================================================================================
+
+New Features
+------------
+
+- add codegen through WebIDL and {{mustache}} (`9cb7d52 <https://github.com/mzdun/proj-flow/commit/9cb7d527bb9529af6334514155f5b2aa2ce6f48d>`_)
+
 `0.18.0 <https://github.com/mzdun/proj-flow/compare/v0.17.2...v0.18.0>`_ (2026-01-11)
 =====================================================================================
 
