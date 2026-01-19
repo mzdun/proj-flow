@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.20.0 <https://github.com/mzdun/proj-flow/compare/v0.19.0...v0.20.0>`_ (2026-01-19)
+=====================================================================================
+
+New Features
+------------
+
+- add tools from templates to extension (`b6de775 <https://github.com/mzdun/proj-flow/commit/b6de775b6b3190ef1935dd8d2e99dc7e05ff4634>`_)
+
 `0.19.0 <https://github.com/mzdun/proj-flow/compare/v0.18.0...v0.19.0>`_ (2026-01-18)
 =====================================================================================
 
