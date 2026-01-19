@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.20.1 <https://github.com/mzdun/proj-flow/compare/v0.20.0...v0.20.1>`_ (2026-01-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- add missing dependency (`55eb30d <https://github.com/mzdun/proj-flow/commit/55eb30d6aae45f7188804c63cfc866aeb4fc6936>`_)
+
 `0.20.0 <https://github.com/mzdun/proj-flow/compare/v0.19.0...v0.20.0>`_ (2026-01-19)
 =====================================================================================
 
