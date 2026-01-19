@@ -29,6 +29,7 @@ dependencies = [
   "PyYAML",
   "toml",
   "pywebidl2",
+  "requests_cache",
 ]
 description = "C++ project maintenance, automated"
 dynamic = ["version"]
