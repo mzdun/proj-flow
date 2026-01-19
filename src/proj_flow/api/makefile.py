@@ -73,7 +73,7 @@ class Rule(ABC):
     @abstractmethod
     def command(self, statement: Statement) -> List[str]: ...
 
-    def run(self, statement: Statement, rt: Runtime):
+    def run(self, statement: Statement, rt: Runtime) -> int:
         return 1
 
     @classmethod
