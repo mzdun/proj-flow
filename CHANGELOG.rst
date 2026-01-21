@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.20.2 <https://github.com/mzdun/proj-flow/compare/v0.20.1...v0.20.2>`_ (2026-01-21)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- unescape string ext attributes (`27cbd9c <https://github.com/mzdun/proj-flow/commit/27cbd9cba6aad60749648e7ceaead903d9edb4e5>`_)
+
 `0.20.1 <https://github.com/mzdun/proj-flow/compare/v0.20.0...v0.20.1>`_ (2026-01-19)
 =====================================================================================
 

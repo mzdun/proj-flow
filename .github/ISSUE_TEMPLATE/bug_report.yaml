@@ -42,7 +42,7 @@ body:
     label: Version
     description: Which version of Project Flow was used?
     options:
-      - Current (v0.20.1)
+      - Current (v0.20.2)
       - Previous (v0.19.0)
       - Older, than v0.19.0
   validations:
