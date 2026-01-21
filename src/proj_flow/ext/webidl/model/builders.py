@@ -68,7 +68,10 @@ def visit_string_extended_attribute(
         return
 
     if attr.rhs:
-        bag[name] = cast(str, attr.rhs.value)
+        value = cast(str, attr.rhs.value)
+        if value.startswith('"') and value.endswith('"') and len(value) > 1:
+            value = value[1:-1]
+        bag[name] = value
 
 
 def flag_extended_attribute(name: str):
