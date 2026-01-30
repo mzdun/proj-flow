@@ -32,6 +32,9 @@ def github():
 
 @arg.command("github", "matrix")
 def matrix(
+    pretty: typing.Annotated[
+        bool, arg.FlagArgument(help="Indent JSON document")
+    ],
     official: typing.Annotated[
         bool, arg.FlagArgument(help="Cut matrix to release builds only")
     ],
@@ -60,6 +63,8 @@ def matrix(
                 print(f"matrix={var}", file=github_output)
         else:
             print(f"matrix={var}")
+    elif pretty:
+        json.dump(usable, sys.stdout, indent=2)
     else:
         json.dump(usable, sys.stdout)
 

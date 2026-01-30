@@ -254,6 +254,10 @@ class FlowConfig:
         return self.postproc.get("exclude", [])
 
     @property
+    def postproc_include(self) -> List[dict]:
+        return self.postproc.get("include", [])
+
+    @property
     def shortcuts(self) -> Dict[str, dict]:
         return self._cfg.get("shortcuts", {})
 

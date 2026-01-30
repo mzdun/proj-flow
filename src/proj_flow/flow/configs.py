@@ -9,6 +9,7 @@ using ``-D`` switches.
 
 
 import argparse
+import copy
 import datetime
 import os
 import sys
@@ -152,6 +153,19 @@ def _load_flow_data(rt: env.Runtime):
     return configs, keys
 
 
+def _apply_postproc_includes(config: dict, postproc_include: List[dict]):
+    clone = copy.deepcopy(config)
+    for ext in postproc_include:
+        if not matrix.partially_matches(config, ext):
+            continue
+
+        for key, value in ext.items():
+            if key in config:
+                continue
+            clone[key] = value
+    return clone
+
+
 class Configs:
     usable: List[env.Config] = []
 
@@ -186,8 +200,9 @@ class Configs:
         )
 
         postproc_exclude = rt.postproc_exclude
+        postproc_include = rt.postproc_include
         usable = [
-            config
+            _apply_postproc_includes(config, postproc_include)
             for config in turned
             if len(postproc_exclude) == 0
             or not matrix.matches_any(config, postproc_exclude)
