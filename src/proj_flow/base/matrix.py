@@ -86,6 +86,29 @@ def matches(tested: dict, test: dict) -> bool:
     return True
 
 
+def partially_matches(tested: dict, test: dict) -> bool:
+    """
+    Checks, if the tested dictionary contains some of the values from test
+    dictionary, with non-zero intersection between both dictionaries.
+
+    :param tested: Dictionary to check
+    :param test: Dictionary to check against
+
+    :returns: `True`, if all keys from `test` are in `tested` and have the same
+        values, `False` otherwise.
+    """
+
+    intersection_size = 0
+    for key, value in test.items():
+        if key not in tested:
+            continue
+        val = tested.get(key)
+        if val != value:
+            return False
+        intersection_size += 1
+    return intersection_size > 0
+
+
 def matches_any(tested: dict, tests: List[dict]):
     """
     Checks, if the tested dictionary contains all the values from at least one
