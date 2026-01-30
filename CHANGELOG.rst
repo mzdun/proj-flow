@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.20.3 <https://github.com/mzdun/proj-flow/compare/v0.20.2...v0.20.3>`_ (2026-01-30)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- allow postproc includes (`07ecd17 <https://github.com/mzdun/proj-flow/commit/07ecd1770170ffb90150d1bcf622e625c39d3f50>`_)
+
 `0.20.2 <https://github.com/mzdun/proj-flow/compare/v0.20.1...v0.20.2>`_ (2026-01-21)
 =====================================================================================
 
