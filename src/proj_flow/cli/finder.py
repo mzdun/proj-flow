@@ -9,6 +9,7 @@ contains ``-C`` argument.
 
 import os
 import shlex
+from pathlib import Path
 from typing import List
 
 from argcomplete import finders
@@ -43,7 +44,7 @@ class CompletionFinder(finders.CompletionFinder):
 
     def find_project(self):
         if not self.active():
-            return "."
+            return Path()
 
         comp_line = os.environ["COMP_LINE"]
         comp_point = int(os.environ["COMP_POINT"])
@@ -51,9 +52,9 @@ class CompletionFinder(finders.CompletionFinder):
         pos = find_dash_see(args)
 
         if pos < 0:
-            return "."
+            return Path()
 
-        return args[pos]
+        return Path(args[pos])
 
 
 autocomplete = CompletionFinder()

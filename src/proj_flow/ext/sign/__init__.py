@@ -54,7 +54,7 @@ class SignBase(step.Step):
         self._runs_after = runs_after
         self._runs_before = runs_before
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         self._active_tools = [
             tool for tool in api.signing_tool.get() if tool.is_active(config, rt)
         ]
@@ -120,7 +120,7 @@ class SignMsi(SignBase):
             runs_before=["StorePackages", "Store"],
         )
 
-    def is_active(self, config: env.Config, rt: env.Runtime) -> int:
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         return super().is_active(config, rt) and "WIX" in config.items.get(
             "cpack_generator", []
         )

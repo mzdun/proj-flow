@@ -113,5 +113,5 @@ def get_project(rt: env.Runtime):
 
     _, project = project_suites.find(wrap)
     if project is None:
-        rt.fatal(f"Cannot get project information from {rt.root}")
+        rt.fatal(f"Cannot get project information from {rt.root.as_posix()}")
     return project

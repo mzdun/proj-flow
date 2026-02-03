@@ -22,7 +22,7 @@ class Install:
         return ["python -m pip"]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
-        return rt.cmd("python", "-m", "pip", "install", rt.root)
+        return rt.cmd("python", "-m", "pip", "install", rt.root.as_posix())
 
 
 @step.register
@@ -48,8 +48,9 @@ class CheckTwine:
         return ["twine"]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
-        filenames = []
-        for root, dirnames, filenames in os.walk("dist"):
+        filenames: list[str] = []
+        root = rt.root / "dist"
+        for root, dirnames, filenames in root.walk():
             dirnames[:] = []
 
         _, project = release.project_suites.find(lambda suite: suite.get_project(rt))
@@ -67,5 +68,5 @@ class CheckTwine:
             return 0
 
         return rt.cmd(
-            "twine", "check", *(os.path.join(root, filename) for filename in filenames)
+            "twine", "check", *((root / filename).as_posix() for filename in filenames)
         )

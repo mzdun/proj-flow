@@ -57,7 +57,7 @@ def _str_arg(arg: Union[bool, str]):
 def matrix_completer(prefix: str, parser, **kwargs):
     flow_cfg = cast(api.env.FlowConfig, parser.flow)
 
-    matrix_yml = os.path.join(flow_cfg.root, ".flow", "matrix.yml")
+    matrix_yml = flow_cfg.root / ".flow" / "matrix.yml"
     with open(matrix_yml, "r", encoding="UTF-8") as contents:
         data: Dict[str, List[Any]] = yaml.load(contents, Loader=yaml.Loader).get(
             "matrix", {}

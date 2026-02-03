@@ -7,6 +7,7 @@ The **proj_flow.ext.cplusplus.cmake.parser** contains simple CMake parser.
 
 import os
 import re
+from pathlib import Path
 from typing import Iterator, List, NamedTuple, Optional
 
 from proj_flow.api.release import NO_ARG, Arg
@@ -76,7 +77,7 @@ def _command(cmd: Token, stream: Iterator[Token]):
     return result
 
 
-def _cmake(filename: str):
+def _cmake(filename: Path):
     commands: List[Command] = []
 
     with open(filename, "r", encoding="UTF-8") as f:
@@ -102,9 +103,9 @@ def _patch(directory: str, arg: Arg, value: str):
         input.write(patched)
 
 
-def get_project(dirname: str) -> Optional[CMakeProject]:
+def get_project(dirname: Path) -> Optional[CMakeProject]:
     try:
-        commands = _cmake(os.path.join(dirname, "CMakeLists.txt"))
+        commands = _cmake(dirname / "CMakeLists.txt")
     except FileNotFoundError:
         return None
 
