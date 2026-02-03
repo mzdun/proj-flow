@@ -4,6 +4,20 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.22.0 <https://github.com/mzdun/proj-flow/compare/v0.21.0...v0.22.0>`_ (2026-02-03)
+=====================================================================================
+
+New Features
+------------
+
+- get test-runner over from cov (`4829061 <https://github.com/mzdun/proj-flow/commit/4829061c153ea66b8c323766f82147d2e71ee5b7>`_)
+
+Bug Fixes
+---------
+
+- make CMake presets more accessible (`d78726f <https://github.com/mzdun/proj-flow/commit/d78726fd708804a04ee3170fa5e90e27a6fa3941>`_)
+- move ``rt.root`` to ``Path`` (`fe6f3e7 <https://github.com/mzdun/proj-flow/commit/fe6f3e7b6968a01f847599e06c67bfeb463d7802>`_)
+
 `0.21.0 <https://github.com/mzdun/proj-flow/compare/v0.20.3...v0.21.0>`_ (2026-02-03)
 =====================================================================================
 
