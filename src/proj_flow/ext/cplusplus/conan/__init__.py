@@ -7,6 +7,7 @@ The **proj_flow.ext.cplusplus.conan** provides the ``"Conan"`` step.
 
 import os
 import textwrap
+from pathlib import Path
 from typing import List
 
 from proj_flow.api import env, step
@@ -14,7 +15,7 @@ from proj_flow.project import cplusplus
 
 from ._conan import conan_api
 
-CONAN_DIR = "build/conan"
+CONAN_DIR = Path("build/conan")
 CONAN_PROFILE = "_profile-compiler"
 CONAN_PROFILE_GEN = "_profile-build_type"
 
@@ -34,13 +35,13 @@ class ConanConfig:
     def is_active(self, config: env.Config, rt: env.Runtime) -> int:
         return os.path.isfile("conanfile.txt") or os.path.isfile("conanfile.py")
 
-    def directories_to_remove(self, _: env.Config) -> List[str]:
+    def directories_to_remove(self, _: env.Config) -> List[Path]:
         return [CONAN_DIR]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         api = conan_api()
 
-        profile_gen = f"{CONAN_DIR}/{CONAN_PROFILE_GEN}-{config.preset}"
+        profile_gen = f"{CONAN_DIR.as_posix()}/{CONAN_PROFILE_GEN}-{config.preset}"
         if not rt.dry_run:
             os.makedirs(CONAN_DIR, exist_ok=True)
             with open(profile_gen, "w", encoding="UTF-8") as profile:
@@ -60,7 +61,8 @@ class ConanConfig:
                 ]:
                     print(setting, file=profile)
 
-        if api.config(rt, CONAN_DIR, f"./{CONAN_DIR}/{CONAN_PROFILE}", profile_gen):
+        conan_dir = CONAN_DIR.as_posix()
+        if api.config(rt, conan_dir, f"./{conan_dir}/{CONAN_PROFILE}", profile_gen):
             return 1
         if not rt.dry_run and os.path.exists("CMakeUserPresets.json"):
             os.remove("CMakeUserPresets.json")

@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Annotated, List, Optional, Set, cast
 
 from proj_flow import api, dependency
@@ -69,7 +70,7 @@ def gather_dependencies_for_all_configs(
 def refresh_directories(
     configs: Configs, rt: api.env.Runtime, steps: List[api.step.Step]
 ):
-    directories_to_refresh: Set[str] = set()
+    directories_to_refresh: Set[Path] = set()
     for config in configs.usable:
         for step in steps:
             if step.is_active(config, rt):
@@ -80,7 +81,7 @@ def refresh_directories(
     for dirname in directories_to_refresh:
         if not rt.silent:
             printed = True
-            print(f"[-] {dirname}", file=sys.stderr)
+            print(f"[-] {dirname.as_posix()}", file=sys.stderr)
         if not rt.dry_run:
             shutil.rmtree(dirname, ignore_errors=True)
 

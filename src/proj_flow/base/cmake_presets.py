@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ext.cplusplus.cmake.presets** check build directories for CMake step.
+The **proj_flow.project.cplusplus.cmake_presets** check build directories for CMake step.
 """
 
 import json
@@ -11,7 +11,7 @@ import platform
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import cast
+from typing import Callable, TypeVar, cast
 
 
 class MacroType(Enum):
@@ -40,6 +40,7 @@ MACROS: dict[str, Path | str | MacroType] = {
 class Preset:
     name: str
     binary_dir: str | None
+    build_type: str | None
     generator: str | None
     inherits: list[str]
     file_dir: Path
@@ -82,12 +83,15 @@ class Presets:
         if dirname is None:
             return self.result
 
-        includes, presets = Presets.__load_file(filename)
-        self.__visit_includes(dirname, includes)
-        for preset in presets:
-            self.__visit_preset(dirname, preset)
-        for preset in self.result.values():
-            self.__merge_preset(preset)
+        try:
+            includes, presets = Presets.__load_file(filename)
+            self.__visit_includes(dirname, includes)
+            for preset in presets:
+                self.__visit_preset(dirname, preset)
+            for preset in self.result.values():
+                self.__merge_preset(preset)
+        except FileNotFoundError:
+            return None
 
         return self.result
 
@@ -109,9 +113,12 @@ class Presets:
         binary_dir = cast(str | None, preset.get("binaryDir"))
         generator = cast(str | None, preset.get("generator"))
         inherits = cast(list[str], preset.get("inherits", []))
+        cache = cast(dict, preset.get("cacheVariables", {}))
+        build_type = cast(str | None, cache.get("CMAKE_BUILD_TYPE"))
         self.result[name] = Preset(
             name=name,
             binary_dir=binary_dir,
+            build_type=build_type,
             generator=generator,
             inherits=inherits,
             file_dir=dirname,
@@ -132,33 +139,46 @@ class Presets:
                 preset.binary_dir = parent_preset.binary_dir
             if parent_preset.generator and not preset.generator:
                 preset.generator = parent_preset.generator
+            if parent_preset.build_type and not preset.build_type:
+                preset.build_type = parent_preset.build_type
 
     @staticmethod
     def __load_file(filename: Path):
-        try:
-            with open(filename, encoding="UTF-8") as f:
-                data = json.load(f)
-            includes = cast(list[str], data.get("include", []))
-            presets = cast(list[dict], data.get("configurePresets", []))
-        except FileNotFoundError:
-            includes: list[str] = []
-            presets: list[dict] = []
+        with open(filename, encoding="UTF-8") as f:
+            data = json.load(f)
+        includes = cast(list[str], data.get("include", []))
+        presets = cast(list[dict], data.get("configurePresets", []))
 
         return (includes, presets)
 
 
-def get_binary_dirs():
-    presets = Presets().visit_file(Path("CMakePresets.json"))
+def binary_dir_from_preset(preset: Preset, cwd: Path):
+    path = preset.expand()
+    if not path:
+        return None
+    if path.is_relative_to(cwd):
+        path = path.relative_to(cwd)
+    return path
 
-    cwd = str(Path.cwd().as_posix()) + "/"
-    result: dict[str, str] = {}
+
+def get_binary_dirs():
+    return visit_presets(binary_dir_from_preset)
+
+
+T = TypeVar("T")
+
+
+def visit_presets(mapper: Callable[[Preset, Path], T | None]):
+    presets = Presets().visit_file(Path("CMakePresets.json"))
+    if presets is None:
+        return None
+
+    cwd = Path.cwd()
+    result: dict[str, T] = {}
     for preset in presets.values():
-        dirname = preset.expand()
-        if dirname is None:
+        mapped = mapper(preset, cwd)
+        if mapped is None:
             continue
-        rel = str(dirname.as_posix())
-        if rel[: len(cwd)] == cwd:
-            rel = rel[len(cwd) :]
-        result[preset.name] = rel
+        result[preset.name] = mapped
 
     return result

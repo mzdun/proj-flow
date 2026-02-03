@@ -57,14 +57,18 @@ class Dependency:
     version_expression: str
     kind: DepKind = DepKind.APP
 
-    def __lt__(self, rhs: "Dependency"):
+    def __lt__(self, rhs: object):
+        if not isinstance(rhs, Dependency):
+            return False
         if self.kind != rhs.kind:
             return self.kind.value < rhs.kind.value
         if self.name != rhs.name:
             return self.name < rhs.name
         return self.version_expression < rhs.version_expression
 
-    def __eq__(self, rhs: "Dependency"):
+    def __eq__(self, rhs: object):
+        if not isinstance(rhs, Dependency):
+            return False
         return (
             self.kind == rhs.kind
             and self.name == rhs.name

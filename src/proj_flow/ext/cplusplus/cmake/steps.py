@@ -7,12 +7,12 @@ building and archiving.
 """
 
 import os
+from pathlib import Path
 from typing import Dict, List, cast
 
 from proj_flow import api
 from proj_flow.api import env, step
 from proj_flow.base.__cmake_version__ import CMAKE_VERSION
-from proj_flow.ext.cplusplus.cmake.presets import get_binary_dirs
 
 
 class CMakeBase(api.step.Step):
@@ -60,18 +60,12 @@ class CMakeConfig(CMakeBase):
 
     def __init__(self):
         super().__init__(name="CMake")
-        self.binary_dirs = get_binary_dirs()
 
     def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         return os.path.isfile("CMakeLists.txt") and os.path.isfile("CMakePresets.json")
 
-    def directories_to_remove(self, config: env.Config) -> List[str]:
-        binary_dir = self.binary_dirs.get(f"{config.preset}-{config.build_generator}")
-        if not binary_dir:
-            if "READTHEDOCS" not in os.environ:
-                return []
-            return [f"build/{config.preset}"]
-        return [binary_dir]
+    def directories_to_remove(self, config: env.Config) -> List[Path]:
+        return [config.build_dir]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         cmake_vars = cast(Dict[str, str], rt._cfg.get("cmake", {}).get("vars", {}))
