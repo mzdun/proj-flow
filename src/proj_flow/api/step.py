@@ -7,6 +7,7 @@ The **proj_flow.api.step** exposes APIs used by run extensions.
 
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import List, cast
 
 from proj_flow.api.env import Config, Runtime
@@ -34,7 +35,7 @@ class Step(ABC):
     def is_active(self, config: Config, rt: Runtime) -> bool:
         return True
 
-    def directories_to_remove(self, config: Config) -> List[str]:
+    def directories_to_remove(self, config: Config) -> List[Path]:
         return []
 
     @abstractmethod
@@ -59,7 +60,7 @@ class SerialStep(Step):
                 return False
         return True
 
-    def directories_to_remove(self, config: Config) -> List[str]:
+    def directories_to_remove(self, config: Config) -> List[Path]:
         return matrix.flatten(
             [child.directories_to_remove(config) for child in self.children]
         )
@@ -162,7 +163,10 @@ def _extend_docstring(conv, step: Step):
             _name_list("Requires", step.platform_dependencies(), template="``{}``"),
             _name_list(
                 "Removes",
-                step.directories_to_remove(_dummy_config),
+                [
+                    dirname.as_posix()
+                    for dirname in step.directories_to_remove(_dummy_config)
+                ],
                 template="``{}``",
             ),
         )

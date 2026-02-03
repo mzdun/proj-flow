@@ -7,6 +7,6 @@ The **proj_flow.ext.cplusplus.cmake** provides ``"CMake"``, ``"Build"``,
 context.
 """
 
-from . import parser, presets, project, steps
+from . import parser, project, steps
 
-__all__ = ["parser", "presets", "project", "steps"]
+__all__ = ["parser", "project", "steps"]

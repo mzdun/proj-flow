@@ -26,11 +26,31 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from proj_flow.api import ctx
 from proj_flow.base import plugins, uname
+from proj_flow.base.cmake_presets import get_binary_dirs
 
 platform = uname.uname()[0]
 
 
 _flow_config_default_compiler: Optional[Dict[str, str]] = None
+
+
+class CMakeBinaryDirsCache:
+    _dirs: dict[str, Path] | None = None
+    _loaded: bool = False
+
+    @property
+    def dirs(self):
+        if not self._loaded:
+            self._loaded = True
+            self._dirs = get_binary_dirs()
+
+        return self._dirs
+
+    def binary_dir(self, key: str):
+        return (self.dirs or {}).get(key)
+
+
+CMAKE_BINARY_DIRS = CMakeBinaryDirsCache()
 
 
 def default_compiler():
@@ -464,9 +484,13 @@ class Config:
         return self.items.get("build_name", "")
 
     @property
-    def build_dir(self) -> str:
-        ## TODO: use the cmake preset if present, fallback to build/${preset}
-        return os.path.join("build", self.preset)
+    def build_dir(self) -> Path:
+        cmake_binary_dir = CMAKE_BINARY_DIRS.binary_dir(
+            f"{self.preset}-{self.build_generator}"
+        )
+        if cmake_binary_dir:
+            return cmake_binary_dir
+        return Path("build") / self.preset
 
     @property
     def preset(self) -> str:
