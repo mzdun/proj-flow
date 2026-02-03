@@ -6,11 +6,19 @@ The **proj_flow.minimal.list** implements ``./flow list`` command.
 """
 
 import os
-from typing import Annotated, Dict, List, Set, cast
+import re
+import sys
+from typing import Annotated, Dict, Iterable, List, Set, cast
 
 from proj_flow import cli
 from proj_flow.api import arg, env, step
 from proj_flow.base import matrix
+
+if sys.platform == "win32":
+    import ctypes
+    import ctypes.wintypes
+else:
+    import termios
 
 
 @arg.command("list")
@@ -51,7 +59,10 @@ def main(
 
             name = f"{bold}{entry_name}{reset}"
             if entry_doc:
-                print(f"- {name}: {entry_doc}")
+                print(f"- {name}:", end=" ")
+                _write_console_para(
+                    " ".join(para.split("\n")) for para in entry_doc.split("\n\n")
+                )
             else:
                 print(f"- {name}")
 
@@ -73,7 +84,8 @@ def main(
                 continue
 
             name = f"{bold}{run_alias.name}{reset}"
-            print(f"- {name}: {', '.join(run_alias.steps)}")
+            print(f"- {name}:", end=" ")
+            _write_console_para([", ".join(run_alias.steps)])
 
         printed_something = True
 
@@ -106,8 +118,10 @@ def main(
                 print(f"- {name}*")
 
         if some_unused:
-            print(
-                f"*step can only be run by explicitly calling through {bold}run{reset}."
+            _write_console_para(
+                [
+                    f"*step can only be run by explicitly calling through {bold}run{reset}."
+                ]
             )
 
         printed_something = True
@@ -144,7 +158,8 @@ def main(
                 value = ", ".join(values.get(key, empty))
                 name = f"{bold}{key}{reset}"
                 if value:
-                    print(f"- {name}: {value}")
+                    print(f"- {name}:", end=" ")
+                    _write_console_para([value])
                 else:
                     print(f"- {name}")
 
@@ -172,6 +187,90 @@ def _walk_menu(menu: cli.argument.Command):
         items.extend(layer)
 
     return items
+
+
+def _cursor_pos():
+    if sys.platform == "win32":
+        old_stdin_mode = ctypes.wintypes.DWORD()
+        old_stdout_mode = ctypes.wintypes.DWORD()
+        kernel32 = ctypes.windll.kernel32
+        kernel32.GetConsoleMode(
+            kernel32.GetStdHandle(-10), ctypes.byref(old_stdin_mode)
+        )
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), 0)
+        kernel32.GetConsoleMode(
+            kernel32.GetStdHandle(-11), ctypes.byref(old_stdout_mode)
+        )
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    else:
+        old_stdin_mode = termios.tcgetattr(sys.stdin)
+        _ = termios.tcgetattr(sys.stdin)
+        _[3] = _[3] & ~(termios.ECHO | termios.ICANON)
+        termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, _)
+    try:
+        _ = ""
+        sys.stdout.write("\x1b[6n")
+        sys.stdout.flush()
+        while not (_ := _ + sys.stdin.read(1)).endswith("R"):
+            pass
+        res = re.match(r".*\[(?P<y>\d*);(?P<x>\d*)R", _)
+    finally:
+        if sys.platform == "win32":
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), old_stdin_mode)
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), old_stdout_mode)
+        else:
+            termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, old_stdin_mode)
+    if res:
+        return (int(res.group("x")), int(res.group("y")))
+    return (1, 1)
+
+
+def _write_console_para(text: Iterable[str]):
+    term_width = os.get_terminal_size().columns
+    margin = min(_cursor_pos()[0], term_width // 2) - 1
+    width = term_width - 1
+    pos = margin
+    for para in text:
+        for word in para.split():
+            if not word:
+                continue
+            word_len = len(word)
+            next_pos = pos + word_len + 1
+
+            if next_pos >= width:
+                orig = pos
+                if orig == margin:
+                    pos = margin - word_len
+                    print(word, end="")
+
+                print()
+                print(" " * margin, end="")
+
+                if orig != margin:
+                    pos = margin
+                    print(word, end=" ")
+            else:
+                print(word, end=" ")
+
+            pos += word_len + 1
+
+            continue
+            if (word_len + 1) > term_width:
+                first_word = pos == margin
+                if first_word:
+                    print(word, end="")
+
+                print(f"\n{' ' * margin}", end="")
+                pos = margin
+
+                if not first_word:
+                    print(word, "", end="")
+                    pos += word_len + 1
+                continue
+
+            print(word, "", end="")
+            pos += word_len + 1
+        print()
 
 
 def _load_flow_data(rt: env.Runtime):
