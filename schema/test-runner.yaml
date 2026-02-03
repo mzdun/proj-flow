@@ -1,0 +1,44 @@
+$schema: http://json-schema.org/draft-04/schema#
+type: object
+required: [args, expected]
+additionalProperties: false
+default: {}
+
+properties:
+  $schema: {type: string}
+  linear: {type: boolean}
+  disabled: {type: [boolean, string]}
+  lang: {type: string}
+  args: {type: string}
+  post: {type: [string, array], items: {type: string}}
+  expected: 
+    type: ["null", array]
+    items:
+      - type: integer
+      - $ref: "#/$defs/lines"
+      - $ref: "#/$defs/lines"
+  check:
+    type: object
+    properties: 
+      stdout: {$ref: "#/$defs/check"}
+      stderr: {$ref: "#/$defs/check"}
+  writes: {$ref: "#/$defs/dictionary"}
+  patches: {$ref: "#/$defs/dictionary"}
+  prepare: { $ref: "#/$defs/commands" }
+  cleanup: { $ref: "#/$defs/commands" }
+
+$defs:
+  dictionary:
+    type: object
+    properties:
+      ^$: {not: {}}
+      ^.+$: {type: string}
+  lines:
+    type: [string, array]
+    items: string
+  commands:
+    type: array
+    items: string
+  check:
+    type: enum
+    enum: [begin, end, all]
