@@ -39,10 +39,7 @@ def main(
         configs = True
 
     if builtin:
-        root = menu
-        while root.parent is not None:
-            root = root.parent
-        builtin_entries = list(sorted((cmd.name, cmd.doc) for cmd in root.children))
+        builtin_entries = list(sorted(_walk_menu(menu)))
         if not pipe and len(builtin_entries) > 0:
             print("Builtin commands")
             print("----------------")
@@ -155,6 +152,26 @@ def main(
 
     if not printed_something and not pipe:
         print(f"Use {bold}--help{reset} to see, which listings are available")
+
+
+def _iterate_levels(menu: cli.argument.Command, prefix: str):
+    yield [(f"{prefix}{cmd.name}", cmd.doc) for cmd in menu.children]
+    for cmd in menu.children:
+        child_prefix = f"{prefix}{cmd.name} "
+        for layer in _iterate_levels(cmd, child_prefix):
+            yield layer
+
+
+def _walk_menu(menu: cli.argument.Command):
+    root = menu
+    while root.parent is not None:
+        root = root.parent
+
+    items: list[tuple[str, str]] = []
+    for layer in _iterate_levels(root, ""):
+        items.extend(layer)
+
+    return items
 
 
 def _load_flow_data(rt: env.Runtime):
