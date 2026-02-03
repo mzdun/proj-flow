@@ -91,7 +91,7 @@ class ChangelogGenerator(abc.ABC):
 
         entire_log.append(self.intro())
 
-        filename = os.path.join(rt.root, f"CHANGELOG{self.ext}")
+        filename = rt.root / f"CHANGELOG{self.ext}"
         with open(filename, "wb") as f:
             for text in reversed(entire_log):
                 f.write(text.encode("UTF-8"))
@@ -106,8 +106,7 @@ class ChangelogGenerator(abc.ABC):
             setup, commit.read_tag_date(setup.curr_tag or "HEAD", rt)
         )
         text = formatter.format_changelog(log)
-        filename = self.filename
-        path = os.path.join(rt.root, filename)
+        path = rt.root / self.filename
 
         try:
             with open(path, encoding="UTF-8") as f:
@@ -125,7 +124,7 @@ class ChangelogGenerator(abc.ABC):
         if len(split) > 1:
             new_text += "".join(split[1:])
 
-        with open(filename, "wb") as f:
+        with open(path, "wb") as f:
             f.write(new_text.encode("UTF-8"))
 
 

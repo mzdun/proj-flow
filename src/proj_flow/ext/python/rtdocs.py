@@ -30,14 +30,14 @@ class RTDocs:
         return ["python -m PyYAML"]
 
     def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
-        return os.path.isfile(os.path.join(rt.root, ".readthedocs.yaml"))
+        return (rt.root / ".readthedocs.yaml").is_file()
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         import venv
 
         import yaml
 
-        with open(os.path.join(rt.root, ".readthedocs.yaml")) as rtd_yaml:
+        with open(rt.root / ".readthedocs.yaml") as rtd_yaml:
             data = yaml.load(rtd_yaml, Loader=yaml.Loader)
 
             formats = ["html"]

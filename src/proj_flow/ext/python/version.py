@@ -7,7 +7,7 @@ The **proj_flow.ext.python.version** provides project suite plugin.
 
 import os
 import re
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, cast
 
 import toml
 
@@ -28,8 +28,8 @@ class ProjectSuite(release.ProjectSuite):
             return None
 
         try:
-            with open(os.path.join(rt.root, path), encoding="UTF-8") as infile:
-                text = infile.read()
+            with open(rt.root / path, encoding="UTF-8") as in_file:
+                text = in_file.read()
         except FileNotFoundError:
             return None
 
@@ -63,27 +63,27 @@ class ProjectSuite(release.ProjectSuite):
         return path
 
     def _pyproject_hatch(self, rt: env.Runtime):
-        pyproject_path = os.path.join(rt.root, "pyproject.toml")
         try:
-            data = toml.load(pyproject_path)
-            project = data.get("project", {})
-            hatch = data.get("tool", {}).get("hatch", {})
-            wheels = (
+            data = toml.load(rt.root / "pyproject.toml")
+            project = cast(dict, data.get("project", {}))
+            hatch = cast(dict, data.get("tool", {}).get("hatch", {}))
+            wheels = cast(
+                dict,
                 hatch.get("build", {})
                 .get("targets", {})
                 .get("wheel", {})
-                .get("packages", [])
+                .get("packages", []),
             )
 
-            name = project.get("name")
+            name = cast(str | None, project.get("name"))
             if len(wheels) > 0:
                 first_wheel = wheels[0].split("/")[-1]
                 if first_wheel:
                     name = first_wheel
 
-            dynamic = project.get("dynamic", [])
+            dynamic = cast(list[str], project.get("dynamic", []))
             if "version" in dynamic:
-                version_dict = hatch.get("version", {})
+                version_dict = cast(dict[str, str | None], hatch.get("version", {}))
                 return QuickProjectInfo(
                     name=name,
                     path=version_dict.get("path"),

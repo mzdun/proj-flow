@@ -21,6 +21,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from proj_flow.api import ctx
@@ -152,7 +153,7 @@ def _flatten_dict(dst: ctx.SettingsType, defaults: Dict[str, Any], prefix=""):
         dst[this_key] = str(val)
 
 
-def _merge(cfg: dict, defaults: ctx.SettingsType, path: str):
+def _merge(cfg: dict, defaults: ctx.SettingsType, path: Path):
     config = plugins.load_data(path)
     if not isinstance(config, dict):
         return
@@ -189,25 +190,25 @@ class FlowConfig:
     _cfg: dict
     steps: list = []
     aliases: List[RunAlias] = []
-    root: str
+    root: Path
 
-    def __init__(self, cfg: Optional["FlowConfig"] = None, root: str = "."):
+    def __init__(self, cfg: Optional["FlowConfig"] = None, root: Path = Path()):
         if cfg is not None:
             self._cfg = cfg._cfg
             self.steps = cfg.steps
             self.aliases = cfg.aliases
             self.root = cfg.root
         else:
-            self.root = os.path.abspath(root)
+            self.root = root.absolute()
             defaults: ctx.SettingsType = {}
             dest: dict = {}
 
             _merge(
                 dest,
                 defaults,
-                os.path.join(os.path.expanduser("~"), ".config", "proj-flow.json"),
+                Path("~").expanduser() / ".config" / "proj-flow.json",
             )
-            _merge(dest, defaults, os.path.join(self.root, ".flow", "config.json"))
+            _merge(dest, defaults, self.root / ".flow" / "config.json")
 
             self._cfg = dest
             self._cfg["defaults"] = defaults
@@ -223,11 +224,9 @@ class FlowConfig:
         extensions = cast(List[str], self._cfg.get("extensions", []))
         extensions.insert(0, "proj_flow.minimal")
 
-        local_extensions = os.path.abspath(
-            os.path.join(self.root, ".flow", "extensions")
-        )
-        if os.path.isdir(local_extensions):
-            sys.path.insert(0, local_extensions)
+        local_extensions = (self.root / ".flow" / "extensions").resolve()
+        if local_extensions.is_dir():
+            sys.path.insert(0, local_extensions.as_posix())
 
         load_extensions(extensions)
 
@@ -466,6 +465,7 @@ class Config:
 
     @property
     def build_dir(self) -> str:
+        ## TODO: use the cmake preset if present, fallback to build/${preset}
         return os.path.join("build", self.preset)
 
     @property

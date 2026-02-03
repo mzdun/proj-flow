@@ -31,6 +31,7 @@ def build_regex(project: release.Project):
 
 
 def gather_artifacts(directory: str, matcher: re.Pattern):
+    names: list[str] = []
     if os.path.isdir(directory):
         for _, dirnames, filenames in os.walk(directory):
             dirnames[:] = []
