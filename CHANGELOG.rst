@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.22.1 <https://github.com/mzdun/proj-flow/compare/v0.22.0...v0.22.1>`_ (2026-02-03)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- add $id to test-runner schema (`8769ddf <https://github.com/mzdun/proj-flow/commit/8769ddfbd4dd959b1001ff62163e094cdd064fb1>`_)
+
 `0.22.0 <https://github.com/mzdun/proj-flow/compare/v0.21.0...v0.22.0>`_ (2026-02-03)
 =====================================================================================
 
