@@ -18,13 +18,16 @@ OneOrMoreStrings = Union[str, Iterable[str]]
 
 
 class VersionUpdater:
-    def on_version_change(self, new_version: str) -> Optional[OneOrMoreStrings]:
+
+    def on_version_change(
+        self, rt: env.Runtime, new_version: str
+    ) -> Optional[OneOrMoreStrings]:
         return None
 
     def on_version_change_tags(
-        self, new_version: str, tags: list[str]
+        self, rt: env.Runtime, new_version: str, tags: list[str]
     ) -> Optional[OneOrMoreStrings]:
-        return self.on_version_change(new_version)
+        return self.on_version_change(rt, new_version)
 
 
 version_updaters = registry.Registry[VersionUpdater]("VersionUpdater")
@@ -118,7 +121,7 @@ def add_release(
             files_to_commit.append(version_path)
 
         for updater in version_updaters.get():
-            modified = updater.on_version_change_tags(next_version, tags)
+            modified = updater.on_version_change_tags(rt, next_version, tags)
             if modified is None:
                 continue
             elif isinstance(modified, str):
