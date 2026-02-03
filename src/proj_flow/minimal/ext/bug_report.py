@@ -8,14 +8,14 @@ next to CHANGELOG.rst.
 
 import re
 import sys
-from typing import List, Tuple
 
+from proj_flow.api import env
 from proj_flow.log import release
 
 YAML_PATH = ".github/ISSUE_TEMPLATE/bug_report.yaml"
 
 
-def _version(ver: str) -> Tuple[int, int, int, str]:
+def _version(ver: str) -> tuple[int, int, int, str]:
     if ver[:1] == "v":
         ver = ver[1:]
 
@@ -26,7 +26,7 @@ def _version(ver: str) -> Tuple[int, int, int, str]:
     return (int(m.group(1)), int(m.group(2)), int(m.group(3)), ver)
 
 
-def _prev_version(new_version: str, tags: List[str]):
+def _prev_version(new_version: str, tags: list[str]):
     current = _version(new_version)
     versions = [_version(tag) for tag in reversed(tags)]
     index = 0
@@ -44,7 +44,9 @@ def _prev_version(new_version: str, tags: List[str]):
 
 @release.version_updaters.add
 class VersionUpdater(release.VersionUpdater):
-    def on_version_change_tags(self, new_version: str, tags: List[str]):
+    def on_version_change_tags(
+        self, rt: env.Runtime, new_version: str, tags: list[str]
+    ):
         old_version = _prev_version(new_version, tags)
 
         range = [f"      - Current (v{new_version})\n"]

@@ -3,6 +3,7 @@ extensions:
   - proj_flow.ext.github
   - proj_flow.ext.re_structured_changelog
   - proj_flow.minimal.ext.bug_report
+  - proj_flow.minimal.ext.versions
 
 entry:
   build: [ Build ]
@@ -10,3 +11,6 @@ entry:
   docs: [ RTD ]
   verify: [ Build, Check Twine ]
   refresh: [ Install, Build, RTD, Check Twine ]
+
+version-updates:
+  schema/test-runner.yaml: tags/v$VERSION/
