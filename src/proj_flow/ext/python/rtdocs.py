@@ -3,7 +3,7 @@
 
 """
 The **proj_flow.ext.python.rtdocs** defines RTDocs step (`"RTD"`), which uses
-.readthedocs.yaml to build the HTML documentation.
+``.readthedocs.yaml`` to build the HTML documentation.
 """
 
 import os
@@ -20,7 +20,11 @@ from proj_flow.base import cmd
 
 @step.register
 class RTDocs:
-    name = "RTD"
+    """Runs the jobs defined by ``.readthedocs.yaml`` to build the docs"""
+
+    @property
+    def name(self):
+        return "RTD"
 
     def platform_dependencies(self):
         return ["python -m PyYAML"]
@@ -100,6 +104,8 @@ class RTDocs:
 
 
 class Builder(ABC):
+    """Base class for any recognized builder in the ``.readthedocs.yaml`` config."""
+
     @property
     @abstractmethod
     def READTHEDOCS_OUTPUT(self) -> str: ...
@@ -112,17 +118,40 @@ class Builder(ABC):
 
 
 class Sphinx(Builder):
-    READTHEDOCS_OUTPUT: str = ""
+    """Builder used, if Sphinx config is found in the config file.
+
+    :param config: filename of a Python script Sphinx should use for the configuration
+    """
+
+    @property
+    def READTHEDOCS_OUTPUT(self) -> str:
+        """A ``build/`` subdirectory placed in the same dir, as ``config`` parameter"""
+        return self.output
 
     def __init__(self, config: str):
         self.config = config
         self.source = os.path.dirname(config)
-        self.READTHEDOCS_OUTPUT = os.path.join(os.path.dirname(self.source), "build")
+        self.output = os.path.join(os.path.dirname(self.source), "build")
 
-    def build(self, target: str):
+    def build(self, target: str) -> int:
+        """Uses ``spinx-build`` to create the documentation.
+
+        :param target: name of the docs format from YAML config
+        :returns: exit code forwarded from the build tool
+        """
         builder = "latex" if target == "pdf" else target
+        print(shutil.which("sphinx-build"))
+
         return subprocess.run(
-            ["sphinx-build", "-M", builder, self.source, self.READTHEDOCS_OUTPUT],
+            [
+                PYTHON_EXECUTABLE,
+                "-m",
+                "sphinx.cmd.build",
+                "-M",
+                builder,
+                self.source,
+                self.READTHEDOCS_OUTPUT,
+            ],
             shell=False,
         ).returncode
 

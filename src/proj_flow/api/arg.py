@@ -159,6 +159,8 @@ def command(*name: str):
         doc = orig_doc or ""
         if doc:
             doc += "\n\n"
+        doc += f":call: ``proj-flow {' '.join(name)}``\n\n"
+        doc += f":call: ``./flow {' '.join(name)}``\n\n"
 
         for arg in _inspect.signature(entry):
             help = ""

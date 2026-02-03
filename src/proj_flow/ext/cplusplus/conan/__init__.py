@@ -23,7 +23,9 @@ CONAN_PROFILE_GEN = "_profile-build_type"
 class ConanConfig:
     """Configures the project for ``preset`` config using ``build_type`` config."""
 
+    #: :meta private:
     name = "Conan"
+    #: :meta private:
     runs_before = ["CMake"]
 
     def platform_dependencies(self):
