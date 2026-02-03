@@ -4,6 +4,20 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.21.0 <https://github.com/mzdun/proj-flow/compare/v0.20.3...v0.21.0>`_ (2026-02-03)
+=====================================================================================
+
+New Features
+------------
+
+- recursively list known commands (`991b120 <https://github.com/mzdun/proj-flow/commit/991b120df9da90fee9047d440c2d0cc133ce740c>`_)
+- **list**: wrap cmd help around terminal width (`64bd30c <https://github.com/mzdun/proj-flow/commit/64bd30cfd3c05da92be705a436f5d9cfcad14630>`_)
+
+Bug Fixes
+---------
+
+- **docs**: touchup on documentation (`4c374be <https://github.com/mzdun/proj-flow/commit/4c374be954f8af5597ba6a25f13cd332bf7bcc5e>`_)
+
 `0.20.3 <https://github.com/mzdun/proj-flow/compare/v0.20.2...v0.20.3>`_ (2026-01-30)
 =====================================================================================
 
