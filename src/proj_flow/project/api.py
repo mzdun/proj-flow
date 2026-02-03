@@ -67,5 +67,6 @@ def get_project_type(id: str):
         raise ProjectNotFound(id)
     return result
 
+
 def load_common_init_setting_extensions():
     env.load_extensions(["proj_flow.ext.github.switches"])

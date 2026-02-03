@@ -87,8 +87,10 @@ def _register_step(step: Step, replace: bool):
                 return
 
         if "READTHEDOCS" not in os.environ:
-            raise NameError(f"Step {name} is marked as replacing, but there is no previous step with that name")
-        
+            raise NameError(
+                f"Step {name} is marked as replacing, but there is no previous step with that name"
+            )
+
     if name in [step.name for step in __steps]:
         if "READTHEDOCS" not in os.environ:
             raise NameError(f"Step {name} already registered")
@@ -133,6 +135,12 @@ def _make_private(f: _inspect.Function):
         f.__doc__ = ":meta private:\n"
 
 
+def _make_private_property(f):
+    if isinstance(f, property):
+        _make_private(cast(_inspect.Function, f))
+        return
+
+
 _dummy_config = Config(
     {
         "os": "${os}",
@@ -163,6 +171,9 @@ def _extend_docstring(conv, step: Step):
     doc = conv.__doc__ or "*Docstring is missing!*"
     conv.__doc__ = f"{doc}\n{info}"
 
+    _make_private_property(conv.name)
+    _make_private_property(conv.runs_before)
+    _make_private_property(conv.runs_after)
     _make_private(conv.is_active)
     _make_private(conv.run)
     _make_private(conv.platform_dependencies)

@@ -32,9 +32,7 @@ def github():
 
 @arg.command("github", "matrix")
 def matrix(
-    pretty: typing.Annotated[
-        bool, arg.FlagArgument(help="Indent JSON document")
-    ],
+    pretty: typing.Annotated[bool, arg.FlagArgument(help="Indent JSON document")],
     official: typing.Annotated[
         bool, arg.FlagArgument(help="Cut matrix to release builds only")
     ],

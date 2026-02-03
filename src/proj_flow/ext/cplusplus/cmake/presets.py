@@ -135,10 +135,14 @@ class Presets:
 
     @staticmethod
     def __load_file(filename: Path):
-        with open(filename, encoding="UTF-8") as f:
-            data = json.load(f)
-        includes = cast(list[str], data.get("include", []))
-        presets = cast(list[dict], data.get("configurePresets", []))
+        try:
+            with open(filename, encoding="UTF-8") as f:
+                data = json.load(f)
+            includes = cast(list[str], data.get("include", []))
+            presets = cast(list[dict], data.get("configurePresets", []))
+        except FileNotFoundError:
+            includes: list[str] = []
+            presets: list[dict] = []
 
         return (includes, presets)
 

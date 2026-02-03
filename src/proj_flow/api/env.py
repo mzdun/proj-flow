@@ -173,11 +173,17 @@ def load_extensions(extensions: List[str]):
     for extension in extensions:
         try:
             importlib.import_module(extension)
-        except ModuleNotFoundError:
+        except ImportError as ex:
             print(
-                f"-- error: module `{extension}` was no found, ignoring",
+                f"-- error: loading module `{extension}` resulted in import error: {ex}",
                 file=sys.stderr,
             )
+        except BaseException as ex:
+            print(
+                f"-- error: there was an error while loading module `{extension}`: {ex}",
+                file=sys.stderr,
+            )
+
 
 class FlowConfig:
     _cfg: dict

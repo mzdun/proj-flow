@@ -22,14 +22,17 @@ class CMakeBase(api.step.Step):
 
     @property
     def name(self):
+        """:meta private:"""
         return self._name
 
     @property
     def runs_after(self):
+        """:meta private:"""
         return self._runs_after
 
     @property
     def runs_before(self):
+        """:meta private:"""
         return self._runs_before
 
     def __init__(
@@ -47,6 +50,7 @@ class CMakeBase(api.step.Step):
         return [f"cmake>={CMAKE_VERSION}"]
 
     def dep_with_tool(self, tool: str):
+        """:meta private:"""
         return [f"cmake>={CMAKE_VERSION}", f"{tool}>={CMAKE_VERSION}"]
 
 
@@ -64,7 +68,9 @@ class CMakeConfig(CMakeBase):
     def directories_to_remove(self, config: env.Config) -> List[str]:
         binary_dir = self.binary_dirs.get(f"{config.preset}-{config.build_generator}")
         if not binary_dir:
-            return []
+            if "READTHEDOCS" not in os.environ:
+                return []
+            return [f"build/{config.preset}"]
         return [binary_dir]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
@@ -78,10 +84,10 @@ class CMakeConfig(CMakeBase):
                 value = value[1:]
 
             if value.startswith("config:"):
-                value = value[len("config:"):]
+                value = value[len("config:") :]
                 value = config.get_path(value)
             elif value.startswith("runtime:"):
-                value = value[len("runtime:"):]
+                value = value[len("runtime:") :]
                 value = getattr(rt, value, None)
 
             if is_flag:
