@@ -58,7 +58,7 @@ def _shell(test: test.Test, args: list[str]):
     subprocess.call("pwsh" if os.name == "nt" else "bash", shell=True, cwd=test.cwd)
 
 
-HANDLERS: dict[str, tuple[int, Callable[[test.Test, list[str]], None]]] = {
+HANDLERS: dict[str, tuple[int, Callable[["test.Test", list[str]], None]]] = {
     "mkdirs": (1, lambda test, args: test.makedirs(args[0])),
     "cd": (1, lambda test, args: test.chdir(args[0])),
     "rm": (1, lambda test, args: test.rmtree(args[0])),
