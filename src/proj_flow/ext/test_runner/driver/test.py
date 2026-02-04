@@ -1,7 +1,6 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
-import json
 import os
 import random
 import re
@@ -613,11 +612,6 @@ Diff:
         self.store()
 
     def store(self):
-        if self.filename.suffix == ".json":
-            with self.filename.open("w", encoding="UTF-8") as f:
-                json.dump(self.data, f, indent=4, ensure_ascii=False)
-                print(file=f)
-            return
         with self.filename.open("wb") as f:
             yaml.dump(
                 self.data,
@@ -625,6 +619,8 @@ Diff:
                 Dumper=Dumper,
                 width=1024,
                 allow_unicode=True,
+                default_flow_style=False,
+                sort_keys=False,
                 encoding="UTF-8",
             )
 
