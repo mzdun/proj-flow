@@ -109,6 +109,9 @@ def task(
     if actual is None:
         return (TaskResult.SKIPPED, test_id, None, tempdir)
 
+    reports: list[str] = []
+
+    saved = False
     if tested.expected is None:
         is_json = tested.filename.suffix == ".json"
         tested.data["expected"] = [
@@ -116,20 +119,25 @@ def task(
             *[to_lines(stream, is_json) for stream in actual[1:3]],
         ]
         tested.store()
+        saved = True
+
+    for file in files:
+        fixed = fix_file_write(file, env2, tested.cwd, tested.patches)
+
+        if fixed.needs_saving():
+            copied = fixed.copy_file()
+            saved = saved or copied
+
+        elif fixed.generated.content != fixed.template.content:
+            reports.append(tested.report_file(fixed))
+
+    if saved:
         return (TaskResult.SAVED, test_id, None, tempdir)
 
     clipped = tested.clip(actual[:3])
 
     if isinstance(clipped, str):
         return (TaskResult.CLIP_FAILED, test_id, clipped, tempdir)
-
-    reports: list[str] = []
-
-    files = actual[3]
-    for file in files:
-        fixed = fix_file_write(file, env2, tested.cwd, tested.patches)
-        if fixed.generated.content != fixed.template.content:
-            reports.append(tested.report_file(fixed))
 
     if actual[:3] != tested.expected and clipped != tested.expected:
         reports.append(tested.report_io(actual[:3]))

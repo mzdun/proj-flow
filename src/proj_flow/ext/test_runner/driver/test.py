@@ -162,16 +162,24 @@ StrOrBytes = TypeVar("StrOrBytes", str, bytes)
 @dataclass
 class FileContents[StrOrBytes]:
     filename: str
+    path: Path
     content: StrOrBytes | None
+
+    def decode(self):
+        return FileContents[str](
+            filename=self.filename,
+            path=self.path,
+            content=cast(bytes, self.content).decode() if self.content else None,
+        )
 
 
 def load_file_contents(filename: str, environment: Env, cwd: str):
-    path = environment.expand(filename, environment.tempdir, cwd=cwd)
+    path = Path(environment.expand(filename, environment.tempdir, cwd=cwd))
     try:
-        content = Path(path).read_bytes()
+        content = path.read_bytes()
     except FileNotFoundError:
         content = None
-    return FileContents(filename=filename, content=content)
+    return FileContents(filename=filename, path=path, content=content)
 
 
 def fix_file_contents(
@@ -179,6 +187,7 @@ def fix_file_contents(
 ):
     return FileContents(
         filename=self.filename,
+        path=self.path,
         content=env.fix(self.content, cwd, patches) if self.content else None,
     )
 
@@ -187,12 +196,25 @@ def fix_file_contents(
 class FileWrite[StrOrBytes]:
     generated: FileContents[StrOrBytes]
     template: FileContents[StrOrBytes]
+    save: bool
+
+    def needs_saving(self):
+        return self.template.content is None or self.save
+
+    def copy_file(self):
+        if not self.generated.content:
+            return False
+
+        self.template.path.parent.mkdir(parents=True, exist_ok=True)
+        self.template.path.write_bytes(cast(str, self.generated.content).encode())
+        return True
 
 
 def fix_file_write(self: FileWrite[bytes], env: Env, cwd: str, patches: dict[str, str]):
     return FileWrite(
         generated=fix_file_contents(self.generated, env, cwd, patches),
-        template=fix_file_contents(self.template, env, cwd, patches),
+        template=self.template.decode(),
+        save=self.save,
     )
 
 
@@ -213,7 +235,7 @@ class Test:
     post: list[list[str]]
     expected: tuple[int, str, str] | None
     check: list[str]
-    writes: dict[str, str]
+    writes: dict[str, str | dict]
     patches: dict[str, str]
     env: dict[str, str | None]
     prepare: list[list[str]]
@@ -236,7 +258,7 @@ class Test:
         self.post = []
         self.expected = None
         self.check = ["all"] * len(_streams)
-        self.writes = cast(dict[str, str], data.get("writes", {}))
+        self.writes = cast(dict[str, str | dict], data.get("writes", {}))
         self.patches = cast(dict[str, str], data.get("patches", {}))
         self.env = {}
         self.prepare = []
@@ -419,12 +441,27 @@ class Test:
 
         expected_files: list[FileWrite[bytes]] = []
         for key, value in self.writes.items():
-            expected_files.append(
-                FileWrite(
-                    generated=load_file_contents(key, environment, cwd=self.cwd),
-                    template=load_file_contents(value, environment, cwd=self.cwd),
+            if isinstance(value, str):
+                expected_files.append(
+                    FileWrite(
+                        generated=load_file_contents(key, environment, cwd=self.cwd),
+                        template=load_file_contents(value, environment, cwd=self.cwd),
+                        save=False,
+                    )
                 )
-            )
+            elif isinstance(value, dict):
+                path = cast(str | None, value.get("path"))
+                save = cast(bool, value.get("save", False))
+                if not isinstance(path, str) or not isinstance(save, bool):
+                    continue
+
+                expected_files.append(
+                    FileWrite(
+                        generated=load_file_contents(key, environment, cwd=self.cwd),
+                        template=load_file_contents(path, environment, cwd=self.cwd),
+                        save=save,
+                    )
+                )
 
         clean = self.run_cmds(environment, self.cleanup, environment.tempdir)
         if clean is None:
