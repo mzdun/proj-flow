@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.22.3 <https://github.com/mzdun/proj-flow/compare/v0.22.2...v0.22.3>`_ (2026-02-04)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- use UTF-8 when writing back test-runner tests (`9722eb1 <https://github.com/mzdun/proj-flow/commit/9722eb17e9ff4ac77b9fc61b8ed69809b9320b16>`_)
+
 `0.22.2 <https://github.com/mzdun/proj-flow/compare/v0.22.1...v0.22.2>`_ (2026-02-04)
 =====================================================================================
 
