@@ -561,8 +561,9 @@ Diff:
                 print(file=f)
             return
         with self.filename.open("w", encoding="UTF-8") as f:
-            yaml.dump(self.data, stream=f, Dumper=Dumper, width=1024)
-            # print(output, file=f, end="")
+            yaml.dump(
+                self.data, stream=f, Dumper=Dumper, width=1024, allow_unicode=True
+            )
 
     def path(self, filename):
         return os.path.join(self.cwd, filename)
