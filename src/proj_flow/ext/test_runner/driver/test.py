@@ -560,9 +560,14 @@ Diff:
                 json.dump(self.data, f, indent=4, ensure_ascii=False)
                 print(file=f)
             return
-        with self.filename.open("w", encoding="UTF-8") as f:
+        with self.filename.open("wb") as f:
             yaml.dump(
-                self.data, stream=f, Dumper=Dumper, width=1024, allow_unicode=True
+                self.data,
+                stream=f,
+                Dumper=Dumper,
+                width=1024,
+                allow_unicode=True,
+                encoding="UTF-8",
             )
 
     def path(self, filename):
