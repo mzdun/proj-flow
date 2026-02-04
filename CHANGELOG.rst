@@ -4,6 +4,21 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.23.0 <https://github.com/mzdun/proj-flow/compare/v0.22.3...v0.23.0>`_ (2026-02-04)
+=====================================================================================
+
+New Features
+------------
+
+- read expected output as a YAML object (`477ca93 <https://github.com/mzdun/proj-flow/commit/477ca936579d3db46dd566c246b1161dee4f6b43>`_)
+- save template file if it is missing (`926b57e <https://github.com/mzdun/proj-flow/commit/926b57ede05a96cb15cbb15876e02a5947e860ef>`_)
+
+Bug Fixes
+---------
+
+- drop support for JSON testcases (`ba4e4f0 <https://github.com/mzdun/proj-flow/commit/ba4e4f061bd69d3d53f70bd3155734cb9cc74aa4>`_)
+- **docs**: prepare new expected and writes schema (`97f2198 <https://github.com/mzdun/proj-flow/commit/97f21983f7af59deadcd6ca4729eb47353231385>`_)
+
 `0.22.3 <https://github.com/mzdun/proj-flow/compare/v0.22.2...v0.22.3>`_ (2026-02-04)
 =====================================================================================
 
