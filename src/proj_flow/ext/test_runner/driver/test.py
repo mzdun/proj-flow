@@ -54,14 +54,14 @@ def _alt_sep(input: str, value: str, var: str):
     return var.join([first, *split])
 
 
-def to_lines(stream: str, is_json: bool):
-    lines = stream.split("\n")
-    if is_json and len(lines) > 1 and lines[-1] == "":
-        lines = lines[:-1]
-        lines[-1] += "\n"
-    if len(lines) == 1:
-        return lines[0]
-    return lines
+def str_presenter(dumper: Dumper, data: str):
+    if "\n" in data:
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+
+yaml.add_representer(str, str_presenter, Dumper=Dumper)
 
 
 @dataclass
@@ -218,6 +218,20 @@ def fix_file_write(self: FileWrite[bytes], env: Env, cwd: str, patches: dict[str
     )
 
 
+@dataclass
+class Expected:
+    returncode: int
+    stdout: str
+    stderr: str
+
+    def as_dict(self):
+        return {
+            "return-code": self.returncode,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+        }
+
+
 class Test:
     cwd: str
     data: dict
@@ -233,7 +247,7 @@ class Test:
     lang: str
     args: list[str]
     post: list[list[str]]
-    expected: tuple[int, str, str] | None
+    expected: Expected | None
     check: list[str]
     writes: dict[str, str | dict]
     patches: dict[str, str]
@@ -288,24 +302,25 @@ class Test:
             self.ok = False
             return
 
-        _expected = cast(None | list, data.get("expected"))
-        if isinstance(_expected, list):
-            if len(_expected) != 3:
-                self.ok = False
-                return
-            _return, _stdout, _stderr = _expected
-            if isinstance(_stdout, list):
-                _stdout = "\n".join(_stdout)
-            if isinstance(_stderr, list):
-                _stderr = "\n".join(_stderr)
-            if (
-                not isinstance(_return, int)
-                or not isinstance(_stdout, str)
-                or not isinstance(_stderr, str)
+        _expected = cast(None | dict[str, str | list[str]], data.get("expected"))
+        if isinstance(_expected, dict):
+            returncode = cast(None | int, _expected.get("return-code"))
+            stdout = _expected.get("stdout")
+            stderr = _expected.get("stderr")
+            if not (
+                isinstance(returncode, int)
+                and isinstance(stdout, (str, list))
+                and isinstance(stderr, (str, list))
             ):
                 self.ok = False
                 return
-            self.expected = _return, _stdout, _stderr
+            if isinstance(stdout, list):
+                stdout = "\n".join(stdout)
+            if isinstance(stderr, list):
+                stderr = "\n".join(stderr)
+            self.expected = Expected(
+                returncode=returncode, stdout=stdout, stderr=stderr
+            )
 
         _check = cast(dict[str, str], data.get("check", {}))
         for index in range(len(_streams)):
@@ -322,11 +337,7 @@ class Test:
 
         if rebuild:
             if self.expected:
-                is_json = self.filename.suffix == ".json"
-                data["expected"] = [
-                    self.expected[0],
-                    *[to_lines(stream, is_json) for stream in self.expected[1:]],
-                ]
+                data["expected"] = self.expected.as_dict()
             self.store()
 
     def __join_args(self, key: str, data: dict, rebuild: bool):
@@ -378,7 +389,7 @@ class Test:
             self.current_env = saved
         return True
 
-    def run(self, environment: Env) -> tuple[int, str, str, list[FileWrite]] | None:
+    def run(self, environment: Env) -> tuple[Expected, list[FileWrite[bytes]]] | None:
         root = os.path.join(
             "build",
             ".testing",
@@ -468,27 +479,34 @@ class Test:
             return None
 
         return (
-            returncode,
-            environment.fix(test_stdout, self.cwd, self.patches),
-            environment.fix(test_stderr, self.cwd, self.patches),
+            Expected(
+                returncode=returncode,
+                stdout=environment.fix(test_stdout, self.cwd, self.patches),
+                stderr=environment.fix(test_stderr, self.cwd, self.patches),
+            ),
             expected_files,
         )
 
-    def clip(self, actual: tuple[int, str, str]) -> str | tuple[int, str, str]:
-        result, streams = actual[0], [*actual[1:]]
+    def clip(self, actual: Expected) -> str | Expected:
         if not self.expected:
-            return cast(tuple, (result, *streams))
+            return actual
+
+        returncode, streams = actual.returncode, [actual.stdout, actual.stderr]
+        expected = [self.expected.stdout, self.expected.stderr]
+
         for ndx in range(len(self.check)):
             check = self.check[ndx]
             if check != "all":
-                ex = cast(str, self.expected[ndx + 1])
+                ex = expected[ndx]
+                ex_len = len(ex)
                 if check == "begin":
-                    streams[ndx] = streams[ndx][: len(ex)]
+                    if len(streams[ndx]) > ex_len:
+                        streams[ndx] = streams[ndx][:ex_len]
                 elif check == "end":
-                    streams[ndx] = streams[ndx][-len(ex) :]
+                    streams[ndx] = streams[ndx][-ex_len:]
                 else:
                     return check
-        return cast(tuple, (result, *streams))
+        return Expected(returncode=returncode, stdout=streams[0], stderr=streams[1])
 
     @staticmethod
     def text_diff(
@@ -504,36 +522,39 @@ Diff:
 {_diff(expected, actual)}
 """
 
-    def report_io(self, actual: tuple[int, str, str]):
+    def report_io(self, actual: Expected):
         result = ""
         if not self.expected:
             return result
 
-        for ndx in range(len(actual)):
-            if actual[ndx] == self.expected[ndx]:
+        if actual.returncode != self.expected.returncode:
+            result += f"""{_flds[0]}
+  Expected:
+    {repr(self.expected.returncode)}
+  Actual:
+    {repr(actual.returncode)}
+"""
+        streams = [
+            (_flds[1], self.check[0], actual.stdout, self.expected.stdout),
+            (_flds[2], self.check[1], actual.stderr, self.expected.stderr),
+        ]
+        for header, check, actual_stream, expected_stream in streams:
+            if actual_stream == expected_stream:
                 continue
 
             if result:
                 result += "\n"
 
-            if ndx:
-                check = self.check[ndx - 1]
-                pre_mark = "..." if check == "end" else ""
-                post_mark = "..." if check == "begin" else ""
-                result += Test.text_diff(
-                    _flds[ndx],
-                    cast(str, self.expected[ndx]),
-                    cast(str, actual[ndx]),
-                    pre_mark,
-                    post_mark,
-                )
-            else:
-                result += f"""{_flds[ndx]}
-  Expected:
-    {repr(self.expected[ndx])}
-  Actual:
-    {repr(actual[ndx])}
-"""
+            pre_mark = "..." if check == "end" else ""
+            post_mark = "..." if check == "begin" else ""
+            result += Test.text_diff(
+                header,
+                expected_stream,
+                actual_stream,
+                pre_mark,
+                post_mark,
+            )
+
         return result
 
     def report_file(

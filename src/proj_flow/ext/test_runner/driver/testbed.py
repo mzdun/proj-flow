@@ -2,15 +2,11 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 import os
-import pprint
 import random
 import string
-import sys
 from dataclasses import dataclass, field, replace
-from pathlib import Path
-from typing import cast
 
-from proj_flow.ext.test_runner.driver.test import Env, Test, fix_file_write, to_lines
+from proj_flow.ext.test_runner.driver.test import Env, Test, fix_file_write
 
 
 class color:
@@ -105,19 +101,16 @@ def task(
     print(test_id)
     os.makedirs(tempdir, exist_ok=True)
 
-    actual = tested.run(env2)
-    if actual is None:
+    result = tested.run(env2)
+    if result is None:
         return (TaskResult.SKIPPED, test_id, None, tempdir)
 
+    actual, files = result
     reports: list[str] = []
 
     saved = False
     if tested.expected is None:
-        is_json = tested.filename.suffix == ".json"
-        tested.data["expected"] = [
-            actual[0],
-            *[to_lines(stream, is_json) for stream in actual[1:3]],
-        ]
+        tested.data["expected"] = actual.as_dict()
         tested.store()
         saved = True
 
@@ -134,13 +127,13 @@ def task(
     if saved:
         return (TaskResult.SAVED, test_id, None, tempdir)
 
-    clipped = tested.clip(actual[:3])
+    clipped = tested.clip(actual)
 
     if isinstance(clipped, str):
         return (TaskResult.CLIP_FAILED, test_id, clipped, tempdir)
 
-    if actual[:3] != tested.expected and clipped != tested.expected:
-        reports.append(tested.report_io(actual[:3]))
+    if actual != tested.expected and clipped != tested.expected:
+        reports.append(tested.report_io(actual))
 
     if reports:
         reports.append(tested.test_footer(env2, tempdir))
