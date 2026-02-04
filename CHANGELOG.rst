@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.22.2 <https://github.com/mzdun/proj-flow/compare/v0.22.1...v0.22.2>`_ (2026-02-04)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- when saving YAML files, allow Unicode characters (`e5d5692 <https://github.com/mzdun/proj-flow/commit/e5d56926b50000a4676a7fe7d62b1c6b86843437>`_)
+
 `0.22.1 <https://github.com/mzdun/proj-flow/compare/v0.22.0...v0.22.1>`_ (2026-02-03)
 =====================================================================================
 
