@@ -7,26 +7,98 @@ default: {}
 
 properties:
   $schema: {type: string}
-  linear: {type: boolean}
-  disabled: {type: [boolean, string]}
-  lang: {type: string}
-  args: {type: string}
-  post: {type: [string, array], items: {type: string}}
+  linear: 
+    type: boolean
+    description: >
+      if absent or set to false, will result in running the test in parallel
+      with other tests; setting to true will run this test in serial scheme
+  disabled: 
+    type: [boolean, string]
+    description: >
+      if absent or set to false will mark this test as runnable; if set to true
+      will disable this test on any run, if set to `sys.platform` will disable
+      this test on this particular platform
+  lang: {type: string, description: language to set current locale to before running the test }
+  args: {type: string, description: list of arguments to use for the test run}
+  post:
+    type: [string, array]
+    items: {type: string}
+    description: >
+      additional runs of the tested executable; the output will be added to
+      the main output and used to compare against the expected object; the first
+      failing run will both stop processing any further post runs and their
+      return-code will be used to compare against expected value
   expected: 
-    type: ["null", array]
-    items:
-      - type: integer
-      - $ref: "#/$defs/lines"
-      - $ref: "#/$defs/lines"
+    type: ["null", object]
+    required: [return-code, stdout, stderr]
+    additionalProperties: false
+    description: >
+      the object representing the expected outcome of running the tested executable
+      with arguments from args and post; if set to literal `null`, will cause
+      the runtime to gather the output and return-code, but instead of comparing
+      to non-existent expected values, will store them back in this test definition
+      and mark the test as SKIPPED
+
+    properties:
+      return-code: 
+        type: integer
+        description: >
+          first non-zero return-code returned by first of args and post runs
+      stdout: {type: string, description: expected output to standard output file}
+      stderr: {type: string, description: expected output to standard error file}
+
   check:
     type: object
+    description: >
+      allows comparing the expected output against either begin or end of actual
+      output; when missing, defaults to "all", meaning expected and actual output
+      must be exactly equal
     properties: 
       stdout: {$ref: "#/$defs/check"}
       stderr: {$ref: "#/$defs/check"}
-  writes: {$ref: "#/$defs/dictionary"}
-  patches: {$ref: "#/$defs/dictionary"}
-  prepare: { $ref: "#/$defs/commands" }
-  cleanup: { $ref: "#/$defs/commands" }
+  writes:
+    type: object
+    description: >
+      a dictionary of files, which are expected to be written during the test run;
+      the keys represent the written file names, the values represent the files
+      to compare them against
+    properties:
+      ^$: {not: {}}
+      ^.+$:
+        type: [string, object]
+        required: [path]
+        additionalProperties: false
+        description: >
+          path to a file to compare the the written file against; if the
+          file named by this value is missing, the file will be copied from
+          written file, instead of compared
+        properties:
+          path: 
+            type: string
+            description: >
+              path to a file to compare the the written file against; if the
+              file named by this value is missing, or if the save property is
+              present and set to true, the file will be copied from written file,
+              instead of compared
+          save:
+            type: boolean
+            description: >
+              if present and set to true, will result in copying the written file
+              using the compared file filename
+  patches:
+    type: object
+    description: >
+      a dictionary of regex expressions mapped to their symbolic representations,
+      to be applied to gathered stdout and stderr, as well as all written files
+    properties:
+      ^$: {not: {}}
+      ^.+$: {type: string}
+  prepare:
+    $ref: "#/$defs/commands"
+    description: list of operations to be performed before the test run
+  cleanup:
+    $ref: "#/$defs/commands"
+    description: list of operations to be performed after the test run
 
 $defs:
   dictionary:
@@ -34,9 +106,6 @@ $defs:
     properties:
       ^$: {not: {}}
       ^.+$: {type: string}
-  lines:
-    type: [string, array]
-    items: string
   commands:
     type: array
     items: string
