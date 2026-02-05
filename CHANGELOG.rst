@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.23.2 <https://github.com/mzdun/proj-flow/compare/v0.23.1...v0.23.2>`_ (2026-02-05)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- cooperate with core.autocrlf=true (`af795b8 <https://github.com/mzdun/proj-flow/commit/af795b8d9b340a3c4bc89bcad968dddc4e8e8d88>`_)
+
 `0.23.1 <https://github.com/mzdun/proj-flow/compare/v0.23.0...v0.23.1>`_ (2026-02-05)
 =====================================================================================
 
