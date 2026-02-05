@@ -666,5 +666,6 @@ Diff:
 
     @staticmethod
     def load(filename: Path, count: int):
-        with open(filename, encoding="UTF-8") as f:
-            return Test(yaml.load(f, Loader=Loader), filename, count)
+        blob = filename.read_bytes().replace(b"\r\n", b"\n")
+        tree = cast(dict, yaml.load(blob, Loader=Loader))
+        return Test(tree, filename, count)
