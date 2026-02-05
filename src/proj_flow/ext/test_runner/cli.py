@@ -1,7 +1,6 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
-import concurrent.futures
 import os
 import platform
 import shutil
@@ -10,7 +9,7 @@ import sys
 import tempfile
 from os import PathLike
 from pathlib import Path
-from typing import Annotated, Any, Generator, cast
+from typing import Annotated, cast
 
 from yaml import __version__ as yaml_version
 
@@ -28,7 +27,7 @@ from proj_flow.api import arg, env, release
 from proj_flow.base.cmake_presets import Presets
 from proj_flow.ext.test_runner.driver.commands import HANDLERS
 from proj_flow.ext.test_runner.driver.test import Env, Test
-from proj_flow.ext.test_runner.driver.testbed import Counters, task
+from proj_flow.ext.test_runner.driver.testbed import run_and_report_tests
 
 RUN_LINEAR = os.environ.get("RUN_LINEAR", 0) != 0
 
@@ -241,73 +240,13 @@ def test_runner(
     ):
         return 1
 
-    return _run_and_report_tests(
+    return run_and_report_tests(
         independent_tests=independent_tests,
         linear_tests=linear_tests,
         install_dir=install_dir,
         env=env,
         thread_count=thread_count,
     )
-
-
-def _print_all(info_block: list[tuple[str, str]]):
-    length = 0
-    for label, _ in info_block:
-        label_len = len(label)
-        if length < label_len:
-            length = label_len
-    length += 1
-
-    for label, info in info_block:
-        lab = f"{label}:"
-        print(f"{lab: <{length}} {info}")
-
-
-def _run_and_report_tests(
-    independent_tests: list[tuple[Test, int]],
-    linear_tests: list[tuple[Test, int]],
-    install_dir: Path,
-    env: Env,
-    thread_count: int,
-):
-    counters = Counters()
-
-    if independent_tests:
-        _report_tests(counters, _run_async_tests(independent_tests, env, thread_count))
-
-    _report_tests(counters, _run_sync_tests(linear_tests, env))
-
-    shutil.rmtree(install_dir, ignore_errors=True)
-    shutil.rmtree("build/.testing", ignore_errors=True)
-
-    if not counters.summary(len(independent_tests) + len(linear_tests)):
-        return 1
-
-    return 0
-
-
-def _run_async_tests(tests: list[tuple[Test, int]], env: Env, thread_count: int):
-    with concurrent.futures.ThreadPoolExecutor(thread_count) as executor:
-        futures: list[concurrent.futures.Future[tuple[int, str, str | None, str]]] = []
-        for test, counter in tests:
-            futures.append(executor.submit(task, env, test, counter))
-
-        for future in concurrent.futures.as_completed(futures):
-            yield future.result()
-
-
-def _run_sync_tests(tests: list[tuple[Test, int]], env: Env):
-    for test, counter in tests:
-        yield task(env, test, counter)
-
-
-def _report_tests(
-    counters: Counters,
-    results: Generator[tuple[int, str, str | None, str], Any, None],
-):
-    for outcome, test_id, message, tempdir in results:
-        counters.report(outcome, test_id, message)
-        shutil.rmtree(tempdir, ignore_errors=True)
 
 
 def _enum_tests(test_root: Path, data_dir: Path | None):
@@ -459,3 +398,16 @@ def _install(
     env.handlers[target_name] = (0, _target(env.target))
 
     return True
+
+
+def _print_all(info_block: list[tuple[str, str]]):
+    length = 0
+    for label, _ in info_block:
+        label_len = len(label)
+        if length < label_len:
+            length = label_len
+    length += 1
+
+    for label, info in info_block:
+        lab = f"{label}:"
+        print(f"{lab: <{length}} {info}")
