@@ -3,6 +3,7 @@
 
 import concurrent.futures
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,18 @@ from os import PathLike
 from pathlib import Path
 from typing import Annotated, Any, Generator, cast
 
+from yaml import __version__ as yaml_version
+
+try:
+    from yaml import CLoader
+
+    yaml_loader = "CLoader"
+except ImportError:
+    from yaml import Loader
+
+    yaml_loader = "Loader"
+
+from proj_flow import __version__
 from proj_flow.api import arg, env, release
 from proj_flow.base.cmake_presets import Presets
 from proj_flow.ext.test_runner.driver.commands import HANDLERS
@@ -168,6 +181,16 @@ def test_runner(
         print("No tests to run.", file=sys.stderr)
         return 0
 
+    RUN_LINEAR = os.environ.get("RUN_LINEAR", 0) != 0
+    if RUN_LINEAR:
+        linear_tests[0:0] = independent_tests
+        independent_tests = []
+
+    try:
+        thread_count = int(os.environ.get("POOL_SIZE", "not-a-number"))
+    except (ValueError, TypeError):
+        thread_count = max(1, (os.cpu_count() or 0)) * 2
+
     env = _make_env(
         target_path,
         data_dir or Path(binary_dir),
@@ -177,16 +200,34 @@ def test_runner(
         env_prefix,
     )
 
-    print("target: ", env.target, env.version)
+    info_block: list[tuple[str, str]] = []
+
+    info_block.append(("target", f"{env.target} {env.version}"))
     if env.data_dir_alt is None:
-        print("data:   ", env.data_dir)
+        info_block.append(("data", env.data_dir))
     else:
-        print("data:   ", env.data_dir, env.data_dir_alt)
-    print("tests:  ", tests)
+        info_block.append(("data", f"{env.data_dir} {env.data_dir_alt}"))
+    info_block.append(("tests", tests))
     if env.tempdir_alt is None:
-        print("$TEMP:  ", env.tempdir)
+        info_block.append(("$TEMP", env.tempdir))
     else:
-        print("$TEMP:  ", env.tempdir, env.tempdir_alt)
+        info_block.append(("$TEMP", f"{env.tempdir} {env.tempdir_alt}"))
+    if independent_tests:
+        info_block.append(("threads", str(thread_count)))
+    if sys.prefix != sys.base_prefix:
+        info_block.append(
+            (
+                "python",
+                f"{platform.python_version()} in {sys.prefix} ({sys.base_prefix})",
+            )
+        )
+    else:
+        info_block.append(("python", f"{platform.python_version()} in {sys.prefix}"))
+
+    info_block.append(("proj-flow", __version__))
+    info_block.append(("PyYAML", f"{yaml_version} (loader: {yaml_loader})"))
+
+    _print_all(info_block)
 
     os.makedirs(env.tempdir, exist_ok=True)
 
@@ -205,7 +246,21 @@ def test_runner(
         linear_tests=linear_tests,
         install_dir=install_dir,
         env=env,
+        thread_count=thread_count,
     )
+
+
+def _print_all(info_block: list[tuple[str, str]]):
+    length = 0
+    for label, _ in info_block:
+        label_len = len(label)
+        if length < label_len:
+            length = label_len
+    length += 1
+
+    for label, info in info_block:
+        lab = f"{label}:"
+        print(f"{lab: <{length}} {info}")
 
 
 def _run_and_report_tests(
@@ -213,21 +268,11 @@ def _run_and_report_tests(
     linear_tests: list[tuple[Test, int]],
     install_dir: Path,
     env: Env,
+    thread_count: int,
 ):
-    RUN_LINEAR = os.environ.get("RUN_LINEAR", 0) != 0
-    if RUN_LINEAR:
-        linear_tests[0:0] = independent_tests
-        independent_tests = []
-
     counters = Counters()
 
     if independent_tests:
-        try:
-            thread_count = int(os.environ.get("POOL_SIZE", "not-a-number"))
-        except (ValueError, TypeError):
-            thread_count = max(1, (os.cpu_count() or 0)) * 2
-        print("threads:", thread_count)
-
         _report_tests(counters, _run_async_tests(independent_tests, env, thread_count))
 
     _report_tests(counters, _run_sync_tests(linear_tests, env))
