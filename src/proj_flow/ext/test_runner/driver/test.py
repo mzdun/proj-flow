@@ -3,18 +3,20 @@
 
 import os
 import random
-import re
 import shlex
 import shutil
 import string
 import subprocess
 import sys
-from dataclasses import dataclass
 from difflib import unified_diff
 from pathlib import Path
-from typing import Callable, TypeVar, cast
+from typing import cast
 
 import yaml
+
+from proj_flow.ext.test_runner.driver.env import Env
+from proj_flow.ext.test_runner.driver.file_writes import FileWrite
+from proj_flow.ext.test_runner.utils.io import ProcessIO
 
 try:
     from yaml import CDumper as Dumper
@@ -38,21 +40,6 @@ def _diff(expected, actual):
     return "\n".join(list(unified_diff(expected, actual, lineterm=""))[2:])
 
 
-def _alt_sep(input: str, value: str, var: str):
-    split = input.split(value)
-    first = split[0]
-    split = split[1:]
-    for index in range(len(split)):
-        m = re.match(r"^(\S+)((\n|.)*)$", split[index])
-        if m is None:
-            continue
-        g2 = m.group(2)
-        if g2 is None:
-            g2 = ""
-        split[index] = "{}{}".format(m.group(1).replace(os.sep, "/"), g2)
-    return var.join([first, *split])
-
-
 def str_presenter(dumper: Dumper, data: str):
     if "\n" in data:
         return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
@@ -61,71 +48,6 @@ def str_presenter(dumper: Dumper, data: str):
 
 
 yaml.add_representer(str, str_presenter, Dumper=Dumper)
-
-
-@dataclass
-class Env:
-    target: str
-    target_name: str
-    build_dir: str
-    data_dir: str
-    inst_dir: str
-    tempdir: str
-    version: str
-    counter_digits: int
-    counter_total: int
-    handlers: dict[str, tuple[int, Callable[["Test", list[str]], None]]]
-    data_dir_alt: str | None = None
-    tempdir_alt: str | None = None
-    # TODO: installable patches
-    builtin_patches: dict[str, str] | None = None
-    reportable_env_prefix: str | None = None
-
-    def expand(
-        self, input: str, tempdir: str, cwd: str, additional: dict[str, str] = {}
-    ):
-        input = (
-            input.replace("$TMP", tempdir)
-            .replace("$CWD", cwd)
-            .replace("$DATA", self.data_dir)
-            .replace("$INST", self.inst_dir)
-            .replace("$VERSION", self.version)
-        )
-        for key, value in additional.items():
-            input = input.replace(f"${key}", value)
-        return input
-
-    def fix(self, raw_input: bytes, cwd: str, patches: dict[str, str]):
-        if os.name == "nt":
-            raw_input = raw_input.replace(b"\r\n", b"\n")
-        input = raw_input.decode("UTF-8")
-        input = _alt_sep(input, cwd, "$CWD")
-        input = _alt_sep(input, self.tempdir, "$TMP")
-        input = _alt_sep(input, self.data_dir, "$DATA")
-        input = input.replace(self.version, "$VERSION")
-
-        if self.tempdir_alt is not None:
-            input = _alt_sep(input, self.tempdir_alt, "$TMP")
-            if self.data_dir_alt:
-                input = _alt_sep(input, self.data_dir_alt, "$DATA")
-
-        builtins = self.builtin_patches or {}
-
-        lines = input.split("\n")
-        for patch, replacement in builtins.items():
-            pattern = re.compile(patch)
-            for lineno in range(len(lines)):
-                m = pattern.match(lines[lineno])
-                if m:
-                    lines[lineno] = m.expand(replacement)
-
-        for patch, replacement in patches.items():
-            pattern = re.compile(patch)
-            for lineno in range(len(lines)):
-                m = pattern.match(lines[lineno])
-                if m:
-                    lines[lineno] = m.expand(replacement)
-        return "\n".join(lines)
 
 
 def _test_name(filename: Path) -> str:
@@ -155,82 +77,6 @@ def _paths(key: str, dirs: list[str]):
     return os.pathsep.join(vals)
 
 
-StrOrBytes = TypeVar("StrOrBytes", str, bytes)
-
-
-@dataclass
-class FileContents[StrOrBytes]:
-    filename: str
-    path: Path
-    content: StrOrBytes | None
-
-    def decode(self):
-        return FileContents[str](
-            filename=self.filename,
-            path=self.path,
-            content=cast(bytes, self.content).decode() if self.content else None,
-        )
-
-
-def load_file_contents(filename: str, environment: Env, cwd: str):
-    path = Path(environment.expand(filename, environment.tempdir, cwd=cwd))
-    try:
-        content = path.read_bytes()
-    except FileNotFoundError:
-        content = None
-    return FileContents(filename=filename, path=path, content=content)
-
-
-def fix_file_contents(
-    self: FileContents[bytes], env: Env, cwd: str, patches: dict[str, str]
-):
-    return FileContents(
-        filename=self.filename,
-        path=self.path,
-        content=env.fix(self.content, cwd, patches) if self.content else None,
-    )
-
-
-@dataclass
-class FileWrite[StrOrBytes]:
-    generated: FileContents[StrOrBytes]
-    template: FileContents[StrOrBytes]
-    save: bool
-
-    def needs_saving(self):
-        return self.template.content is None or self.save
-
-    def copy_file(self):
-        if not self.generated.content:
-            return False
-
-        self.template.path.parent.mkdir(parents=True, exist_ok=True)
-        self.template.path.write_bytes(cast(str, self.generated.content).encode())
-        return True
-
-
-def fix_file_write(self: FileWrite[bytes], env: Env, cwd: str, patches: dict[str, str]):
-    return FileWrite(
-        generated=fix_file_contents(self.generated, env, cwd, patches),
-        template=self.template.decode(),
-        save=self.save,
-    )
-
-
-@dataclass
-class Expected:
-    returncode: int
-    stdout: str
-    stderr: str
-
-    def as_dict(self):
-        return {
-            "return-code": self.returncode,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
-        }
-
-
 class Test:
     cwd: str
     data: dict
@@ -246,7 +92,7 @@ class Test:
     lang: str
     args: list[str]
     post: list[list[str]]
-    expected: Expected | None
+    expected: ProcessIO | None
     check: list[str]
     writes: dict[str, str | dict]
     patches: dict[str, str]
@@ -317,7 +163,7 @@ class Test:
                 stdout = "\n".join(stdout)
             if isinstance(stderr, list):
                 stderr = "\n".join(stderr)
-            self.expected = Expected(
+            self.expected = ProcessIO(
                 returncode=returncode, stdout=stdout, stderr=stderr
             )
 
@@ -388,7 +234,7 @@ class Test:
             self.current_env = saved
         return True
 
-    def run(self, environment: Env) -> tuple[Expected, list[FileWrite[bytes]]] | None:
+    def run(self, environment: Env) -> tuple[ProcessIO, list[FileWrite]] | None:
         root = os.path.join(
             "build",
             ".testing",
@@ -425,39 +271,28 @@ class Test:
                 del _env[key]
 
         cwd = None if self.linear else self.cwd
-        proc: subprocess.CompletedProcess = subprocess.run(
+        io = ProcessIO()
+        proc = subprocess.run(
             [environment.target, *expanded], capture_output=True, env=_env, cwd=self.cwd
         )
-        returncode: int = proc.returncode
-        test_stdout: bytes = proc.stdout
-        test_stderr: bytes = proc.stderr
+        io.append(proc)
 
         for sub_expanded in post_expanded:
-            if returncode != 0:
+            if io.returncode != 0:
                 break
-            proc_post: subprocess.CompletedProcess = subprocess.run(
+            proc: subprocess.CompletedProcess = subprocess.run(
                 [environment.target, *sub_expanded],
                 capture_output=True,
                 env=_env,
                 cwd=cwd,
             )
-            returncode = proc_post.returncode
-            if len(test_stdout) and len(proc_post.stdout):
-                test_stdout += b"\n"
-            if len(test_stderr) and len(proc_post.stderr):
-                test_stderr += b"\n"
-            test_stdout += proc_post.stdout
-            test_stderr += proc_post.stderr
+            io.append(proc)
 
-        expected_files: list[FileWrite[bytes]] = []
+        expected_files: list[FileWrite] = []
         for key, value in self.writes.items():
             if isinstance(value, str):
                 expected_files.append(
-                    FileWrite(
-                        generated=load_file_contents(key, environment, cwd=self.cwd),
-                        template=load_file_contents(value, environment, cwd=self.cwd),
-                        save=False,
-                    )
+                    FileWrite.load(key, value, environment, cwd=self.cwd, save=False)
                 )
             elif isinstance(value, dict):
                 path = cast(str | None, value.get("path"))
@@ -466,11 +301,7 @@ class Test:
                     continue
 
                 expected_files.append(
-                    FileWrite(
-                        generated=load_file_contents(key, environment, cwd=self.cwd),
-                        template=load_file_contents(path, environment, cwd=self.cwd),
-                        save=save,
-                    )
+                    FileWrite.load(key, path, environment, cwd=self.cwd, save=save)
                 )
 
         clean = self.run_cmds(environment, self.cleanup, environment.tempdir)
@@ -478,15 +309,11 @@ class Test:
             return None
 
         return (
-            Expected(
-                returncode=returncode,
-                stdout=environment.fix(test_stdout, self.cwd, self.patches),
-                stderr=environment.fix(test_stderr, self.cwd, self.patches),
-            ),
+            environment.patch_io(io, self.cwd, self.patches),
             expected_files,
         )
 
-    def clip(self, actual: Expected) -> str | Expected:
+    def clip(self, actual: ProcessIO) -> str | ProcessIO:
         if not self.expected:
             return actual
 
@@ -505,7 +332,7 @@ class Test:
                     streams[ndx] = streams[ndx][-ex_len:]
                 else:
                     return check
-        return Expected(returncode=returncode, stdout=streams[0], stderr=streams[1])
+        return ProcessIO(returncode=returncode, stdout=streams[0], stderr=streams[1])
 
     @staticmethod
     def text_diff(
@@ -521,7 +348,7 @@ Diff:
 {_diff(expected, actual)}
 """
 
-    def report_io(self, actual: Expected):
+    def report_io(self, actual: ProcessIO):
         result = ""
         if not self.expected:
             return result
@@ -558,24 +385,29 @@ Diff:
 
     def report_file(
         self,
-        file: FileWrite[str],
+        file: FileWrite,
     ):
-        header = file.generated.filename
+        header = (
+            f"{file.generated.filename} [{'BIN' if file.generated.binary else 'TXT'}]"
+        )
 
         if not file.generated.content:
             header += "\n  New file was not present to be read"
-        if not file.generated.content:
+        if not file.template.content:
             header += (
-                f"\n  Test file {file.generated.filename} was not present to be read"
+                f"\n  Test file {file.template.filename} was not present to be read"
             )
 
         if not file.generated.content or not file.template.content:
             return header
 
+        if file.binary:
+            return header + "\n  Binary files differ"
+
         return Test.text_diff(
             header,
-            expected=file.template.content,
-            actual=file.generated.content,
+            expected=cast(str, file.template.content),
+            actual=cast(str, file.generated.content),
         )
 
     def test_footer(self, env: Env, tempdir: str):
@@ -666,6 +498,6 @@ Diff:
 
     @staticmethod
     def load(filename: Path, count: int):
-        blob = filename.read_bytes().replace(b"\r\n", b"\n")
-        tree = cast(dict, yaml.load(blob, Loader=Loader))
+        contents = filename.read_text(encoding="UTF-8")
+        tree = cast(dict, yaml.load(contents, Loader=Loader))
         return Test(tree, filename, count)

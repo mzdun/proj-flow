@@ -19,6 +19,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import traceback
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -200,10 +201,15 @@ def load_extensions(extensions: List[str]):
                 file=sys.stderr,
             )
         except BaseException as ex:
+            te = traceback.TracebackException(
+                type(ex), ex, ex.__traceback__, limit=None, compact=True
+            )
+
             print(
-                f"-- error: there was an error while loading module `{extension}`: {ex}",
+                f"-- error: there was an error while loading module `{extension}`: {ex}\n\nTraceback (most recent call last):",
                 file=sys.stderr,
             )
+            print("".join(te.stack.format()))
 
 
 class FlowConfig:
