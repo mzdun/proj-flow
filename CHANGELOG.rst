@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.23.1 <https://github.com/mzdun/proj-flow/compare/v0.23.0...v0.23.1>`_ (2026-02-05)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- describe the test runtime a bit more (`f78df8e <https://github.com/mzdun/proj-flow/commit/f78df8efda38a41b203dbe92aa9cb156f9845835>`_)
+
 `0.23.0 <https://github.com/mzdun/proj-flow/compare/v0.22.3...v0.23.0>`_ (2026-02-04)
 =====================================================================================
 
