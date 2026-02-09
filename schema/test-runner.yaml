@@ -20,6 +20,13 @@ properties:
       this test on this particular platform
   lang: {type: string, description: language to set current locale to before running the test }
   args: {type: string, description: list of arguments to use for the test run}
+  input:
+    type: [string, array]
+    items: { type: string }
+    description: >
+      attach text to stdin of the args-based call (and not post ones); if the
+      input is an array of strings, it will be concatenated into single text
+      with new lines
   post:
     type: [string, array]
     items: {type: string}
