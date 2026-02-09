@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.24.0 <https://github.com/mzdun/proj-flow/compare/v0.23.2...v0.24.0>`_ (2026-02-09)
+=====================================================================================
+
+New Features
+------------
+
+- support "input" in test-runner YAMLs (`00645c2 <https://github.com/mzdun/proj-flow/commit/00645c28618a40c4ee595df473993c0e54ff815f>`_)
+
 `0.23.2 <https://github.com/mzdun/proj-flow/compare/v0.23.1...v0.23.2>`_ (2026-02-05)
 =====================================================================================
 

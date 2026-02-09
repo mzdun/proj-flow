@@ -1,5 +1,5 @@
 $schema: http://json-schema.org/draft-04/schema#
-$id: https://raw.githubusercontent.com/mzdun/proj-flow/refs/tags/v0.23.2/schema/test-runner.yaml
+$id: https://raw.githubusercontent.com/mzdun/proj-flow/refs/tags/v0.24.0/schema/test-runner.yaml
 type: object
 required: [args, expected]
 additionalProperties: false
