@@ -91,6 +91,7 @@ class Test:
     disabled: bool | str
     lang: str
     args: list[str]
+    input: str | None
     post: list[list[str]]
     expected: ProcessIO | None
     check: list[str]
@@ -115,6 +116,7 @@ class Test:
         self.lang = cast(str, data.get("lang", "en"))
         self.args = []
         self.post = []
+        self.input = None
         self.expected = None
         self.check = ["all"] * len(_streams)
         self.writes = cast(dict[str, str | dict], data.get("writes", {}))
@@ -127,6 +129,11 @@ class Test:
             self.ok = not self.disabled
         elif isinstance(self.disabled, str):
             self.ok = self.disabled != sys.platform
+
+        test_input = cast(str | list[str] | None, data.get("input"))
+        if isinstance(test_input, list):
+            test_input = "\n".join(test_input)
+        self.input = test_input
 
         rebuild = False
 
@@ -272,8 +279,15 @@ class Test:
 
         cwd = None if self.linear else self.cwd
         io = ProcessIO()
+        kwargs = {}
+        if self.input is not None:
+            kwargs["input"] = self.input.encode()
         proc = subprocess.run(
-            [environment.target, *expanded], capture_output=True, env=_env, cwd=self.cwd
+            [environment.target, *expanded],
+            capture_output=True,
+            env=_env,
+            cwd=self.cwd,
+            **kwargs,
         )
         io.append(proc)
 
