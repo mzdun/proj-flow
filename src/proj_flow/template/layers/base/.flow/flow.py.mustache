@@ -10,50 +10,73 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Optional, cast
+from functools import total_ordering
+from pathlib import Path
+from typing import cast
 
-CXX_FLOW_VERSION = "{{__flow_version__}}"
-PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+PROJ_FLOW_VERSION = "{{__flow_version__}}"
+PROJECT_ROOT = Path(__file__).parent.parent
 VER_REGEX = re.compile(r"((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))")
 
 
 @dataclass
+@total_ordering
 class Version:
     major: int
     minor: int
     patch: int
 
-    def compatible_with(self: "Version", runtime: Optional["Version"]):
-        if runtime is None:
+    def __str__(self):
+        return f"{self.major}.{self.minor}.{self.patch}"
+
+    def __lt__(self, other):
+        if not isinstance(other, Version):
             return False
-        return self.major == runtime.major and self.minor <= runtime.minor
+        if self.major != other.major:
+            return self.major < other.major
+        if self.minor != other.minor:
+            return self.minor < other.minor
+        return self.patch < other.patch
+
+    def __eq__(self, other):
+        if not isinstance(other, Version):
+            return False
+        return (
+            self.major == other.major
+            and self.minor == other.minor
+            and self.patch == other.patch
+        )
+
+    def compatible_with(self, runtime: "Version | None"):
+        return self <= runtime and self.major == cast(Version, runtime).major
 
     @staticmethod
     def parse(value: str):
         chunks = value.split("-")[0].split("+")[0].split(".")
-        try:
-            int_chunks = list(map(int, chunks))[0:3]
-            while len(int_chunks) < 3:
-                int_chunks.append(0)
-            return Version(*int_chunks)
-        except ValueError:
-            return None
+
+        int_chunks = list(map(int, chunks))[0:3]
+        while len(int_chunks) < 3:
+            int_chunks.append(0)
+        return Version(*int_chunks)
 
     @staticmethod
     def proc_parse(process: subprocess.CompletedProcess):
         value = cast(str, process.stdout).strip() if process.returncode == 0 else ""
         m = VER_REGEX.search(value)
-        return Version.parse(m.group(0)) if m is not None else None
+        try:
+            return Version.parse(m.group(0)) if m is not None else None
+        except ValueError:
+            return None
 
 
-proj_flow = Version.parse(CXX_FLOW_VERSION)
+proj_flow = Version.parse(PROJ_FLOW_VERSION)
 
 PYTHON_EXECUTABLE = sys.executable
 
 
 def python(
     *args: str,
-    module: Optional[str] = None,
+    module: str | None = None,
     capture_output: bool = True,
 ) -> subprocess.CompletedProcess:
     if module is not None:
@@ -75,9 +98,12 @@ def venv(*args: str, capture_output: bool = False):
     return python(*args, module="venv", capture_output=capture_output)
 
 
-def cxx_flow_version(print_output=False):
+def proj_flow_version(print_output=False):
+    executable = shutil.which("proj-flow")
+    if not executable:
+        return None
     proc = subprocess.run(
-        "proj-flow --version", shell=True, encoding="UTF-8", capture_output=True
+        [executable, "--version"], encoding="utf-8", capture_output=True
     )
     result = Version.proc_parse(proc)
     if result is None and print_output:
@@ -89,8 +115,8 @@ def cxx_flow_version(print_output=False):
 
 
 @contextmanager
-def cd(path: str):
-    prev = os.getcwd()
+def cd(path: Path):
+    prev = Path().absolute()
     os.chdir(path)
     try:
         yield
@@ -99,13 +125,13 @@ def cd(path: str):
 
 
 def get_venv_path():
-    bindir = os.path.join(".venv", "bin")
-    scripts = os.path.join(".venv", "Scripts")
+    bindir = Path(".venv", "bin")
+    scripts = Path(".venv", "Scripts")
 
-    if os.path.isdir(bindir):
+    if bindir.is_dir():
         return bindir
 
-    if os.path.isdir(scripts):
+    if scripts.is_dir():
         return scripts
 
     return None
@@ -114,52 +140,51 @@ def get_venv_path():
 def activate_virtual_env():
     global PYTHON_EXECUTABLE
 
-    with cd(os.path.dirname(__file__)):
+    with cd(PROJECT_ROOT):
         exec_ext = ".exe" if sys.platform == "win32" else ""
         python_exec = f"python{exec_ext}"
         bindir = get_venv_path()
-        has_venv = bindir is not None and os.path.isfile(
-            os.path.join(bindir, python_exec)
-        )
+        has_venv = bindir is not None and (bindir / python_exec).is_file()
 
         if not has_venv:
             venv(".venv")
             bindir = get_venv_path()
 
         if bindir is not None:
-            os.environ["PATH"] = (
-                f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
-            )
+            os.environ["PATH"] = f"{bindir.absolute()}{os.pathsep}{os.environ['PATH']}"
             PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
 
 
 def bootstrap_cxx_flow():
-    if proj_flow is None:
-        print('Cannot parse version "{CXX_FLOW_VERSION}"', file=sys.stderr)
-        return False
-
-    if proj_flow.compatible_with(cxx_flow_version()):
+    version = proj_flow_version()
+    if proj_flow.compatible_with(version):
         return True
 
     if sys.prefix == sys.base_prefix:
         activate_virtual_env()
 
-        if proj_flow.compatible_with(cxx_flow_version()):
+        version = proj_flow_version()
+        if proj_flow.compatible_with(version):
             return True
 
     if pip("--version", capture_output=True).returncode != 0:
         print("Cannot call pip as a module. Exiting.\n", file=sys.stderr)
         sys.exit(1)
 
-    version_major = proj_flow.major
-    version_minor = proj_flow.minor
-    version_range = f">={version_major}.{version_minor},<{version_major + 1}"
+    if not version:
+        print("Found no version of proj_flow package, installing from pypi.")
+    elif version.major > proj_flow.major:
+        print(
+            f"Found proj_flow=={version}, need >={proj_flow} and <{proj_flow.major + 1}, installing from pypi."
+        )
+    else:
+        print(f"Found proj_flow=={version}, need >={proj_flow}, installing from pypi.")
 
-    if pip("install", f"proj-flow{version_range}").returncode != 0:
+    if pip("install", f"proj-flow>={proj_flow},<{proj_flow.major + 1}").returncode != 0:
         print("Cannot install proj-flow with current pip. Exiting.\n", file=sys.stderr)
         sys.exit(1)
 
-    return proj_flow.compatible_with(cxx_flow_version(print_output=True))
+    return proj_flow.compatible_with(proj_flow_version(print_output=True))
 
 
 def main():
