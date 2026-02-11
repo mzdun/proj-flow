@@ -344,7 +344,7 @@ def _extract_args(entry: callable):  # type: ignore
     return typing.cast(typing.List[AnyArgument], list(args))
 
 
-def _build_run_shortcuts(cfg):
+def _build_run_shortcuts(cfg: env.FlowConfig):
     shortcut_configs: typing.Dict[str, typing.List[str]] = {}
     args: typing.List[typing.Tuple[str, typing.List[str], bool, bool]] = []
 
@@ -356,7 +356,7 @@ def _build_run_shortcuts(cfg):
         config: typing.List[str] = []
         for key in sorted(shortcut.keys()):
             has_os = has_os or key == "os"
-            has_compiler = has_compiler or key == "os"
+            has_compiler = has_compiler or key == "compiler"
             value = shortcut[key]
             if isinstance(value, list):
                 for v in value:
@@ -436,6 +436,20 @@ def _argparse_config_visit(parser: Parser):
         "for that key are used. Otherwise, only values from command "
         "line are used.",
     ).completer = completers.matrix_completer  # type: ignore
+
+    parser.add_argument(
+        "-E",
+        dest="extra",
+        metavar="key=value",
+        nargs="*",
+        action="store",
+        default=[],
+        help="After calculating all the matching configs through -D, "
+        "extend the configuration with the -E; for each singular name, this "
+        "name is simply added to matching configs, for repeating name, a new "
+        "cartesian axis for the config is created and the configs are "
+        "populated on it.",
+    )
 
     parser.add_argument(
         "--official",
