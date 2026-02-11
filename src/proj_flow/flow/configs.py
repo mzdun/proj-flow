@@ -13,7 +13,7 @@ import copy
 import datetime
 import os
 import sys
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, cast
 
 from proj_flow.api import env
 from proj_flow.base import matrix
@@ -259,7 +259,8 @@ class Configs:
             or not matrix.matches_any(config, postproc_exclude)
         ]
 
-        usable = _apply_extras(usable, matrix.cartesian(_extras(args.extra)))
+        extra = (cast(list[str], args.extra) if hasattr(args, "extra") else None) or []
+        usable = _apply_extras(usable, matrix.cartesian(_extras(extra)))
 
         if not expand_compilers:
             self.usable = [env.Config(conf, keys) for conf in usable]
