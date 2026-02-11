@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.25.1 <https://github.com/mzdun/proj-flow/compare/v0.25.0...v0.25.1>`_ (2026-02-11)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- extra fail on Github workflows (`3e6e7d7 <https://github.com/mzdun/proj-flow/commit/3e6e7d7a179c8a2c68a3837e2dd243b819e53863>`_)
+
 `0.25.0 <https://github.com/mzdun/proj-flow/compare/v0.24.0...v0.25.0>`_ (2026-02-11)
 =====================================================================================
 

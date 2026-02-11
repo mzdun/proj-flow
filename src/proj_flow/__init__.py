@@ -6,4 +6,4 @@ The **proj_flow** contains only ``__version__`` to be updated, nothing more.
 This is in an attempt to make this module easy to load initially.
 """
 
-__version__ = "0.25.0"
+__version__ = "0.25.1"
