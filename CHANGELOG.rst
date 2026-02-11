@@ -4,6 +4,19 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.25.0 <https://github.com/mzdun/proj-flow/compare/v0.24.0...v0.25.0>`_ (2026-02-11)
+=====================================================================================
+
+New Features
+------------
+
+- add -E to runs, allowing clients to additionally extend the matrix (`c0e69b9 <https://github.com/mzdun/proj-flow/commit/c0e69b9444e878d71fb97c6a8f87bcbf98429292>`_)
+
+Bug Fixes
+---------
+
+- have a stricter flow bootstrap version check (`98fc506 <https://github.com/mzdun/proj-flow/commit/98fc50679b8a7c861b6db2de869d10f393937acd>`_)
+
 `0.24.0 <https://github.com/mzdun/proj-flow/compare/v0.23.2...v0.24.0>`_ (2026-02-09)
 =====================================================================================
 
