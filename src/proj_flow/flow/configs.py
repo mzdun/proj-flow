@@ -47,6 +47,7 @@ def _boolean(with_name: str):
 
 
 _TRUE = {"true", "on", "yes", "1"}
+_FALSE = {"false", "off", "no", "0"}
 _boolean_sanitizer = _boolean("with-sanitizer")
 
 
@@ -80,6 +81,48 @@ def _config(config: List[str], only_host: bool, types: Dict[str, Callable[[str],
         args["os"] = [env.platform]
 
     return args
+
+
+def _extras(extra: List[str]):
+    args: dict[str, list[str]] = {}
+    for arg in extra:
+        if arg[:1] == "-":
+            continue
+        _arg = arg.split("=", 1)
+        if len(_arg) == 1:
+            continue
+
+        name, vals = _arg
+        name = name.strip()
+        values = set(vals.split(","))
+        if name in args:
+            values.update(args[name])
+        args[name] = list(values)
+
+    bools: set[str] = set()
+    bools.update(_TRUE, _FALSE)
+    configs: dict[str, list[str] | list[bool] | list[int]] = {}
+    for name, values in args.items():
+        l_name = name.lower()
+        with_l_name = f"with-{l_name}"
+        extended_bool = bools.copy()
+        extended_bool.add(with_l_name)
+        extended_bool.add(f"without-{l_name}")
+
+        if all(map(lambda value: value.lower() in extended_bool, values)):
+            vals = map(
+                lambda value: value.lower() in _TRUE or value.lower() == with_l_name,
+                values,
+            )
+            configs[name] = list(vals)
+            continue
+        try:
+            ints = [int(value) for value in values]
+            configs[name] = ints
+        except ValueError:
+            configs[name] = values
+
+    return configs
 
 
 def _expand_one(config: dict, github_os: str, os_in_name: str):
@@ -166,6 +209,14 @@ def _apply_postproc_includes(config: dict, postproc_include: List[dict]):
     return clone
 
 
+def _apply_extras(configs: list[dict], extras: list[dict]):
+    result: list[dict] = []
+    for config in configs:
+        for extra in extras:
+            result.append({**extra, **config})
+    return result
+
+
 class Configs:
     usable: List[env.Config] = []
 
@@ -207,6 +258,8 @@ class Configs:
             if len(postproc_exclude) == 0
             or not matrix.matches_any(config, postproc_exclude)
         ]
+
+        usable = _apply_extras(usable, matrix.cartesian(_extras(args.extra)))
 
         if not expand_compilers:
             self.usable = [env.Config(conf, keys) for conf in usable]
