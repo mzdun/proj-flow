@@ -204,3 +204,9 @@ def verbose_info():
         print(
             f'-- Step: adding "{step.name}" from `{step.__module__}.{step.__class__.__name__}`'
         )
+
+
+def get_registered(name: str):
+    for step in __steps:
+        if step.name == name:
+            return step
