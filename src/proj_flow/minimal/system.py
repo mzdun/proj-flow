@@ -19,7 +19,7 @@ def main(
         str,
         arg.Argument(
             help="Select, what format should be returned",
-            choices=["props", "platform", "debug"],
+            choices=["props", "platform", "os", "debug"],
         ),
     ],
 ):
@@ -38,6 +38,10 @@ def main(
     if format == "platform":
         version = "" if version is None else f"-{version}"
         print(f"{system}{version}-{arch}")
+
+    if format == "os":
+        version = "-latest" if version is None else f"-{version}"
+        print(f"{system}{version}")
 
     if format == "debug":
         for name in [
