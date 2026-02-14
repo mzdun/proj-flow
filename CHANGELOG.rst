@@ -4,6 +4,15 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.25.2 <https://github.com/mzdun/proj-flow/compare/v0.25.1...v0.25.2>`_ (2026-02-14)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- get OS name only from ``system`` (`896dab5 <https://github.com/mzdun/proj-flow/commit/896dab5769bef64b395588daf1bdd55c438f83eb>`_)
+- get currently registered step (`4fd506f <https://github.com/mzdun/proj-flow/commit/4fd506fb96b37e87ef741a77f67bd808f820b754>`_)
+
 `0.25.1 <https://github.com/mzdun/proj-flow/compare/v0.25.0...v0.25.1>`_ (2026-02-11)
 =====================================================================================
 
