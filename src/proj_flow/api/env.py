@@ -257,6 +257,10 @@ class FlowConfig:
         load_extensions(extensions)
 
     @property
+    def items(self):
+        return self._cfg
+
+    @property
     def entry(self) -> Dict[str, dict]:
         return self._cfg.get("entry", {})
 
