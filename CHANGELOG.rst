@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.25.4 <https://github.com/mzdun/proj-flow/compare/v0.25.3...v0.25.4>`_ (2026-02-15)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- expose env to test writers (`d626dcd <https://github.com/mzdun/proj-flow/commit/d626dcd6629ce68bedb4b61a2396de8a09733759>`_)
+
 `0.25.3 <https://github.com/mzdun/proj-flow/compare/v0.25.2...v0.25.3>`_ (2026-02-15)
 =====================================================================================
 
