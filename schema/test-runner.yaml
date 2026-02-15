@@ -6,20 +6,24 @@ additionalProperties: false
 default: {}
 
 properties:
-  $schema: {type: string}
-  linear: 
+  $schema: { type: string }
+  linear:
     type: boolean
     description: >
       if absent or set to false, will result in running the test in parallel
       with other tests; setting to true will run this test in serial scheme
-  disabled: 
+  disabled:
     type: [boolean, string]
     description: >
       if absent or set to false will mark this test as runnable; if set to true
       will disable this test on any run, if set to `sys.platform` will disable
       this test on this particular platform
-  lang: {type: string, description: language to set current locale to before running the test }
-  args: {type: string, description: list of arguments to use for the test run}
+  lang:
+    {
+      type: string,
+      description: language to set current locale to before running the test,
+    }
+  args: { type: string, description: list of arguments to use for the test run }
   input:
     type: [string, array]
     items: { type: string }
@@ -29,13 +33,13 @@ properties:
       with new lines
   post:
     type: [string, array]
-    items: {type: string}
+    items: { type: string }
     description: >
       additional runs of the tested executable; the output will be added to
       the main output and used to compare against the expected object; the first
       failing run will both stop processing any further post runs and their
       return-code will be used to compare against expected value
-  expected: 
+  expected:
     type: ["null", object]
     required: [return-code, stdout, stderr]
     additionalProperties: false
@@ -47,12 +51,14 @@ properties:
       and mark the test as SKIPPED
 
     properties:
-      return-code: 
+      return-code:
         type: integer
         description: >
           first non-zero return-code returned by first of args and post runs
-      stdout: {type: string, description: expected output to standard output file}
-      stderr: {type: string, description: expected output to standard error file}
+      stdout:
+        { type: string, description: expected output to standard output file }
+      stderr:
+        { type: string, description: expected output to standard error file }
 
   check:
     type: object
@@ -60,9 +66,9 @@ properties:
       allows comparing the expected output against either begin or end of actual
       output; when missing, defaults to "all", meaning expected and actual output
       must be exactly equal
-    properties: 
-      stdout: {$ref: "#/$defs/check"}
-      stderr: {$ref: "#/$defs/check"}
+    properties:
+      stdout: { $ref: "#/$defs/check" }
+      stderr: { $ref: "#/$defs/check" }
   writes:
     type: object
     description: >
@@ -70,7 +76,7 @@ properties:
       the keys represent the written file names, the values represent the files
       to compare them against
     properties:
-      ^$: {not: {}}
+      ^$: { not: {} }
       ^.+$:
         type: [string, object]
         required: [path]
@@ -80,7 +86,7 @@ properties:
           file named by this value is missing, the file will be copied from
           written file, instead of compared
         properties:
-          path: 
+          path:
             type: string
             description: >
               path to a file to compare the the written file against; if the
@@ -98,8 +104,24 @@ properties:
       a dictionary of regex expressions mapped to their symbolic representations,
       to be applied to gathered stdout and stderr, as well as all written files
     properties:
-      ^$: {not: {}}
-      ^.+$: {type: string}
+      ^$: { not: {} }
+      ^.+$: { type: string }
+  env:
+    type: object
+    description: >
+      a dictionary of environment variables to set/clear; setting the value to
+      a string will replace the variable, setting it to null will remove the
+      variable; finally, if the value is an array, it will be appended to the
+      environment variable with, unless the variable itself is mentioned in the
+      value, in which case the environment variable will be placed in the placed
+      of the variable name; for example, setting `VAR: [before, $VAR, after]` is
+      equivalent to calling `set "VAR=before;%VAR%;after"` in cmd.exe or
+      `export "VAR=before:$VAR:after"` in Bash
+    properties:
+      ^$: { not: {} }
+      ^.+$:
+        type: ["null", string, array]
+        items: { type: string }
   prepare:
     $ref: "#/$defs/commands"
     description: list of operations to be performed before the test run
@@ -111,8 +133,8 @@ $defs:
   dictionary:
     type: object
     properties:
-      ^$: {not: {}}
-      ^.+$: {type: string}
+      ^$: { not: {} }
+      ^.+$: { type: string }
   commands:
     type: array
     items: string
