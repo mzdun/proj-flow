@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.25.3 <https://github.com/mzdun/proj-flow/compare/v0.25.2...v0.25.3>`_ (2026-02-15)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- allow removing protected access warning from pylint reports (`6cfe662 <https://github.com/mzdun/proj-flow/commit/6cfe6623a841e3a8eceafc9cf61dbc512f8f0f9e>`_)
+
 `0.25.2 <https://github.com/mzdun/proj-flow/compare/v0.25.1...v0.25.2>`_ (2026-02-14)
 =====================================================================================
 
