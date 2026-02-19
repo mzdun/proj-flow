@@ -73,6 +73,7 @@ dev = [
   "types-PyYAML~=6.0",
   "types-chevron~=0.14",
   "types-toml~=0.10",
+  "python-dateutil~=2.9",
 ]
 
 [tool.black]
