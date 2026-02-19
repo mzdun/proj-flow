@@ -53,7 +53,7 @@ def read_junit_testcase(suite: list[str], element: ET.Element, source_dir: Path)
         ),
         suite=suite,
         start=timestamp,
-    )
+    ).recalc_name()
 
     try:
         test.line = int(line_str) if line_str is not None else None

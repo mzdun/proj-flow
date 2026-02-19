@@ -52,7 +52,7 @@ class ReportTestInfo:
             message=self.message,
             start=self.start,
             stop=self.stop,
-        )
+        ).recalc_name()
 
 
 @dataclass
