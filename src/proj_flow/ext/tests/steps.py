@@ -55,10 +55,7 @@ class GTestToCtrf(step.Step):
             read_junit_testsuites(results, filename.stem, filename, source_dir)
 
             results.tool.name = "gtest-to-ctrf"
-            data = results.root_element()
-            path = ctrf_dir / f"{filename.stem}.json"
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+            results.store_root_element(ctrf_dir / f"{filename.stem}.json")
 
         return 0
 
@@ -110,10 +107,7 @@ class MergeCtrfFiles(step.Step):
             results.environment.update(new_env)
 
         results.tool.name = "proj_flow-ctrf-merge"
-        data = results.root_element()
-
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        results.store_root_element(output)
 
         duration = 0
         summary = results.summary

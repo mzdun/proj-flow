@@ -7,8 +7,9 @@ The **proj_flow.ctrf.ctrf** provides ctrf.io classes.
 
 
 import hashlib
+import json
 from dataclasses import asdict, dataclass, field, fields
-from typing import cast
+from pathlib import Path
 
 from proj_flow import __version__
 
@@ -81,6 +82,12 @@ class Test:
     stop: int | None = field(default=None)
     timestamp: str | None = field(default=None)
     duration: int = field(default=0)
+    id: str | None = field(default=None)
+
+    def recalc_name(self):
+        suite = self.suite or []
+        self.name = " » ".join([*suite, self.name])
+        return self
 
     def with_status(self, status: str, /, message: str | None = None):
         self.status = status
@@ -95,10 +102,9 @@ class Test:
         return _less(self.filePath, other.filePath)
 
     def asdict(self):
+        if self.id is None:
+            self.id = _test_uuid(self)
         values = asdict(self)
-        suite = self.suite or []
-        values["name"] = " » ".join([*suite, self.name])
-        values["id"] = _test_uuid(self)
         for f in fields(self):
             value = getattr(self, f.name)
             if value is None:
@@ -190,6 +196,11 @@ class Results:
             "generatedBy": self.tool.name,
             "results": self.asdict(),
         }
+
+    def store_root_element(self, path: Path):
+        data = self.root_element()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(json.dumps(data, ensure_ascii=False, indent=2).encode())
 
 
 CTRF_NAMESPACE = b"\x6b\xa7\xb8\x10\x9d\xad\x11\xd1\x80\xb4\x00\xc0\x4f\xd4\x30\xc8"
