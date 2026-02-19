@@ -96,6 +96,8 @@ class Test:
 
     def asdict(self):
         values = asdict(self)
+        suite = self.suite or []
+        values["name"] = " » ".join([*suite, self.name])
         values["id"] = _test_uuid(self)
         for f in fields(self):
             value = getattr(self, f.name)
