@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.5 <https://github.com/mzdun/proj-flow/compare/v0.26.4...v0.26.5>`_ (2026-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- bring back results/environment and then some (`fd99061 <https://github.com/mzdun/proj-flow/commit/fd9906179663d71499616d7a2e6276033725deec>`_)
+
 `0.26.4 <https://github.com/mzdun/proj-flow/compare/v0.26.3...v0.26.4>`_ (2026-02-19)
 =====================================================================================
 
