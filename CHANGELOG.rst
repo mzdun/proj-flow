@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.3 <https://github.com/mzdun/proj-flow/compare/v0.26.2...v0.26.3>`_ (2026-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- prepend test name with suite path (`a1e79ac <https://github.com/mzdun/proj-flow/commit/a1e79ac672ecd4030a894b9b624ab9c390f42fbf>`_)
+
 `0.26.2 <https://github.com/mzdun/proj-flow/compare/v0.26.1...v0.26.2>`_ (2026-02-19)
 =====================================================================================
 
