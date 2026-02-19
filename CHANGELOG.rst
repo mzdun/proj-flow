@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.4 <https://github.com/mzdun/proj-flow/compare/v0.26.3...v0.26.4>`_ (2026-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- raquo made some issues on Windows (`88ee900 <https://github.com/mzdun/proj-flow/commit/88ee900a5ca00bed3127794d570b286be159c12b>`_)
+
 `0.26.3 <https://github.com/mzdun/proj-flow/compare/v0.26.2...v0.26.3>`_ (2026-02-19)
 =====================================================================================
 
