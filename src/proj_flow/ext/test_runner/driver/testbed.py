@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Generator, Iterator
 
 from proj_flow import __version__
+from proj_flow.api import env
 from proj_flow.ext.test_runner.driver.test import Env, Test
 from proj_flow.ext.test_runner.utils.counters import (
     Counters,
@@ -84,7 +85,9 @@ def run_and_report_tests(
     install_dir: Path,
     env: Env,
     thread_count: int,
+    rt: env.Runtime,
     ctrf: str | None,
+    report_name: str | None,
 ):
     counters = Counters(env.target_name, env.source_dir())
 
@@ -97,6 +100,14 @@ def run_and_report_tests(
     shutil.rmtree("build/.testing", ignore_errors=True)
 
     if ctrf:
+        head = rt.capture("git", "rev-parse", "--abbrev-ref", "HEAD", silent=True)
+        environment = counters.results.environment
+        environment.reportName = report_name
+        environment.appName = env.target_name
+        environment.appVersion = env.version
+        if head.returncode == 0:
+            environment.branchName = head.stdout.strip()
+
         counters.results.store_root_element(Path(ctrf))
 
     if not counters.summary(len(independent_tests) + len(linear_tests)):
