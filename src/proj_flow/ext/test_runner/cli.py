@@ -79,69 +79,17 @@ def binary_runner(
         str | None,
         arg.Argument(help="Write a CTRF-compatible output, if specified", opt=True),
     ],
+    report_name: Annotated[
+        str | None,
+        arg.Argument(
+            help="Provide the name for CTRF report",
+            opt=True,
+            names=["--ctrf-report-name"],
+        ),
+    ],
     rt: env.Runtime,
 ) -> int:
     """Run specified tests checking stdout and stderr against expected values"""
-    return test_runner(
-        preset_name=preset_name,
-        tests=tests or ".",
-        version=version,
-        run=run,
-        nullify=nullify,
-        ctrf=ctrf,
-        rt=rt,
-    )
-
-
-@arg.command("tools", "test-runner")
-def test_runner(
-    preset_name: Annotated[
-        str,
-        arg.Argument(
-            help="Set name of CMake build preset",
-            meta="CONFIG",
-            names=["--preset"],
-        ),
-    ],
-    tests: Annotated[
-        str,
-        arg.Argument(
-            help="Point to directory with the JSON test cases; test cases are enumerated recursively",
-            meta="DIR",
-        ),
-    ],
-    version: Annotated[
-        str | None,
-        arg.Argument(
-            help="Select version to patch output with; defaults to automatic detection",
-            meta="SEMVER",
-            opt=True,
-        ),
-    ],
-    run: Annotated[
-        list[str],
-        arg.Argument(
-            help="Filter the tests to run",
-            meta="ID",
-            action="extend",
-            opt=True,
-            nargs="*",
-            default=[],
-        ),
-    ],
-    nullify: Annotated[
-        bool,
-        arg.FlagArgument(
-            help='Set the "expected" field of the test cases to null',
-        ),
-    ],
-    ctrf: Annotated[
-        str | None,
-        arg.Argument(help="Write a CTRF-compatible output, if specified", opt=True),
-    ],
-    rt: env.Runtime,
-) -> int:
-    """Run specified test steps"""
 
     if os.name == "nt":
         sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
@@ -217,6 +165,9 @@ def test_runner(
         if isinstance(test_data_dir, str)
         else None
     )
+
+    if not tests:
+        tests = "."
 
     test_default_set = cast(str | None, testsuite_config.get("default-set"))
     if isinstance(test_default_set, str):
@@ -311,7 +262,9 @@ def test_runner(
         install_dir=install_dir,
         env=env,
         thread_count=thread_count,
+        rt=rt,
         ctrf=ctrf,
+        report_name=report_name,
     )
 
 
