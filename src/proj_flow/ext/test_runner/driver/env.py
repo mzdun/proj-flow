@@ -6,6 +6,7 @@ import random
 import re
 import string
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any, Callable
 
 from proj_flow.ext.test_runner.utils.io import ProcessIO
@@ -107,3 +108,21 @@ class Env:
                 if m:
                     lines[lineno] = m.expand(replacement)
         return "\n".join(lines)
+
+    def source_dir(self):
+        key = "CMAKE_HOME_DIRECTORY"
+        build_dir = Path(self.build_dir)
+        cmake_cache = build_dir / "CMakeCache.txt"
+        try:
+            lines = cmake_cache.read_text().split("\n")
+            prefix = f"${key}:INTERNAL="
+            for line in lines:
+                if not line.startswith(prefix):
+                    continue
+                source_dir = line[len(prefix) :].strip()
+                if source_dir and not source_dir.endswith("-NOTFOUND"):
+                    return Path(source_dir)
+        except FileNotFoundError:
+            pass
+
+        return build_dir.parent.parent

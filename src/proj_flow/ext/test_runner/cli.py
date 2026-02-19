@@ -32,6 +32,67 @@ from proj_flow.ext.test_runner.driver.testbed import run_and_report_tests
 RUN_LINEAR = os.environ.get("RUN_LINEAR", 0) != 0
 
 
+@arg.command("tests", "runner")
+def binary_runner(
+    preset_name: Annotated[
+        str,
+        arg.Argument(
+            help="Set name of CMake build preset",
+            meta="CONFIG",
+            names=["--preset"],
+        ),
+    ],
+    tests: Annotated[
+        str | None,
+        arg.Argument(
+            help="Point to directory with the JSON test cases; test cases are enumerated recursively",
+            meta="DIR",
+            opt=True,
+        ),
+    ],
+    version: Annotated[
+        str | None,
+        arg.Argument(
+            help="Select version to patch output with; defaults to automatic detection",
+            meta="SEMVER",
+            opt=True,
+        ),
+    ],
+    run: Annotated[
+        list[str],
+        arg.Argument(
+            help="Filter the tests to run",
+            meta="ID",
+            action="extend",
+            opt=True,
+            nargs="*",
+            default=[],
+        ),
+    ],
+    nullify: Annotated[
+        bool,
+        arg.FlagArgument(
+            help='Set the "expected" field of the test cases to null',
+        ),
+    ],
+    ctrf: Annotated[
+        str | None,
+        arg.Argument(help="Write a CTRF-compatible output, if specified", opt=True),
+    ],
+    rt: env.Runtime,
+) -> int:
+    """Run specified tests checking stdout and stderr against expected values"""
+    return test_runner(
+        preset_name=preset_name,
+        tests=tests or ".",
+        version=version,
+        run=run,
+        nullify=nullify,
+        ctrf=ctrf,
+        rt=rt,
+    )
+
+
 @arg.command("tools", "test-runner")
 def test_runner(
     preset_name: Annotated[
@@ -73,6 +134,10 @@ def test_runner(
         arg.FlagArgument(
             help='Set the "expected" field of the test cases to null',
         ),
+    ],
+    ctrf: Annotated[
+        str | None,
+        arg.Argument(help="Write a CTRF-compatible output, if specified", opt=True),
     ],
     rt: env.Runtime,
 ) -> int:
@@ -246,6 +311,7 @@ def test_runner(
         install_dir=install_dir,
         env=env,
         thread_count=thread_count,
+        ctrf=ctrf,
     )
 
 

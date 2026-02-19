@@ -2,18 +2,27 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 import concurrent.futures
+import json
 import os
 import shutil
+import time
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any, Generator, Iterator
 
+from proj_flow import __version__
 from proj_flow.ext.test_runner.driver.test import Env, Test
-from proj_flow.ext.test_runner.utils.counters import Counters, TaskResult, color
+from proj_flow.ext.test_runner.utils.counters import (
+    Counters,
+    ReportTestInfo,
+    TaskResult,
+    color,
+)
 
 
 def _task(
     runtime: Env, tested: Test, current_counter: int
-) -> tuple[int, str, str | None, str]:
+) -> tuple[ReportTestInfo, str]:
     env = runtime.with_random_temp_subdir()
 
     test_counter = f"{color.counter}[{current_counter:>{env.counter_digits}}/{env.counter_total}]{color.reset}"
@@ -23,9 +32,14 @@ def _task(
     print(test_id)
     os.makedirs(env.tempdir, exist_ok=True)
 
+    info = ReportTestInfo(tested, test_id)
+
+    info.start = int(time.time() * 1000 + 0.5)
     result = tested.run(env)
+    info.stop = int(time.time() * 1000 + 0.5)
+
     if result is None:
-        return (TaskResult.SKIPPED, test_id, None, env.tempdir)
+        return (info.with_outcome(TaskResult.SKIPPED), env.tempdir)
 
     actual, files = result
     reports: list[str] = []
@@ -47,21 +61,21 @@ def _task(
             reports.append(tested.report_file(fixed))
 
     if saved:
-        return (TaskResult.SAVED, test_id, None, env.tempdir)
+        return (info.with_outcome(TaskResult.SAVED), env.tempdir)
 
     clipped = tested.clip(actual)
 
     if isinstance(clipped, str):
-        return (TaskResult.CLIP_FAILED, test_id, clipped, env.tempdir)
+        return (info.with_outcome(TaskResult.CLIP_FAILED, clipped), env.tempdir)
 
     if actual != tested.expected and clipped != tested.expected:
         reports.append(tested.report_io(actual))
 
     if reports:
         reports.append(tested.test_footer(env, env.tempdir))
-        return (TaskResult.FAILED, test_id, "\n".join(reports), env.tempdir)
+        return (info.with_outcome(TaskResult.FAILED, "\n".join(reports)), env.tempdir)
 
-    return (TaskResult.OK, test_id, None, env.tempdir)
+    return (info.with_outcome(TaskResult.OK), env.tempdir)
 
 
 def run_and_report_tests(
@@ -70,8 +84,9 @@ def run_and_report_tests(
     install_dir: Path,
     env: Env,
     thread_count: int,
+    ctrf: str | None,
 ):
-    counters = Counters()
+    counters = Counters(env.target_name, env.source_dir())
 
     if independent_tests:
         _report_tests(counters, _run_async_tests(independent_tests, env, thread_count))
@@ -81,6 +96,12 @@ def run_and_report_tests(
     shutil.rmtree(install_dir, ignore_errors=True)
     shutil.rmtree("build/.testing", ignore_errors=True)
 
+    if ctrf:
+        data = counters.ctrf.root_element()
+        path = Path(ctrf)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
     if not counters.summary(len(independent_tests) + len(linear_tests)):
         return 1
 
@@ -89,7 +110,7 @@ def run_and_report_tests(
 
 def _run_async_tests(tests: list[tuple[Test, int]], env: Env, thread_count: int):
     with concurrent.futures.ThreadPoolExecutor(thread_count) as executor:
-        futures: list[concurrent.futures.Future[tuple[int, str, str | None, str]]] = []
+        futures: list[concurrent.futures.Future[tuple[ReportTestInfo, str]]] = []
         for test, counter in tests:
             futures.append(executor.submit(_task, env, test, counter))
 
@@ -104,8 +125,8 @@ def _run_sync_tests(tests: list[tuple[Test, int]], env: Env):
 
 def _report_tests(
     counters: Counters,
-    results: Generator[tuple[int, str, str | None, str], Any, None],
+    results: Iterator[tuple[ReportTestInfo, str]],
 ):
-    for outcome, test_id, message, tempdir in results:
-        counters.report(outcome, test_id, message)
+    for info, tempdir in results:
+        counters.report(info)
         shutil.rmtree(tempdir, ignore_errors=True)
