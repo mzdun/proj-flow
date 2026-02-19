@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.1 <https://github.com/mzdun/proj-flow/compare/v0.26.0...v0.26.1>`_ (2026-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- add dateutil dependency properly (`4eb98d9 <https://github.com/mzdun/proj-flow/commit/4eb98d9ec4744fbc0c399178f6ba6cf32905f742>`_)
+
 `0.26.0 <https://github.com/mzdun/proj-flow/compare/v0.25.4...v0.26.0>`_ (2026-02-19)
 =====================================================================================
 
