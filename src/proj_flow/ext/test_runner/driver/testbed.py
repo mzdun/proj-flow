@@ -97,7 +97,7 @@ def run_and_report_tests(
     shutil.rmtree("build/.testing", ignore_errors=True)
 
     if ctrf:
-        data = counters.ctrf.root_element()
+        data = counters.results.root_element()
         path = Path(ctrf)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
