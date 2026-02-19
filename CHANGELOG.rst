@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.0 <https://github.com/mzdun/proj-flow/compare/v0.25.4...v0.26.0>`_ (2026-02-19)
+=====================================================================================
+
+New Features
+------------
+
+- support ctrf.io report format (`a6e4526 <https://github.com/mzdun/proj-flow/commit/a6e45267b72ceb8cead1926eac8de03b2e945be2>`_)
+
 `0.25.4 <https://github.com/mzdun/proj-flow/compare/v0.25.3...v0.25.4>`_ (2026-02-15)
 =====================================================================================
 
