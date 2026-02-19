@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.2 <https://github.com/mzdun/proj-flow/compare/v0.26.1...v0.26.2>`_ (2026-02-19)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- one missed use of "ctrf" as property name (`2cff10e <https://github.com/mzdun/proj-flow/commit/2cff10ec1be4187e3f90c8b91d8ecba3d427eb22>`_)
+
 `0.26.1 <https://github.com/mzdun/proj-flow/compare/v0.26.0...v0.26.1>`_ (2026-02-19)
 =====================================================================================
 
