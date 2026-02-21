@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.6 <https://github.com/mzdun/proj-flow/compare/v0.26.5...v0.26.6>`_ (2026-02-21)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- allow to use super-linters action directly (`69d2d72 <https://github.com/mzdun/proj-flow/commit/69d2d723a7ad17f4772fc3a5956762924a41b646>`_)
+
 `0.26.5 <https://github.com/mzdun/proj-flow/compare/v0.26.4...v0.26.5>`_ (2026-02-19)
 =====================================================================================
 
