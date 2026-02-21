@@ -19,8 +19,7 @@ try:
 except ImportError:
     from yaml import Loader
 
-IMAGE = "github/super-linter"
-PREFIX = f"{IMAGE}/"
+IMAGES = ["github/super-linter", "super-linter/super-linter"]
 
 
 @dataclass
@@ -43,6 +42,8 @@ class Image:
         _env["LOG_LEVEL"] = log_level
         _env["USE_FIND_ALGORITHM"] = "true"
         _env["VALIDATE_ALL_CODEBASE"] = "true"
+        if "DEFAULT_BRANCH" in _env:
+            del _env["DEFAULT_BRANCH"]
 
         args = [
             arg
@@ -99,7 +100,7 @@ def run_linter(
 
     session = requests_cache.CachedSession(db_path)
     JOBS: list[Job] = []
-    for root, dirs, files in WORKFLOWS.walk():
+    for root, _, files in WORKFLOWS.walk():
         for filename in files:
             path = root / filename
             if path.suffix not in [".yml", ".yaml"]:
@@ -132,14 +133,22 @@ def _download_docker_image_id(
     session: requests_cache.CachedSession,
     verbose: bool,
 ):
-    if action != IMAGE and not action.startswith(PREFIX):
+    image_name: str | None = None
+    image_prefix = ""
+    for image in IMAGES:
+        image_prefix = f"{image}/"
+        if action == image or action.startswith(image_prefix):
+            image_name = image
+            break
+
+    if not image_name:
         return None
 
-    repo = "https://raw.githubusercontent.com/github/super-linter"
+    repo = f"https://raw.githubusercontent.com/{image_name}"
     refs = f"refs/tags/{version}" if version else "refs/heads/main"
     filename = "action.yml"
-    if action.startswith(PREFIX):
-        filename = f"{action[len(PREFIX):]}/{filename}"
+    if action.startswith(image_prefix):
+        filename = f"{action[len(image_prefix):]}/{filename}"
 
     url = f"{repo}/{refs}/{filename}"
     if verbose:
