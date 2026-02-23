@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.7 <https://github.com/mzdun/proj-flow/compare/v0.26.6...v0.26.7>`_ (2026-02-23)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- quick-fix for write-only files (`7ca58d0 <https://github.com/mzdun/proj-flow/commit/7ca58d0983c6879a6745b40fb0bb1f95a7c2108d>`_)
+
 `0.26.6 <https://github.com/mzdun/proj-flow/compare/v0.26.5...v0.26.6>`_ (2026-02-21)
 =====================================================================================
 
