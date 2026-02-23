@@ -11,8 +11,10 @@ from proj_flow.ext.test_runner.driver import test
 from proj_flow.ext.test_runner.utils.archives import locate_unpack
 
 _file_cache = {}
-_rw_mask = stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH
-_ro_mask = 0o777 ^ _rw_mask
+_w_mask = stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH
+_r_mask = stat.S_IREAD | stat.S_IRGRP | stat.S_IROTH
+_ro_mask = 0o777 ^ _w_mask
+_wo_mask = 0o777 ^ _r_mask
 
 
 def _touch(test: test.Test, args: list[str]):
@@ -30,12 +32,19 @@ def _make_RO(test: test.Test, args: list[str]):
     os.chmod(filename, mode & _ro_mask)
 
 
+def _make_WO(test: test.Test, args: list[str]):
+    filename = test.path(args[0])
+    mode = os.stat(filename).st_mode
+    _file_cache[filename] = mode
+    os.chmod(filename, mode & _wo_mask)
+
+
 def _make_RW(test: test.Test, args: list[str]):
     filename = test.path(args[0])
     try:
         mode = _file_cache[filename]
     except KeyError:
-        mode = os.stat(filename).st_mode | _rw_mask
+        mode = os.stat(filename).st_mode | _r_mask | _w_mask
     os.chmod(filename, mode)
 
 
@@ -65,8 +74,9 @@ HANDLERS: dict[str, tuple[int, Callable[["test.Test", list[str]], None]]] = {
     "touch": (1, _touch),
     "unpack": (2, _unpack),
     "store": (2, lambda test, args: test.store_output(args[0], args[1:])),
-    "ro": (1, _make_RO),
     "cp": (2, lambda test, args: test.cp(args[0], args[1])),
+    "ro": (1, _make_RO),
+    "wo": (1, _make_WO),
     "rw": (1, _make_RW),
     "ls": (1, lambda test, args: test.ls(args[0])),
     "cat": (1, _cat),
