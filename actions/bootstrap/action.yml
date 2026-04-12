@@ -6,46 +6,49 @@ inputs:
   python-version:
     description: "Version range or exact version of Python or PyPy to use, using SemVer's version range syntax. Reads from .python-version if unset."
 
-outputs:
-  version:
-    description: Version of the `proj-flow` this project expects
-    value: ${{ steps.version.outputs.version }}
+  cache-prefix:
+    description: How to prefix the virtual environment cache
+    required: true
 
-  is-flow-app:
-    description: Checks, if this project is a Flow project
-    value: ${{ steps.version.outputs.is-flow-app }}
+  checkout:
+    description: >
+      Whether to checkout the code
+    default: false
+
+  submodules:
+    description: >
+      Whether to checkout submodules: `true` to checkout submodules or `recursive` to
+      recursively checkout submodules.
+
+
+      When the `ssh-key` input is not provided, SSH URLs beginning with `git@github.com:` are
+      converted to HTTPS.
+    default: false
 
 runs:
   using: composite
   steps:
-    - name: python 3.10
-      uses: actions/setup-python@v5
+    - name: Checkout
+      uses: actions/checkout@v5
+      if: ${{ inputs.checkout }}
+      with:
+        submodules: ${{ inputs.submodules }}
+
+    - name: Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: check version
-      id: version
-      shell: python
-      run: |
-        import os
-        import sys
-
-        ACTION_PATH = os.environ['ACTION_PATH'].replace('/', os.sep)
-        sys.path.insert(0, ACTION_PATH)
-
-        import version
-      env:
-        ACTION_PATH: ${{ github.action_path }}
-        RUNNER_CONTEXT: ${{ toJson(runner) }}
-
-    - name: .flow/.venv cache
-      if: ${{ fromJson(steps.version.outputs.is-flow-app) }}
-      uses: actions/cache@v4
+    - name: Virtual env cache
+      uses: actions/cache@v5
+      id: cache
       with:
-        path: .flow/.venv
-        key: ${{ steps.version.outputs.venv-cache-key }}
+        path: .venv
+        key: ${{ inputs.cache-prefix }}-${{ hashFiles('.flow/flow.py') }}
+        restore-keys: |
+          ${{ inputs.cache-prefix }}-
 
-    - name: bootstrap
-      if: ${{ fromJson(steps.version.outputs.is-flow-app) }}
-      run: python ./.flow/flow.py bootstrap
+    - name: Install dependencies
       shell: bash
+      run: |
+        python ./.flow/flow.py bootstrap
