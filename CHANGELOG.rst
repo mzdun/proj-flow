@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.26.8 <https://github.com/mzdun/proj-flow/compare/v0.26.7...v0.26.8>`_ (2026-04-20)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- LTS is not ready on 1st of April yet (`5b825bb <https://github.com/mzdun/proj-flow/commit/5b825bb6f4799f81140839ee13a1fc22a5f8f5d4>`_)
+
 `0.26.7 <https://github.com/mzdun/proj-flow/compare/v0.26.6...v0.26.7>`_ (2026-02-23)
 =====================================================================================
 
