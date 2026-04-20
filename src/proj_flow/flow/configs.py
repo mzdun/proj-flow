@@ -144,7 +144,8 @@ def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
     for y in range(year - lts_years, year + 1):
         if y % 2 != 0:
             continue
-        release = datetime.date(y, 4, 1)
+        # Move from 1st of April to 1st of June, it's not yet ready in April yet
+        release = datetime.date(y, 6, 1)
         end_of_life = datetime.date(y + lts_years, 1, 31)
         if release > today or end_of_life < today:
             continue
@@ -161,7 +162,7 @@ def _lts_list(config: dict, lts_list: Dict[str, List[str]]):
                 __printed_lts_ubuntu_warning = True
                 print(
                     "\033[1;33m-- lts.ubuntu in config.yaml is deprecated; "
-                    "please remove it, so it can be calculated base on "
+                    "please remove it, so it can be calculated based on "
                     "current date\033[m",
                     file=sys.stderr,
                 )
