@@ -4,6 +4,15 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.27.0 <https://github.com/mzdun/proj-flow/compare/v0.26.8...v0.27.0>`_ (2026-04-26)
+=====================================================================================
+
+New Features
+------------
+
+- update flow.py to current state of play in quick_dra (`4900b8e <https://github.com/mzdun/proj-flow/commit/4900b8e220ebc8554a9ad42cbce7b2e9789ad2fa>`_)
+- add more information from bootstrap (`0f46263 <https://github.com/mzdun/proj-flow/commit/0f46263ff67d6eb82b13eceb039159fd2dc8d36e>`_)
+
 `0.26.8 <https://github.com/mzdun/proj-flow/compare/v0.26.7...v0.26.8>`_ (2026-04-20)
 =====================================================================================
 
