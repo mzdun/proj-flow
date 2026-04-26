@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2025 Marcin Zdun
+# Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
+
+from __future__ import annotations
 
 import os
 import re
@@ -10,17 +12,28 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import total_ordering
 from pathlib import Path
 from typing import cast
 
+
+def exe(ver: str):
+    return (ver, True)
+
+
+def mod(ver: str):
+    return (ver, False)
+
+
 PROJ_FLOW_VERSION = "{{__flow_version__}}"
+REQUIREMENTS: dict[str, tuple[str, bool]] = {
+    "proj-flow": exe(PROJ_FLOW_VERSION),
+    # place additional packages here: mod("0.1.1"),
+}
 PROJECT_ROOT = Path(__file__).parent.parent
 VER_REGEX = re.compile(r"((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))")
 
 
 @dataclass
-@total_ordering
 class Version:
     major: int
     minor: int
@@ -29,26 +42,13 @@ class Version:
     def __str__(self):
         return f"{self.major}.{self.minor}.{self.patch}"
 
-    def __lt__(self, other):
-        if not isinstance(other, Version):
+    def compatible_with(self, runtime: Version):
+        # self <= runtime and self.major == runtime.major
+        if self.major != runtime.major:
             return False
-        if self.major != other.major:
-            return self.major < other.major
-        if self.minor != other.minor:
-            return self.minor < other.minor
-        return self.patch < other.patch
-
-    def __eq__(self, other):
-        if not isinstance(other, Version):
-            return False
-        return (
-            self.major == other.major
-            and self.minor == other.minor
-            and self.patch == other.patch
-        )
-
-    def compatible_with(self, runtime: "Version | None"):
-        return self <= runtime and self.major == cast(Version, runtime).major
+        if self.minor != runtime.minor:
+            return self.minor < runtime.minor
+        return self.patch <= runtime.patch
 
     @staticmethod
     def parse(value: str):
@@ -69,9 +69,58 @@ class Version:
             return None
 
 
-proj_flow = Version.parse(PROJ_FLOW_VERSION)
+@dataclass
+class Package:
+    name: str
+    version: Version
+
+    @staticmethod
+    def build_from(requirements: dict[str, tuple[str, bool]]) -> list[Package]:
+        return [
+            (ExecPackage if value[1] else Package)(key, Version.parse(value[0]))
+            for key, value in requirements.items()
+        ]
+
+    def runtime_version(self, print_output=False) -> Version | None:
+        version = get_version(self.name)
+        if not version:
+            return None
+        return Version.parse(version)
+
+    @staticmethod
+    def missing_requirements(requirements: list[Package], print_output=False):
+        missing: list[tuple[Package, Version | None]] = []
+        for req in requirements:
+            runtime = req.runtime_version(print_output=print_output)
+            if runtime is None or not req.version.compatible_with(runtime):
+                missing.append((req, runtime))
+        return missing
+
+
+class ExecPackage(Package):
+    def runtime_version(self, print_output=False) -> Version | None:
+        executable = shutil.which("proj-flow")
+        if not executable:
+            return None
+        proc = subprocess.run(
+            [executable, "--version"], encoding="utf-8", capture_output=True
+        )
+        result = Version.proc_parse(proc)
+        if result is None and print_output:
+            if proc.stdout:
+                print(proc.stdout)
+            if proc.stderr:
+                print(proc.stderr, file=sys.stderr)
+        return result
+
 
 PYTHON_EXECUTABLE = sys.executable
+PACKAGE_VERSION: dict[str, str] | None = None
+
+
+def clean_version_cache():
+    global PACKAGE_VERSION
+    PACKAGE_VERSION = None
 
 
 def python(
@@ -98,20 +147,24 @@ def venv(*args: str, capture_output: bool = False):
     return python(*args, module="venv", capture_output=capture_output)
 
 
-def proj_flow_version(print_output=False):
-    executable = shutil.which("proj-flow")
-    if not executable:
-        return None
-    proc = subprocess.run(
-        [executable, "--version"], encoding="utf-8", capture_output=True
-    )
-    result = Version.proc_parse(proc)
-    if result is None and print_output:
-        if proc.stdout:
-            print(proc.stdout)
-        if proc.stderr:
-            print(proc.stderr, file=sys.stderr)
-    return result
+def get_version(name: str):
+    global PACKAGE_VERSION
+
+    if PACKAGE_VERSION is None:
+        pip_run = cast(
+            subprocess.CompletedProcess[bytes], pip("freeze", capture_output=True)
+        )
+        if pip_run.returncode != 0:
+            return None
+
+        output = pip_run.stdout.decode("utf-8").replace("\r\n", "\n").rstrip()
+        versioned = [line.split("==", 1) for line in output.split("\n") if "==" in line]
+        try:
+            PACKAGE_VERSION = {key.strip(): value.strip() for key, value in versioned}
+        except ValueError:
+            PACKAGE_VERSION = {}
+
+    return PACKAGE_VERSION.get(name)
 
 
 @contextmanager
@@ -153,43 +206,76 @@ def activate_virtual_env():
         if bindir is not None:
             os.environ["PATH"] = f"{bindir.absolute()}{os.pathsep}{os.environ['PATH']}"
             PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
+            clean_version_cache()
 
 
-def bootstrap_cxx_flow():
-    version = proj_flow_version()
-    if proj_flow.compatible_with(version):
+def bootstrap_proj_flow(requirements: list[Package], with_venv: bool):
+    global PACKAGE_VERSION
+
+    missing = Package.missing_requirements(requirements)
+    if not missing:
         return True
 
-    if sys.prefix == sys.base_prefix:
+    if sys.prefix == sys.base_prefix and with_venv:
         activate_virtual_env()
 
-        version = proj_flow_version()
-        if proj_flow.compatible_with(version):
+        missing = Package.missing_requirements(requirements)
+        if not missing:
             return True
 
     if pip("--version", capture_output=True).returncode != 0:
         print("Cannot call pip as a module. Exiting.\n", file=sys.stderr)
         sys.exit(1)
 
-    if not version:
-        print("Found no version of proj_flow package, installing from pypi.")
-    elif version.major > proj_flow.major:
-        print(
-            f"Found proj_flow=={version}, need >={proj_flow} and <{proj_flow.major + 1}, installing from pypi."
-        )
-    else:
-        print(f"Found proj_flow=={version}, need >={proj_flow}, installing from pypi.")
+    versions: list[str] = []
+    for pkg, runtime in missing:
+        versions.append(f"{pkg.name}>={pkg.version},<{pkg.version.major + 1}")
 
-    if pip("install", f"proj-flow>={proj_flow},<{proj_flow.major + 1}").returncode != 0:
-        print("Cannot install proj-flow with current pip. Exiting.\n", file=sys.stderr)
-        sys.exit(1)
+        if runtime is None:
+            print(f"Found no version of {pkg.name} package, installing from pypi.")
+        elif runtime.major > pkg.version.major:
+            print(
+                f"Found {pkg.name}=={runtime}, need >={pkg.version} and <{pkg.version.major + 1}, installing from pypi."
+            )
+        else:
+            print(
+                f"Found {pkg.name}=={runtime}, need >={pkg.version}, installing from pypi."
+            )
 
-    return proj_flow.compatible_with(proj_flow_version(print_output=True))
+    if versions:
+        if pip("install", "-U", *versions).returncode != 0:
+            print(
+                f"Cannot install {' '.join(versions)} with current pip. Exiting.\n",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        clean_version_cache()
+
+    return not Package.missing_requirements(requirements, print_output=True)
+
+
+def check_no_venv():
+    args = sys.argv[1:]
+
+    while args and args[0].startswith("-"):
+        args = args[1:]
+
+    if not args or args[0] != "bootstrap":
+        return False
+
+    return "--no-venv" in args[1:]
 
 
 def main():
-    if not bootstrap_cxx_flow():
-        print("Cannot find a working copy of proj-flow package", file=sys.stderr)
+    with_venv = not check_no_venv()
+    requirements = Package.build_from(REQUIREMENTS)
+    if not bootstrap_proj_flow(requirements, with_venv):
+        print("Cannot find a working copy of proj-flow package:", file=sys.stderr)
+        for pkg, ver in Package.missing_requirements(requirements):
+            if ver:
+                continue
+            print(f"-- missing: {pkg.name}>={pkg.version}", file=sys.stderr)
         return 1
 
     with cd(PROJECT_ROOT):
