@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.28.0 <https://github.com/mzdun/proj-flow/compare/v0.27.0...v0.28.0>`_ (2026-05-06)
+=====================================================================================
+
+New Features
+------------
+
+- allow IDL versioning (`d61a5fa <https://github.com/mzdun/proj-flow/commit/d61a5fa7ef96b411e28135cee3f1ea0fe1192346>`_)
+
 `0.27.0 <https://github.com/mzdun/proj-flow/compare/v0.26.8...v0.27.0>`_ (2026-04-26)
 =====================================================================================
 
