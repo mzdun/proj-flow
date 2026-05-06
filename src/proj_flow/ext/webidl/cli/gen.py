@@ -6,7 +6,6 @@ import sys
 import typing
 from dataclasses import asdict
 from pathlib import Path
-from pprint import pprint
 
 import chevron
 
@@ -18,8 +17,15 @@ from proj_flow.ext.webidl.base.config import (
     templates_dir,
 )
 from proj_flow.ext.webidl.cli.updater import update_file_if_needed
-from proj_flow.ext.webidl.model.ast import Definitions
-from proj_flow.ext.webidl.registry import webidl_visitors
+from proj_flow.ext.webidl.model.ast import EnumInfo, Interface
+from proj_flow.ext.webidl.model.versioning import (
+    VersionedUse,
+    filter_by_version,
+    find_max_version,
+    load_unversioned_idl,
+    split_reused_enums,
+    split_reused_interfaces,
+)
 
 
 def aslist(items: list):
@@ -81,29 +87,128 @@ def gen(
                 print(f"-- WebIDL: adding `{partial}' package partial")
 
     for rule in config.rules:
-        names = list(map(lambda path: path.as_posix(), rule.inputs))
-        context = {
+        unversioned_idl = load_unversioned_idl(rule, config.ext_attrs)
+        max_version = find_max_version(unversioned_idl, config.version) or 1
+        versions = list(range(1, max_version + 1))
+
+        cache: dict[int, tuple[list[EnumInfo], list[Interface]]] = {}
+        for version in versions:
+            versioned_idl = filter_by_version(unversioned_idl, version)
+
+            context = {
+                **global_ctx,
+                "version": str(version),
+                "input": Output.filename_context(
+                    rule.inputs[0],
+                    cmake_dirs.project_source_dir,
+                    version=version,
+                ),
+            }
+
+            for out in rule.outputs:
+                output = out.freeze(version)
+
+                if not output.mustache_template:
+                    continue
+
+                write_message: str | None = None
+                if not rt.silent:
+                    fname = (
+                        output.output.relative_to(
+                            cmake_dirs.project_source_dir
+                        ).as_posix()
+                        if output.output.is_relative_to(cmake_dirs.project_source_dir)
+                        else output.output.as_posix()
+                    )
+                    write_message = f"writing {fname}"
+
+                types = output.get_type_replacements()
+                interfaces, modules_or_includes = versioned_idl.order(types)
+                enums = versioned_idl.enum
+                cache[version] = (enums, interfaces)
+                generation_versions = [
+                    {"value": v, "current": v == version} for v in range(1, version + 1)
+                ]
+
+                use_enums: list[VersionedUse] = []
+                use_interfaces: list[VersionedUse] = []
+
+                if version > 1:
+                    prev_enums, prev_interfaces = cache[version - 1]
+                    enums, use_enums = split_reused_enums(
+                        enums, prev_enums, version - 1
+                    )
+                    interfaces, use_interfaces = split_reused_interfaces(
+                        interfaces, prev_interfaces, version - 1
+                    )
+
+                output_context = {
+                    **output.initial_context,
+                    **context,
+                    "modules_or_includes": list(sorted(modules_or_includes)),
+                    "interfaces": aslist(interfaces),
+                    "enums": aslist(enums),
+                    "use_interfaces": aslist(use_interfaces),
+                    "use_enums": aslist(use_enums),
+                    "has_modules_or_includes": not not modules_or_includes,
+                    "has_interfaces": not not interfaces,
+                    "has_enums": not not enums,
+                    "has_use_interfaces": not not use_interfaces,
+                    "has_use_enums": not not use_enums,
+                    "output": Output.filename_context(
+                        str(output.output), cmake_dirs.project_binary_dir, version=1
+                    ),
+                    "versions": generation_versions,
+                }
+
+                kwargs = {}
+                if output.partials:
+                    kwargs["partials_path"] = output.partials.as_posix()
+                text = output.mustache_template.read_text(encoding="UTF-8")
+                try:
+                    text = chevron.render(
+                        text, output_context, partials_dict=pkg_partials, **kwargs
+                    )
+                except chevron.ChevronError as e:
+                    filename = e.filename or output.mustache_template.as_posix()
+                    line = conv(lambda num: f":{num}", e.lineno) or ""
+                    col = (
+                        (conv(lambda num: f":{num}", e.offset) or "")
+                        if e.lineno
+                        else ""
+                    )
+                    print(f"{filename}{line}{col}: {e.msg}")
+                    if e.text:
+                        print(e.text)
+                        if e.offset:
+                            spaces = "".join(
+                                ["\t" if c == "\t" else " " for c in e.text[: e.offset]]
+                            )
+                            print(f"{spaces}^")
+                    sys.exit(1)
+
+                update_file_if_needed(output.output, text, write_message)
+
+                dst = output.output.with_name(output.output.name + ".json")
+                update_file_if_needed(dst, json.dumps(output_context, indent=2))
+
+        versioned_context = {
             **global_ctx,
-            "input": Output.filename_context(names[0], cmake_dirs.project_source_dir),
+            "current_version": str(config.version),
+            "input": Output.filename_context(
+                rule.inputs[0],
+                cmake_dirs.project_source_dir,
+                version=config.version,
+            ),
+            "version": [str(v) for v in versions],
         }
 
-        try:
-            idl = Definitions.parse_and_merge(names, config.ext_attrs)
-        except FileNotFoundError as e:
-            p = Path(e.filename)
-            print(f"{e.strerror}: {p.as_posix()}")
-            sys.exit(1)
-        if isinstance(idl, list):
-            for error in idl:
-                print(f"{error.path}:{error.error}")
-            sys.exit(1)
+        for out in rule.versioned_outputs:
+            output = out.freeze(version=config.version, versions=versions)
 
-        for visitor in webidl_visitors.get():
-            visitor.on_definitions(idl)
-
-        for output in rule.outputs:
             if not output.mustache_template:
                 continue
+
             write_message: str | None = None
             if not rt.silent:
                 fname = (
@@ -113,19 +218,11 @@ def gen(
                 )
                 write_message = f"writing {fname}"
 
-            types = output.get_type_replacements()
-            interfaces, modules_or_includes = idl.order(types)
             output_context = {
                 **output.initial_context,
-                **context,
-                "modules_or_includes": list(sorted(modules_or_includes)),
-                "interfaces": aslist(interfaces),
-                "enums": aslist(idl.enum),
-                "has_modules_or_includes": not not modules_or_includes,
-                "has_interfaces": not not interfaces,
-                "has_enums": not not idl.enum,
+                **versioned_context,
                 "output": Output.filename_context(
-                    str(output.output), cmake_dirs.project_binary_dir
+                    str(output.output), cmake_dirs.project_binary_dir, version=1
                 ),
             }
 
