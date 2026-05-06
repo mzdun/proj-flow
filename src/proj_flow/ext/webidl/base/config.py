@@ -6,6 +6,7 @@ import copy
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from pprint import pprint
 from typing import Any, Callable, cast
 
 import chevron
@@ -73,6 +74,18 @@ class CMakeDirs:
             "CMAKE_CURRENT_SOURCE_DIR": self.current_source_dir.as_posix(),
             "CMAKE_CURRENT_BINARY_DIR": self.current_binary_dir.as_posix(),
         }
+
+    def expand_prefix(self, filename: str):
+        if "${" not in filename:
+            return Path(filename)
+        defs = self.my_defines()
+        chunks = filename.split("${")
+        result = chunks[0]
+        chunks = chunks[1:]
+        for chunk in chunks:
+            var, rest = chunk.split("}", 1)
+            result += defs.get(var, f"${{{var}}}") + rest
+        return Path(result)
 
     def prefix(self, filename: str):
         if "${" in filename:
@@ -144,6 +157,10 @@ class Rebuild:
     def rebuild(initial_context: dict, global_ctx: dict[str, str]):
         return Rebuild.__rebuild_map(initial_context, global_ctx)
 
+    @staticmethod
+    def rebuild_any(initial_context, global_ctx: dict[str, str]):
+        return Rebuild.__rebuild_any(initial_context, global_ctx)
+
 
 @dataclass
 class ConfigOutput:
@@ -154,14 +171,20 @@ class ConfigOutput:
     types: str | None
     partials: str | None
     initial_context: dict
+    initial_versioned_context: dict
     debug: bool
     ndebug: bool
 
     @staticmethod
     def from_config(
-        data: dict[str, str | dict[str, Any]], root_default: "ConfigOutput"
+        data: dict[str, str | dict[str, Any]],
+        root_default: "ConfigOutput",
+        allow_versioned: bool,
     ):
-        result = [ConfigOutput.from_dict(key, item) for key, item in data.items()]
+        result = [
+            ConfigOutput.from_dict(key, item, allow_versioned)
+            for key, item in data.items()
+        ]
 
         for index in range(len(result)):
             default = result[index]
@@ -170,18 +193,18 @@ class ConfigOutput:
 
             del result[index]
             for item in result:
-                item.update_from(default)
+                item.update_from(default, allow_versioned)
 
             break
 
         for item in result:
-            item.update_from(root_default)
+            item.update_from(root_default, allow_versioned)
 
         return result
 
     @staticmethod
     def from_dict(
-        output_name: str, data: str | dict[str, str | dict]
+        output_name: str, data: str | dict[str, str | dict], allow_versioned: bool
     ) -> "ConfigOutput":
         if isinstance(data, str):
             return ConfigOutput(
@@ -192,6 +215,7 @@ class ConfigOutput:
                 types=None,
                 partials=None,
                 initial_context={},
+                initial_versioned_context={},
                 debug=False,
                 ndebug=False,
             )
@@ -202,6 +226,11 @@ class ConfigOutput:
         types = cast(str | None, data.get("types", None))
         partials = cast(str | None, data.get("partials", None))
         initial_context = copy.deepcopy(cast(dict, data.get("context", {})))
+        initial_versioned_context = (
+            copy.deepcopy(cast(dict, data.get("version_context", {})))
+            if allow_versioned
+            else {}
+        )
         debug = not not data.get("debug", {})
         ndebug = not not data.get("ndebug", {})
 
@@ -213,20 +242,26 @@ class ConfigOutput:
             types=types,
             partials=partials,
             initial_context=initial_context,
+            initial_versioned_context=initial_versioned_context,
             debug=debug,
             ndebug=ndebug,
         )
 
-    def update_from(self, default: "ConfigOutput"):
+    def update_from(self, default: "ConfigOutput", allow_versioned: bool):
         self.mustache_template = self.mustache_template or default.mustache_template
         self.output_template = self.output_template or default.output_template
         self.lang = self.lang or default.lang
         self.types = self.types or default.types
         self.partials = self.partials or default.partials
         self.initial_context = {
-            **copy.deepcopy(self.initial_context),
             **copy.deepcopy(default.initial_context),
+            **copy.deepcopy(self.initial_context),
         }
+        if allow_versioned:
+            self.initial_versioned_context = {
+                **copy.deepcopy(default.initial_versioned_context),
+                **copy.deepcopy(self.initial_versioned_context),
+            }
         self.debug = self.debug or default.debug
         self.ndebug = self.ndebug or default.ndebug
 
@@ -246,7 +281,7 @@ def _file_props(path: Path):
     }
 
 
-def _rel_file_props(path: Path, root: Path):
+def _rel_file_props(path: Path, root: Path, version: int):
     props: dict = _file_props(path)
     if path.is_relative_to(root):
         rel = path.relative_to(root)
@@ -254,7 +289,73 @@ def _rel_file_props(path: Path, root: Path):
             "filename": rel.as_posix(),
             "dirname": rel.parent.as_posix(),
         }
+    props["version"] = version
     return props
+
+
+@dataclass
+class OutputTemplate:
+    config: ConfigOutput
+    context: dict
+    abs_path: Callable[[str], Path]
+
+    def freeze(self, version: int, versions: list[int] | None = None):
+        context = copy.deepcopy(self.context)
+        context["version"] = version
+        expand_path = lambda text: chevron.render(template=text, data=context)
+
+        output_name = expand_path(str(self.config.output_name))
+        context["PATH"] = str(output_name)
+
+        if self.config.output_template:
+            output_name = expand_path(self.config.output_template)
+        output_name = self.abs_path(output_name)
+
+        mustache_template = None
+        if self.config.mustache_template:
+            mustache_template = self.abs_path(
+                expand_path(self.config.mustache_template)
+            )
+
+        types = None
+        if self.config.types:
+            types = self.abs_path(expand_path(self.config.types))
+
+        partials = None
+        if self.config.partials:
+            partials = self.abs_path(expand_path(self.config.partials))
+
+        initial_context = Rebuild.rebuild(self.config.initial_context, context)
+        if versions:
+            for key, value in self.config.initial_versioned_context.items():
+                initial_context[key] = [
+                    Rebuild.rebuild_any(value, {**context, "version": str(ver)})
+                    for ver in versions
+                ]
+
+        return Output(
+            output=output_name,
+            mustache_template=mustache_template,
+            lang=self.config.lang,
+            types=types,
+            partials=partials,
+            initial_context=initial_context,
+            debug=self.config.debug and not self.config.ndebug,
+            name_context=context,
+        )
+
+    @staticmethod
+    def from_config(
+        context: dict[str, str],
+        root_default: ConfigOutput,
+        data: dict[str, str | dict[str, Any]],
+        abs_path: Callable[[str], Path],
+        allow_versioned: bool,
+    ):
+        return [
+            OutputTemplate(config=config, context=context, abs_path=abs_path)
+            for config in ConfigOutput.from_config(data, root_default, allow_versioned)
+        ]
 
 
 @dataclass
@@ -266,59 +367,15 @@ class Output:
     partials: Path | None
     initial_context: dict
     debug: bool
+    name_context: dict
 
     @staticmethod
-    def filename_context(filename: str, root_dir: Path):
-        return _rel_file_props(Path(filename), root_dir)
+    def filename_context(filename: str | Path, root_dir: Path, version: int):
+        return _rel_file_props(Path(filename), root_dir, version=version)
 
     @staticmethod
     def abs_path(basedir: Path, path: str):
         return basedir / path
-
-    @staticmethod
-    def from_config(
-        context: dict[str, str],
-        root_default: ConfigOutput,
-        data: dict[str, str | dict[str, Any]],
-        abs_path: Callable[[str], Path],
-    ):
-        expand_path = lambda text: chevron.render(template=text, data=context)
-
-        result: list[Output] = []
-
-        for output in ConfigOutput.from_config(data, root_default):
-            output_name = expand_path(output.output_name)
-            context["PATH"] = str(output_name)
-
-            if output.output_template:
-                output_name = expand_path(output.output_template)
-            output_name = abs_path(output_name)
-
-            mustache_template = None
-            if output.mustache_template:
-                mustache_template = abs_path(expand_path(output.mustache_template))
-
-            types = None
-            if output.types:
-                types = abs_path(expand_path(output.types))
-
-            partials = None
-            if output.partials:
-                partials = abs_path(expand_path(output.partials))
-
-            result.append(
-                Output(
-                    output=output_name,
-                    mustache_template=mustache_template,
-                    lang=output.lang,
-                    types=types,
-                    partials=partials,
-                    initial_context=Rebuild.rebuild(output.initial_context, context),
-                    debug=output.debug and not output.ndebug,
-                )
-            )
-
-        return result
 
     def get_type_replacements(self):
         return TypeReplacement.load_config(self.lang, self.types)
@@ -327,7 +384,8 @@ class Output:
 @dataclass
 class TemplateRule:
     inputs: list[Path]
-    outputs: list[Output]
+    outputs: list[OutputTemplate]
+    versioned_outputs: list[OutputTemplate]
 
     @staticmethod
     def from_config(
@@ -344,6 +402,7 @@ class TemplateRule:
                         TemplateRule.__get_rule(
                             cast(list[str] | str, input.get("idl", [])),
                             cast(str | None, input.get("template")),
+                            cast(str | None, input.get("versioned_template")),
                             global_ctx,
                             source_dir,
                             templates,
@@ -359,6 +418,7 @@ class TemplateRule:
     def __get_rule(
         input_names: str | list[str],
         suite_id: str | None,
+        versioned_suite_id: str | None,
         global_ctx: dict,
         source_dir: Path,
         templates: dict[str, dict[str, str | dict[str, Any]]],
@@ -368,25 +428,57 @@ class TemplateRule:
             return None
 
         names = [input_names] if isinstance(input_names, str) else input_names
-        context = {**global_ctx, "input": Output.filename_context(names[0], source_dir)}
+        context = {
+            **global_ctx,
+            "input": Output.filename_context(names[0], source_dir, version=1),
+        }
 
         inputs = [abs_path(name) for name in names]
-        root_config = ConfigOutput.from_dict("", templates.get("", {}).get("", {}))
-        outputs = Output.from_config(
-            context, root_config, templates.get(suite_id, {}), abs_path
+        root_config = ConfigOutput.from_dict(
+            "", templates.get("", {}).get("", {}), allow_versioned=True
+        )
+        outputs = OutputTemplate.from_config(
+            context,
+            root_config,
+            templates.get(suite_id, {}),
+            abs_path,
+            allow_versioned=False,
+        )
+        versioned_outputs = OutputTemplate.from_config(
+            context,
+            root_config,
+            templates.get(versioned_suite_id, {}) if versioned_suite_id else {},
+            abs_path,
+            allow_versioned=True,
         )
 
-        return TemplateRule(inputs=inputs, outputs=outputs)
+        return TemplateRule(
+            inputs=inputs, outputs=outputs, versioned_outputs=versioned_outputs
+        )
 
     def get_dependencies(
-        self, CMAKE_CURRENT_BINARY_DIR: Path | None, *additional_inputs: Path
+        self,
+        max_version: int,
+        CMAKE_CURRENT_BINARY_DIR: Path | None,
+        *additional_inputs: Path,
     ) -> dict[str, list[str]]:
         def rel(path: Path):
             return _relative(path, CMAKE_CURRENT_BINARY_DIR)
 
         result: dict[str, list[str]] = {}
-        for out in self.outputs:
+        versions = list(range(1, max_version + 1))
+        for output in self.outputs:
+            for version in versions:
+                current_inputs: list[Path] = [*self.inputs, *additional_inputs]
+                out = output.freeze(version)
+                if out.mustache_template:
+                    current_inputs.append(out.mustache_template)
+                result[rel(out.output).as_posix()] = [
+                    path.as_posix() for path in current_inputs
+                ]
+        for output in self.versioned_outputs:
             current_inputs: list[Path] = [*self.inputs, *additional_inputs]
+            out = output.freeze(1, versions=versions)
             if out.mustache_template:
                 current_inputs.append(out.mustache_template)
             result[rel(out.output).as_posix()] = [

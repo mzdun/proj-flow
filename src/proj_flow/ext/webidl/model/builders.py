@@ -16,6 +16,13 @@ TR = list[str] | str | None
 
 
 @dataclass
+class VersionAttribute:
+    value: int
+    is_max: bool = False
+    is_min: bool = False
+
+
+@dataclass
 class TypeReplacement:
     name: str
     module_or_include: str | None = None
@@ -74,6 +81,32 @@ def visit_string_extended_attribute(
         bag[name] = value
 
 
+def visit_version_extended_attribute(
+    name: str,
+    bag: dict[str, Any],
+    attributes: dict[str, expr.ExtendedAttribute],
+    is_max: bool = False,
+    is_min: bool = False,
+):
+    bag[name] = None
+    try:
+        attr = attributes[name]
+    except KeyError:
+        return
+
+    if attr.rhs:
+        raw_value = attr.rhs.value
+        if not isinstance(raw_value, str):
+            return
+
+        try:
+            bag[name] = VersionAttribute(
+                value=int(raw_value), is_max=is_max, is_min=is_min
+            )
+        except (TypeError, ValueError):
+            return
+
+
 def flag_extended_attribute(name: str):
     def impl(bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]):
         return visit_flag_extended_attribute(name, bag, attributes)
@@ -88,9 +121,20 @@ def string_extended_attribute(name: str):
     return impl
 
 
+def version_extended_attribute(name: str, is_max: bool = False, is_min: bool = False):
+    def impl(bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]):
+        return visit_version_extended_attribute(
+            name, bag, attributes, is_max=is_max, is_min=is_min
+        )
+
+    return impl
+
+
 ATTR_TYPE = {
     "bool": flag_extended_attribute,
     "str": string_extended_attribute,
+    "min-version": lambda name: version_extended_attribute(name, is_min=True),
+    "max-version": lambda name: version_extended_attribute(name, is_max=True),
 }
 
 ExtAttrsVisitor = Callable[[dict[str, Any], dict[str, expr.ExtendedAttribute]], None]
@@ -201,11 +245,16 @@ class ExtAttrsContextBuilders:
                 value = parent[key]
                 del parent[key]
                 if isinstance(value, bool):
-                    type[key] = cast(bool, type.get(key, False)) or value
+                    val = cast(bool | None, type.get(key, False))
+                    type[key] = val if val is not None else value
                     continue
 
                 if isinstance(value, str):
-                    type[key] = cast(str, type.get(key, False)) or value
+                    type[key] = cast(str, type.get(key)) or value
+                    continue
+
+                if isinstance(value, VersionAttribute):
+                    type[key] = cast(VersionAttribute, type.get(key)) or value
                     continue
 
     @staticmethod

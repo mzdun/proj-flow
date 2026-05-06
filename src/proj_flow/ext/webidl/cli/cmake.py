@@ -1,6 +1,7 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+import sys
 import typing
 from pathlib import Path
 
@@ -10,9 +11,41 @@ from proj_flow.api import arg, env
 from proj_flow.ext.webidl.base.config import (
     CMakeDirs,
     TemplateConfig,
+    TemplateRule,
     load_package_template,
 )
 from proj_flow.ext.webidl.cli.updater import update_file_if_needed
+from proj_flow.ext.webidl.model.versioning import load_versions_idl
+
+
+def enum_rule_outputs(config: TemplateConfig):
+    for rule in config.rules:
+        versions = list(load_versions_idl(rule, config.ext_attrs, config.version))
+        for version in versions:
+            for out in rule.outputs:
+                yield out.freeze(version).output.as_posix()
+        for out in rule.versioned_outputs:
+            yield out.freeze(config.version, versions=versions).output.as_posix()
+
+
+def __expand_cmake_vars_in_rules(rules: list[TemplateRule], cmake_dirs: CMakeDirs):
+    result: list[TemplateRule] = []
+    for rule in rules:
+        expanded_rule = TemplateRule(
+            inputs=[cmake_dirs.expand_prefix(str(input)) for input in rule.inputs],
+            outputs=rule.outputs,
+            versioned_outputs=rule.versioned_outputs,
+        )
+        result.append(expanded_rule)
+    return result
+
+
+def __expand_cmake_vars(config: TemplateConfig, cmake_dirs: CMakeDirs):
+    return TemplateConfig(
+        version=config.version,
+        rules=__expand_cmake_vars_in_rules(config.rules, cmake_dirs),
+        ext_attrs=config.ext_attrs,
+    )
 
 
 @arg.command("webidl", "cmake")
@@ -36,6 +69,9 @@ def cmake(
 ):
     """Write the CMake configuration based on given config"""
 
+    cmake_dirs = CMakeDirs.from_config_path(
+        Path(config_path), project_binary_dir=Path(binary_dir)
+    )
     global_ctx = {
         key: f"${{{key}}}"
         for key in [
@@ -68,9 +104,7 @@ def cmake(
             "source": cmake_dirs.prefix(str(config_filename.absolute())).as_posix(),
             "basename": config_filename.name,
         },
-        "output": [
-            out.output.as_posix() for rule in config.rules for out in rule.outputs
-        ],
+        "output": list(enum_rule_outputs(__expand_cmake_vars(config, cmake_dirs))),
         "target": target,
         "depfile": depfile_ref.as_posix(),
     }

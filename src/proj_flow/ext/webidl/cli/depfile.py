@@ -13,6 +13,7 @@ from proj_flow.ext.webidl.base.config import (
     load_package_template,
 )
 from proj_flow.ext.webidl.cli.updater import update_file_if_needed
+from proj_flow.ext.webidl.model.versioning import find_max_version, load_unversioned_idl
 
 
 @arg.command("webidl", "depfile")
@@ -55,7 +56,11 @@ def depfile(
     flat_deps: dict[str, set[str]] = {}
 
     for rule in config.rules:
-        for outname, inputs in rule.get_dependencies(None, config_filename).items():
+        unversioned_idl = load_unversioned_idl(rule, config.ext_attrs)
+        max_version = find_max_version(unversioned_idl, config.version) or 1
+        for outname, inputs in rule.get_dependencies(
+            max_version, None, config_filename
+        ).items():
             try:
                 flat_deps[outname].update(inputs)
             except KeyError:
@@ -63,10 +68,9 @@ def depfile(
     reverse: dict[str, set[str]] = {}
     for key, value in flat_deps.items():
         val = ";".join(sorted(value))
-        try:
-            reverse[val].update(key)
-        except KeyError:
-            reverse[val] = {key}
+        if val not in reverse:
+            reverse[val] = set()
+        reverse[val].add(key)
 
     rules: list[dict] = []
     for deps, tgts in reverse.items():
