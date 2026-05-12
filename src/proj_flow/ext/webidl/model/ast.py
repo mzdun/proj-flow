@@ -156,7 +156,7 @@ class Type:
             inner.nullable = inner.nullable or ast.nullable or nullable
             inner.ext_attrs = [*ast.ext_attrs, *inner.ext_attrs]
             inner.generic = inner.generic or ast.generic
-            return Type.from_idl(inner, builders, parent_ast_attrs)
+            return Type.from_idl(inner, builders, [])
 
         print(type(ast.idl_type), ast.generic != "")
         print(ast)

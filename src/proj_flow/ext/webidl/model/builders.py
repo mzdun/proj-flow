@@ -62,7 +62,8 @@ class TypeReplacement:
 def visit_flag_extended_attribute(
     name: str, bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]
 ):
-    bag[name] = attributes.get(name) != None
+    if attributes.get(name):
+        bag[name] = True
 
 
 def visit_string_extended_attribute(
@@ -79,6 +80,9 @@ def visit_string_extended_attribute(
         if value.startswith('"') and value.endswith('"') and len(value) > 1:
             value = value[1:-1]
         bag[name] = value
+
+    if bag[name] is None:
+        del bag[name]
 
 
 def visit_version_extended_attribute(
@@ -245,7 +249,7 @@ class ExtAttrsContextBuilders:
                 value = parent[key]
                 del parent[key]
                 if isinstance(value, bool):
-                    val = cast(bool | None, type.get(key, False))
+                    val = cast(bool | None, type.get(key))
                     type[key] = val if val is not None else value
                     continue
 
