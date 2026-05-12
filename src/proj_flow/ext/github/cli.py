@@ -95,6 +95,15 @@ def release_cmd(
             help="Even with --dry-run, write changes in project files, changelog, etc."
         ),
     ],
+    omit: typing.Annotated[
+        typing.Optional[list[str]],
+        arg.Argument(
+            help="Hide these commits in the generated changelog",
+            meta="range",
+            action="append",
+            default=lambda: list(),
+        ),
+    ],
 ):
     """
     Bump the project version based on current git logs, create a "chore"
@@ -121,6 +130,7 @@ def release_cmd(
             take_all=all,
             draft=publish != "ON",
             generator=generator,
+            omit=omit or [],
             git=git,
             hosting=gh_links,
         )
