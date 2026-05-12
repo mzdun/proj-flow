@@ -332,6 +332,9 @@ class LogSetup:
     #: End of commit range. If missing, represent the HEAD of current branch.
     curr_tag: Optional[str]
 
+    #: Refs and ranges of commits to hide in the generated changelog
+    omit: list[str]
+
     #: Allow reacting to commits with typos in scope names
     scope_fix: Dict[str, str] = field(default_factory=dict)
 
@@ -384,6 +387,14 @@ class Git:
         self.rt = rt
 
     def get_log(self, setup: LogSetup, silent=False) -> Tuple[ChangeLog, Level]:
+        omit = set[str]()
+        args = ["git", "log", f"--format=%H"]
+        for ref in setup.omit:
+            stdout = set(
+                self.rt.capture(*args, ref, silent=silent).stdout.strip().split("\n")
+            )
+            omit = omit.union(stdout)
+
         args = ["git", "log", f"--format=%h %H%n%B%n{COMMIT_SEP}"]
 
         commit_range = setup.commit_range
@@ -391,15 +402,20 @@ class Git:
             args.append(commit_range)
 
         proc = self.rt.capture(*args, silent=silent)
-        return self.parse_log(proc.stdout, COMMIT_SEP, setup)
+        return self.parse_log(proc.stdout, COMMIT_SEP, setup, omit)
 
-    def parse_log(self, git_log_output: str, separator: str, setup: LogSetup):
+    def parse_log(
+        self, git_log_output: str, separator: str, setup: LogSetup, omit: set[str]
+    ):
         commitLog: List[Commit] = []
         amassed: List[str] = []
         for line in git_log_output.split("\n"):
             if line == separator:
                 if len(amassed):
                     short_hash, hash = amassed[0].split(" ")
+                    if hash in omit:
+                        amassed = []
+                        continue
                     commit = _get_commit(
                         hash, short_hash, "\n".join(amassed[1:]).strip()
                     )
