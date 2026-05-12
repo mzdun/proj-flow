@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.28.1 <https://github.com/mzdun/proj-flow/compare/v0.28.0...v0.28.1>`_ (2026-05-12)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- better ext_attrs (`565b792 <https://github.com/mzdun/proj-flow/commit/565b7922f38b7c0b4d2f3e272925e610256be791>`_)
+
 `0.28.0 <https://github.com/mzdun/proj-flow/compare/v0.27.0...v0.28.0>`_ (2026-05-06)
 =====================================================================================
 
