@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.28.2 <https://github.com/mzdun/proj-flow/compare/v0.28.1...v0.28.2>`_ (2026-05-12)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- allow hiding some commits from changelog (`2a5ff68 <https://github.com/mzdun/proj-flow/commit/2a5ff6876780a4f75f51190632a21b658360b700>`_)
+
 `0.28.1 <https://github.com/mzdun/proj-flow/compare/v0.28.0...v0.28.1>`_ (2026-05-12)
 =====================================================================================
 
