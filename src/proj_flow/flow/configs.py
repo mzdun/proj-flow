@@ -7,7 +7,6 @@ The **proj_flow.flow.configs** provides :class:`Configs`, which uses
 using ``-D`` switches.
 """
 
-
 import argparse
 import copy
 import datetime
@@ -144,8 +143,8 @@ def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
     for y in range(year - lts_years, year + 1):
         if y % 2 != 0:
             continue
-        # Move from 1st of April to 1st of June, it's not yet ready in April yet
-        release = datetime.date(y, 6, 1)
+        # Move from 1st of April to 1st of August, it's not yet ready in April yet
+        release = datetime.date(y, 8, 1)
         end_of_life = datetime.date(y + lts_years, 1, 31)
         if release > today or end_of_life < today:
             continue
