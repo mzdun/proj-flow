@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.28.3 <https://github.com/mzdun/proj-flow/compare/v0.28.2...v0.28.3>`_ (2026-06-03)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- Ubuntu 26.04 is not ready yet (`0bb9a62 <https://github.com/mzdun/proj-flow/commit/0bb9a62f9027f86a9aba496568973fad909b5d8e>`_)
+
 `0.28.2 <https://github.com/mzdun/proj-flow/compare/v0.28.1...v0.28.2>`_ (2026-05-12)
 =====================================================================================
 
