@@ -36,25 +36,26 @@ def main(
 ):
     """Run automation steps for current project"""
 
-    rt_steps = cast(List[api.step.Step], rt.steps)
-    if not cli_steps:
-        steps = [step.name for step in rt_steps]
-    else:
-        steps = matrix.flatten(step.split(",") for step in cli_steps)
-    steps = list(map(lambda s: s.lower(), steps))
+    with prep_environment(rt, "run-env"):
+        rt_steps = cast(List[api.step.Step], rt.steps)
+        if not cli_steps:
+            steps = [step.name for step in rt_steps]
+        else:
+            steps = matrix.flatten(step.split(",") for step in cli_steps)
+        steps = list(map(lambda s: s.lower(), steps))
 
-    step_names = set(steps)
-    program = [step for step in rt_steps if step.name.lower() in step_names]
+        step_names = set(steps)
+        program = [step for step in rt_steps if step.name.lower() in step_names]
 
-    errors = gather_dependencies_for_all_configs(configs, rt, program)
-    if len(errors) > 0:
-        if not rt.silent:
-            for error in errors:
-                print(f"proj-flow: {error}", file=sys.stderr)
-        return 1
+        errors = gather_dependencies_for_all_configs(configs, rt, program)
+        if len(errors) > 0:
+            if not rt.silent:
+                for error in errors:
+                    print(f"proj-flow: {error}", file=sys.stderr)
+            return 1
 
-    printed = refresh_directories(configs, rt, program)
-    return run_steps(configs, rt, program, printed)
+        printed = refresh_directories(configs, rt, program)
+        return run_steps(configs, rt, program, printed)
 
 
 def gather_dependencies_for_all_configs(
@@ -146,11 +147,40 @@ def run_steps(
                 step = steps[index]
                 print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)
                 steps_ran += 1
-                ret = step.run(config, rt)
-                if ret:
-                    return 1
+                with prep_environment(rt, f"run-env.{step.name}"):
+                    ret = step.run(config, rt)
+                    if ret:
+                        return 1
 
     if steps_ran == 0:
         print("Nothing to do.")
 
     return 0
+
+
+@contextmanager
+def prep_environment(rt: api.env.Runtime, key: str):
+    original_env = dict[str, str | None]()
+
+    for key, value in cast(dict, rt.items.get(key, {})).items():
+        original_value = os.environ.get(key)
+        if value is None:
+            if original_value is not None:
+                del os.environ[key]
+                original_env[key] = original_value
+                rt.print("export", f"{key.upper()}=")
+        else:
+            os.environ[key] = str(value)
+            original_env[key] = original_value
+            rt.print("export", f"{key.upper()}={value}")
+
+    try:
+        yield
+    finally:
+        for key, value in original_env.items():
+            if value is None:
+                del os.environ[key]
+                rt.print("export", f"{key.upper()}=")
+            else:
+                os.environ[key] = value
+                rt.print("export", f"{key.upper()}={value}")
