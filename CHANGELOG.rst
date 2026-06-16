@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.29.0 <https://github.com/mzdun/proj-flow/compare/v0.28.3...v0.29.0>`_ (2026-06-16)
+=====================================================================================
+
+New Features
+------------
+
+- set environment variables through ``run-env.<StepName>`` variable (`586e565 <https://github.com/mzdun/proj-flow/commit/586e56558d1a30ca9577d9a6d99f60021cbdcba4>`_)
+
 `0.28.3 <https://github.com/mzdun/proj-flow/compare/v0.28.2...v0.28.3>`_ (2026-06-03)
 =====================================================================================
 
