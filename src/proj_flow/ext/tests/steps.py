@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ext.tests.steps** provides the ``"GTestToCtrf"`` step.
+The **proj_flow.ext.tests.steps** provides the ``"JUnitToCtrf"`` step.
 """
 
 import json
@@ -11,17 +11,17 @@ from typing import Any, List, cast
 
 from proj_flow.api import env, step
 from proj_flow.ctrf import ctrf
-from proj_flow.ctrf.googletest import read_junit_testsuites
+from proj_flow.ctrf.junit import read_junit_testsuites
 
 
 @step.register
-class GTestToCtrf(step.Step):
-    """Converts Google Test JUnit XML reports to CTRF JSON files."""
+class JUnitToCtrf(step.Step):
+    """Converts JUnit XML reports produced by Google Test and Qt QTest to CTRF JSON files."""
 
     @property
     def name(self) -> str:
         """:meta private:"""
-        return "GTestToCtrf"
+        return "JUnitToCtrf"
 
     @property
     def runs_after(self) -> List[str]:
@@ -82,7 +82,7 @@ class MergeCtrfFiles(step.Step):
     @property
     def runs_after(self) -> List[str]:
         """:meta private:"""
-        return ["Test", "GTestToCtrf"]
+        return ["Test", "JUnitToCtrf"]
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         build_dir = config.build_dir
