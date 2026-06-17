@@ -15,7 +15,12 @@ from dateutil import tz
 from proj_flow.ctrf import ctrf
 
 
-def read_junit_testcase(suite: list[str], element: ET.Element, source_dir: Path):
+def read_junit_testcase(
+    suite: list[str],
+    element: ET.Element,
+    source_dir: Path,
+    parent_timestamp_str: str | None,
+):
     attrib = element.attrib
 
     status = attrib.get("status")
@@ -25,6 +30,9 @@ def read_junit_testcase(suite: list[str], element: ET.Element, source_dir: Path)
     timestamp_str = attrib.get("timestamp")
     file = attrib.get("file")
     line_str = attrib.get("line")
+    if status is None and timestamp_str is None and parent_timestamp_str is not None:
+        status = "run"
+        timestamp_str = parent_timestamp_str
     if status != "run" or not name or not time_str or not timestamp_str:
         return None
 
@@ -88,18 +96,35 @@ def read_junit_testcase(suite: list[str], element: ET.Element, source_dir: Path)
     return test
 
 
+def read_junit_testsuite(
+    ctrf: ctrf.Results,
+    testsuite_group: str,
+    source_dir: Path,
+    testsuite: ET.Element,
+):
+    testsuite_name = testsuite.attrib.get("name")
+    if not testsuite_name:
+        return
+
+    suite = [testsuite_group, testsuite_name]
+    for testcase in testsuite:
+        if testcase.tag != "testcase":
+            continue
+        test = read_junit_testcase(
+            suite, testcase, source_dir, testsuite.attrib.get("timestamp")
+        )
+        if test:
+            ctrf.update(test)
+
+
 def read_junit_testsuites(
-    ctrf: ctrf.Results, testuite_group: str, filename: Path, source_dir: Path
+    ctrf: ctrf.Results, testsuite_group: str, filename: Path, source_dir: Path
 ):
     tree = ET.parse(filename)
     root = tree.getroot()
-    for testsuite in root:
-        testsuite_name = testsuite.attrib.get("name")
-        if not testsuite_name:
-            continue
+    if root.tag == "testsuite":
+        read_junit_testsuite(ctrf, testsuite_group, source_dir, root)
+        return
 
-        suite = [testuite_group, testsuite_name]
-        for testcase in testsuite:
-            test = read_junit_testcase(suite, testcase, source_dir)
-            if test:
-                ctrf.update(test)
+    for testsuite in root:
+        read_junit_testsuite(ctrf, testsuite_group, source_dir, testsuite)

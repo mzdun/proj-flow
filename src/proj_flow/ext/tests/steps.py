@@ -33,16 +33,26 @@ class GTestToCtrf(step.Step):
         build_dir = config.build_dir
 
         test_cg = cast(dict, rt.items.get("test", {}))
-        gtest_dir = build_dir / cast(str, test_cg.get("gtest-dir", "test-results"))
         ctrf_dir = build_dir / cast(str, test_cg.get("ctrf-dir", "test-results"))
 
-        paths: list[Path] = []
-        if gtest_dir.is_dir():
-            for cwd, _, files in gtest_dir.walk():
-                paths.extend(cwd / file for file in files if file.endswith(".xml"))
-        else:
-            rt.message("Cannot find", str(gtest_dir))
-
+        path_set = set[Path]()
+        for config_key in ["gtest-dir", "junit-dir", "junit-dirs"]:
+            config_name = cast(str | list[str] | None, test_cg.get(config_key))
+            if config_name is None:
+                continue
+            config_names = (
+                [config_name] if isinstance(config_name, str) else config_name
+            )
+            for dirname in config_names:
+                xmls_dir = build_dir / dirname
+                if not xmls_dir.is_dir():
+                    rt.message("Cannot find", str(xmls_dir))
+                    continue
+                for cwd, _, files in xmls_dir.walk():
+                    path_set = path_set.union(
+                        set(cwd / file for file in files if file.endswith(".xml"))
+                    )
+        paths = list(sorted(path_set))
         for path in paths:
             rt.message("Found", str(path))
 

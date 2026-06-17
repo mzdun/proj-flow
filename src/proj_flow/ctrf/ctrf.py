@@ -5,7 +5,6 @@
 The **proj_flow.ctrf.ctrf** provides ctrf.io classes.
 """
 
-
 import hashlib
 import json
 from dataclasses import asdict, dataclass, field, fields
@@ -73,7 +72,7 @@ def _less[T: (str, int)](lhs: T | None, rhs: T | None) -> bool:
 @dataclass
 class Test:
     name: str
-    filePath: str | None
+    filePath: str | None = field(default=None)
     line: int | None = field(default=None)
     suite: list[str] | None = field(default=None)
     status: str = field(default="pending")
