@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.29.2 <https://github.com/mzdun/proj-flow/compare/v0.29.1...v0.29.2>`_ (2026-06-17)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- add additional information available in QTest JUnits (`9070f76 <https://github.com/mzdun/proj-flow/commit/9070f7625d631eb9b2ace5ed284d35fe27f451ca>`_)
+
 `0.29.1 <https://github.com/mzdun/proj-flow/compare/v0.29.0...v0.29.1>`_ (2026-06-17)
 =====================================================================================
 
