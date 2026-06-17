@@ -81,6 +81,13 @@ def read_junit_testcase(
     for child in element:
         if child.tag == "failure":
             failures.append(child.attrib.get("message", ""))
+            if child.text is not None:
+                additional = child.text.strip()
+                # is this QTest?
+                if additional.startswith("Computed ("):
+                    prefix = additional.split("Baseline (", 1)[0].split("\n")[-1]
+                    additional = prefix + additional
+                failures[-1] += "\n" + additional
             continue
         if child.tag == "skipped":
             is_skipped = True
