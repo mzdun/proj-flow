@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.29.3 <https://github.com/mzdun/proj-flow/compare/v0.29.2...v0.29.3>`_ (2026-06-20)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- move system-out to stdout and relax gtest-specific tests (`9498f4d <https://github.com/mzdun/proj-flow/commit/9498f4db93c533c3270148717dbd682b826bb467>`_)
+
 `0.29.2 <https://github.com/mzdun/proj-flow/compare/v0.29.1...v0.29.2>`_ (2026-06-17)
 =====================================================================================
 
