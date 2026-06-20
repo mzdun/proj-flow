@@ -19,33 +19,31 @@ def read_junit_testcase(
     suite: list[str],
     element: ET.Element,
     source_dir: Path,
-    parent_timestamp_str: str | None,
 ):
     attrib = element.attrib
 
-    status = attrib.get("status")
     name = attrib.get("name")
     value_param = attrib.get("value_param")
     time_str = attrib.get("time")
     timestamp_str = attrib.get("timestamp")
     file = attrib.get("file")
     line_str = attrib.get("line")
-    if status is None and timestamp_str is None and parent_timestamp_str is not None:
-        status = "run"
-        timestamp_str = parent_timestamp_str
-    if status != "run" or not name or not time_str or not timestamp_str:
+    if (attrib.get("status") not in [None, "run"]) or not name or not time_str:
         return None
 
-    local_dt_posing_as_utc = datetime.fromisoformat(timestamp_str)
-    local_dt_posing_as_utc.replace(tzinfo=tz.tzlocal())
-    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-    timestamp: int | None = int(
-        (local_dt_posing_as_utc.astimezone(tz.tzutc()) - epoch).total_seconds() * 1000
-        + 0.5
-    )
+    timestamp: int | None = None
+    if timestamp_str:
+        local_dt_posing_as_utc = datetime.fromisoformat(timestamp_str)
+        local_dt_posing_as_utc.replace(tzinfo=tz.tzlocal())
+        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        timestamp = int(
+            (local_dt_posing_as_utc.astimezone(tz.tzutc()) - epoch).total_seconds()
+            * 1000
+            + 0.5
+        )
 
-    if timestamp < (24 * 60 * 60 * 1000):
-        timestamp = None
+        if timestamp < (24 * 60 * 60 * 1000):
+            timestamp = None
 
     if value_param:
         value_param = f" ({value_param})"
@@ -60,7 +58,6 @@ def read_junit_testcase(
             else None
         ),
         suite=suite,
-        start=timestamp,
     ).recalc_name()
 
     try:
@@ -73,32 +70,36 @@ def read_junit_testcase(
     except ValueError:
         test.duration = 0
 
-    if test.start is not None:
-        test.stop = test.duration + test.start
-
     failures: list[str] = []
-    is_skipped = False
+    skips: list[str] = []
+    stdout: list[str] = []
+    stderr: list[str] = []
     for child in element:
         if child.tag == "failure":
-            failures.append(child.attrib.get("message", ""))
-            if child.text is not None:
-                additional = child.text.strip()
-                # is this QTest?
-                if additional.startswith("Computed ("):
-                    prefix = additional.split("Baseline (", 1)[0].split("\n")[-1]
-                    additional = prefix + additional
-                failures[-1] += "\n" + additional
+            failures.extend(child.attrib.get("message", "").split("\n"))
             continue
         if child.tag == "skipped":
-            is_skipped = True
+            skips.extend(child.attrib.get("message", "").split("\n"))
+            continue
+        if child.tag == "system-out":
+            stdout.extend((child.text or "").split("\n"))
+            continue
+        if child.tag == "system-err":
+            stderr.extend((child.text or "").split("\n"))
             continue
 
     test.status = "passed"
     if failures:
         test.message = "\n".join(failures)
         test.status = "failed"
-    elif is_skipped:
+    elif skips:
+        test.message = "\n".join(skips)
         test.status = "skipped"
+
+    if stdout:
+        test.stdout = stdout
+    if stderr:
+        test.stderr = stderr
 
     return test
 
@@ -117,9 +118,7 @@ def read_junit_testsuite(
     for testcase in testsuite:
         if testcase.tag != "testcase":
             continue
-        test = read_junit_testcase(
-            suite, testcase, source_dir, testsuite.attrib.get("timestamp")
-        )
+        test = read_junit_testcase(suite, testcase, source_dir)
         if test:
             ctrf.update(test)
 
