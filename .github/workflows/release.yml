@@ -3,6 +3,7 @@ name: Release Merged PR
 on:
   pull_request:
     types: [closed]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,7 +11,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: write
 
@@ -50,7 +51,6 @@ jobs:
         with:
           name: release-dists
           path: dist/
-
 
   pypi-publish:
     runs-on: ubuntu-latest
