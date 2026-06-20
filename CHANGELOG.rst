@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.29.4 <https://github.com/mzdun/proj-flow/compare/v0.29.3...v0.29.4>`_ (2026-06-20)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- use curated list of known Ubuntu runners (`adf6dad <https://github.com/mzdun/proj-flow/commit/adf6dad49f938c44d581c05e0fd48eec45192f07>`_)
+
 `0.29.3 <https://github.com/mzdun/proj-flow/compare/v0.29.2...v0.29.3>`_ (2026-06-20)
 =====================================================================================
 
