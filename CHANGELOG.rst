@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.30.0 <https://github.com/mzdun/proj-flow/compare/v0.29.4...v0.30.0>`_ (2026-06-20)
+=====================================================================================
+
+New Features
+------------
+
+- allow triggering a release from Actions tab (`047c62a <https://github.com/mzdun/proj-flow/commit/047c62a09dd5d43c25f7335afc47aef0a014e702>`_)
+
 `0.29.4 <https://github.com/mzdun/proj-flow/compare/v0.29.3...v0.29.4>`_ (2026-06-20)
 =====================================================================================
 
