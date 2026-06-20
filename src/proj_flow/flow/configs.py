@@ -12,7 +12,10 @@ import copy
 import datetime
 import os
 import sys
+from pathlib import Path
 from typing import Any, Callable, Dict, List, cast
+
+import yaml
 
 from proj_flow.api import env
 from proj_flow.base import matrix
@@ -136,19 +139,31 @@ def _expand_one(config: dict, github_os: str, os_in_name: str):
 
 
 __printed_lts_ubuntu_warning = False
+__this_directory_on_github = "https://raw.githubusercontent.com/mzdun/proj-flow/refs/heads/main/src/proj_flow/flow/"
+__files = dict[str, bytes]()
 
 
-def _ubuntu_lts(today=datetime.date.today(), lts_years=5):
-    year = today.year
-    for y in range(year - lts_years, year + 1):
-        if y % 2 != 0:
-            continue
-        # Move from 1st of April to 1st of August, it's not yet ready in April yet
-        release = datetime.date(y, 8, 1)
-        end_of_life = datetime.date(y + lts_years, 1, 31)
-        if release > today or end_of_life < today:
-            continue
-        yield f"ubuntu-{y % 100}.04"
+def _cached_download(filename: str):
+    global __files
+    if filename not in __files or not __files[filename]:
+        import httplib2
+
+        http = httplib2.Http(".cache")
+        response, content = http.request(f"{__this_directory_on_github}/{filename}")
+        status = int(response.status)
+        if status % 100 < 4:
+            __files[filename] = cast(bytes, content)
+        else:
+            with (Path(__file__).parent / filename).open("rb") as f:
+                __files[filename] = f.read()
+
+    return __files[filename]
+
+
+def _ubuntu_lts():
+    return yaml.load(_cached_download("github-runners.yaml"), Loader=yaml.Loader).get(
+        "ubuntu", []
+    )
 
 
 def _lts_list(config: dict, lts_list: Dict[str, List[str]]):
