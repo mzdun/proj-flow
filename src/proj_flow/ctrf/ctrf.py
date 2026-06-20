@@ -81,6 +81,8 @@ class Test:
     stop: int | None = field(default=None)
     timestamp: str | None = field(default=None)
     duration: int = field(default=0)
+    stdout: list[str] | None = field(default=None)
+    stderr: list[str] | None = field(default=None)
     id: str | None = field(default=None)
 
     def recalc_name(self):
