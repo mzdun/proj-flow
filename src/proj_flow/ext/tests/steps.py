@@ -117,7 +117,9 @@ class MergeCtrfFiles(step.Step):
             results.environment.update(new_env)
 
         results.tool.name = "proj_flow-ctrf-merge"
+        results.fold_output()
         results.store_root_element(output)
+        print(str(output))
 
         duration = 0
         summary = results.summary

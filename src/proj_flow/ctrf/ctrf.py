@@ -114,6 +114,20 @@ class Test:
             del values["line"]
         return values
 
+    def fold_output(self):
+        message = self.message or ""
+        if self.stdout:
+            if message:
+                message += "\n\n"
+            message += f"stdout: {'\n'.join(self.stdout)}"
+            self.stdout = None
+        if self.stderr:
+            if message:
+                message += "\n\n"
+            message += f"stderr: {'\n'.join(self.stderr)}"
+            self.stderr = None
+        self.message = message
+
     @staticmethod
     def from_dict(**kwargs):
         if "id" in kwargs:
@@ -197,6 +211,10 @@ class Results:
             "generatedBy": self.tool.name,
             "results": self.asdict(),
         }
+
+    def fold_output(self):
+        for test in self.tests:
+            test.fold_output()
 
     def store_root_element(self, path: Path):
         data = self.root_element()
