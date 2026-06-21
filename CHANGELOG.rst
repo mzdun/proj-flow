@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.30.1 <https://github.com/mzdun/proj-flow/compare/v0.30.0...v0.30.1>`_ (2026-06-21)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- fold stdout/stderr into message (for github plugin) (`f5c20e7 <https://github.com/mzdun/proj-flow/commit/f5c20e7be1b664a9a2ac9c2c5391b5251fc6984d>`_)
+
 `0.30.0 <https://github.com/mzdun/proj-flow/compare/v0.29.4...v0.30.0>`_ (2026-06-20)
 =====================================================================================
 
