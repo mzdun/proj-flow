@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.31.1 <https://github.com/mzdun/proj-flow/compare/v0.31.0...v0.31.1>`_ (2026-06-22)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- remove debug print (`e995447 <https://github.com/mzdun/proj-flow/commit/e995447c86994df0ad70b2f4b3b6fab83348a32f>`_)
+
 `0.31.0 <https://github.com/mzdun/proj-flow/compare/v0.30.1...v0.31.0>`_ (2026-06-22)
 =====================================================================================
 
