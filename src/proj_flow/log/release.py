@@ -67,6 +67,7 @@ def add_release(
     dbg_changelog: bool,
     forced_level: typing.Optional[commit.Level],
     take_all: bool,
+    with_types: list[str],
     draft: bool,
     generator: rich_text.api.ChangelogGenerator,
     omit: list[str],
@@ -92,7 +93,9 @@ def add_release(
     for tag in reversed(tags):
         rt.message("  >", tag, "*" if tag == prev_tag else "")
 
-    setup = commit.LogSetup(hosting, prev_tag, None, omit=omit, take_all=take_all)
+    setup = commit.LogSetup(
+        hosting, prev_tag, None, omit=omit, take_all=take_all, with_types=with_types
+    )
     changelog, log_level = git.get_log(setup)
 
     rt.message("Changelog:")

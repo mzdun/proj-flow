@@ -13,7 +13,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional
 
 from proj_flow.api import env
 from proj_flow.base import registry
@@ -40,7 +40,7 @@ class Level(Enum):
     BREAKING = 4
 
 
-FORCED_LEVEL: Dict[str, Level] = {
+FORCED_LEVEL: dict[str, Level] = {
     "patch": Level.PATCH,
     "fix": Level.PATCH,
     "minor": Level.FEATURE,
@@ -79,8 +79,8 @@ class Link(NamedTuple):
     hash: str
     short_hash: str
     is_breaking: bool
-    breaking_message: List[str]
-    references: Dict[str, List[str]]
+    breaking_message: list[str]
+    references: dict[str, list[str]]
 
 
 class Commit(NamedTuple):
@@ -88,7 +88,7 @@ class Commit(NamedTuple):
     link: Link
 
 
-ChangeLog = Dict[str, List[Link]]
+ChangeLog = dict[str, list[Link]]
 
 
 def read_tag_date(tag: str, rt: env.Runtime):
@@ -164,7 +164,7 @@ def _get_commit(hash: str, short_hash: str, message: str) -> Optional[Commit]:
     )
 
 
-def _level_from_commit(commit: Commit) -> Tuple[Level, str]:
+def _level_from_commit(commit: Commit) -> tuple[Level, str]:
     if commit.link.is_breaking:
         return (Level.BREAKING, commit.link.scope)
     try:
@@ -208,7 +208,7 @@ class Hosting(ABC):
     host_link: str
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         """Can publish a release"""
         return True
 
@@ -282,7 +282,7 @@ class NoHosting(Hosting):
     """
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         return False
 
     def __init__(self):
@@ -336,10 +336,13 @@ class LogSetup:
     omit: list[str]
 
     #: Allow reacting to commits with typos in scope names
-    scope_fix: Dict[str, str] = field(default_factory=dict)
+    scope_fix: dict[str, str] = field(default_factory=dict)
 
     #: Choose either all Conventional Commits or only ``feat``/``fix`` ones.
     take_all: bool = False
+
+    #: If not taking all, which commits still should be included in addition to ``feat``/``fix`` ones.
+    with_types: list[str] = field(default_factory=list)
 
     @property
     def commit_range(self):
@@ -386,7 +389,7 @@ class Git:
     def __init__(self, rt: env.Runtime):
         self.rt = rt
 
-    def get_log(self, setup: LogSetup, silent=False) -> Tuple[ChangeLog, Level]:
+    def get_log(self, setup: LogSetup, silent=False) -> tuple[ChangeLog, Level]:
         omit = set[str]()
         args = ["git", "log", f"--format=%H"]
         for ref in setup.omit:
@@ -407,8 +410,8 @@ class Git:
     def parse_log(
         self, git_log_output: str, separator: str, setup: LogSetup, omit: set[str]
     ):
-        commitLog: List[Commit] = []
-        amassed: List[str] = []
+        commitLog: list[Commit] = []
+        amassed: list[str] = []
         for line in git_log_output.split("\n"):
             if line == separator:
                 if len(amassed):
@@ -444,7 +447,9 @@ class Git:
             if current_level.value > level.value:
                 level = current_level
             current_type = TYPE_FIX.get(commit.type, commit.type)
-            hidden = current_type not in KNOWN_TYPES
+            hidden = (
+                current_type not in KNOWN_TYPES and current_type not in setup.with_types
+            )
 
             if hidden and not link.is_breaking and not setup.take_all:
                 continue
@@ -494,10 +499,10 @@ class Git:
 
     def tag_list(self, silent=False):
         """Get list of version tags, in increasing order."""
-        tags: List[str] = self.rt.capture("git", "tag", silent=silent).stdout.split(
+        tags: list[str] = self.rt.capture("git", "tag", silent=silent).stdout.split(
             "\n"
         )
-        versions: List[Tuple[Tuple[int, int, int, str], str]] = []
+        versions: list[tuple[tuple[int, int, int, str], str]] = []
         for tag in tags:
             if tag[:1] != "v":
                 continue

@@ -104,12 +104,28 @@ def release_cmd(
             default=lambda: list(),
         ),
     ],
+    with_types: typing.Annotated[
+        typing.Optional[list[str]],
+        arg.Argument(
+            help="Use these commit types in addition to breaking/feat/fix",
+            names=["--with"],
+            nargs="+",
+            meta="type",
+            action="append",
+            default=lambda: list(),
+        ),
+    ],
 ):
     """
     Bump the project version based on current git logs, create a "chore"
     commit for the change, attach an annotated tag with the version number
     and push it all to GitHub.
     """
+
+    with_types = [
+        with_type for type_group in (with_types or []) for with_type in type_group
+    ]
+    print(with_types)
 
     generator = (
         rich_text.api.changelog_generators.first()
@@ -128,6 +144,7 @@ def release_cmd(
             dbg_changelog=changelog,
             forced_level=forced_level,
             take_all=all,
+            with_types=with_types,
             draft=publish != "ON",
             generator=generator,
             omit=omit or [],
