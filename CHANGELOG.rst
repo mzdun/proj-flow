@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.31.0 <https://github.com/mzdun/proj-flow/compare/v0.30.1...v0.31.0>`_ (2026-06-22)
+=====================================================================================
+
+New Features
+------------
+
+- allow changelogs in the middle of current extremes (`cbb2091 <https://github.com/mzdun/proj-flow/commit/cbb209102aabe8f0b1fb692f7ebdccf170600882>`_)
+
 `0.30.1 <https://github.com/mzdun/proj-flow/compare/v0.30.0...v0.30.1>`_ (2026-06-21)
 =====================================================================================
 
