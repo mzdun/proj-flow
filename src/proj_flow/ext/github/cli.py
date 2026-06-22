@@ -125,7 +125,6 @@ def release_cmd(
     with_types = [
         with_type for type_group in (with_types or []) for with_type in type_group
     ]
-    print(with_types)
 
     generator = (
         rich_text.api.changelog_generators.first()
