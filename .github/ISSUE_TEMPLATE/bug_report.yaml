@@ -47,25 +47,26 @@ body:
       - Older, than v0.30.1
   validations:
     required: true
-- type: dropdown
+- type: checkboxes
   id: project
   attributes:
     label: Project Template
     description: If this is about `proj-flow init`, which project is used?
     options:
-      - cxx
-      - Other
+      - label: cxx
+      - label: Other
   validations:
     required: true
-- type: dropdown
+- type: checkboxes
   id: os
   attributes:
     label: Operating Systems
     description: Which operating systems have you used? You may select more than one.
     options:
-      - macOS
-      - Windows
-      - Linux
+      - label: macOS
+      - label: Windows
+      - label: Linux
+      - label: Other
   validations:
     required: false
 - type: textarea
