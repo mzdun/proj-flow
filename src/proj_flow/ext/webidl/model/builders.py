@@ -59,43 +59,104 @@ class TypeReplacement:
         return result
 
 
+class ExtAttrError(ValueError):
+    """Extended attribute used in a way its declared type does not allow."""
+
+
+ExtAttrMap = dict[str, list[expr.ExtendedAttribute]]
+"""Extended attributes of one IDL node, grouped by name in source order."""
+
+
+def group_extended_attributes(ext_attrs: list[expr.ExtendedAttribute]) -> ExtAttrMap:
+    result: ExtAttrMap = {}
+    for attr in ext_attrs:
+        result.setdefault(attr.name, []).append(attr)
+    return result
+
+
+def _unquote(value: str):
+    if value.startswith('"') and value.endswith('"') and len(value) > 1:
+        return value[1:-1]
+    return value
+
+
+def _single_extended_attribute(name: str, attributes: ExtAttrMap):
+    found = attributes.get(name)
+    if not found:
+        return None
+    if len(found) > 1:
+        raise ExtAttrError(f"`{name}' can only be used once")
+    return found[0]
+
+
 def visit_flag_extended_attribute(
-    name: str, bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]
+    name: str, bag: dict[str, Any], attributes: ExtAttrMap
 ):
-    if attributes.get(name):
+    if _single_extended_attribute(name, attributes):
         bag[name] = True
 
 
 def visit_string_extended_attribute(
-    name: str, bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]
+    name: str, bag: dict[str, Any], attributes: ExtAttrMap
 ):
     bag[name] = None
-    try:
-        attr = attributes[name]
-    except KeyError:
+    attr = _single_extended_attribute(name, attributes)
+    if attr is None:
         return
 
     if attr.rhs:
-        value = cast(str, attr.rhs.value)
-        if value.startswith('"') and value.endswith('"') and len(value) > 1:
-            value = value[1:-1]
-        bag[name] = value
+        if isinstance(attr.rhs, expr.LiteralList):
+            raise ExtAttrError(
+                f"`{name}' takes a single value; declare it as `str-list' to allow more"
+            )
+        bag[name] = _unquote(cast(str, attr.rhs.value))
 
     if bag[name] is None:
         del bag[name]
 
 
+def visit_string_list_extended_attribute(
+    name: str, bag: dict[str, Any], attributes: ExtAttrMap
+):
+    """Collects values from every `name="..."` and `name=("...", ...)`, in order.
+
+    The result is always a list, so templates read the items with `{{.}}`.
+    Like `str`, an absent attribute is stored as None, so that templates do
+    not pick up a same-named value from an outer scope.
+
+    Next to it, `has_<name>` tells if there are any values, so that templates
+    can render a block once, instead of once per item:
+    `{{#has_name}}...{{#name}}{{.}}{{/name}}...{{/has_name}}`."""
+
+    bag[name] = None
+    values: list[str] = []
+    for attr in attributes.get(name, []):
+        if attr.rhs is None:
+            continue
+        if isinstance(attr.rhs, expr.LiteralList):
+            values.extend(_unquote(cast(str, item.value)) for item in attr.rhs.value)
+        else:
+            values.append(_unquote(cast(str, attr.rhs.value)))
+
+    if values:
+        bag[name] = values
+    bag[has_name(name)] = len(values) > 0
+
+
+def has_name(name: str):
+    return f"has_{name}"
+
+
 def visit_version_extended_attribute(
     name: str,
     bag: dict[str, Any],
-    attributes: dict[str, expr.ExtendedAttribute],
+    attributes: ExtAttrMap,
     is_max: bool = False,
     is_min: bool = False,
 ):
     bag[name] = None
-    try:
-        attr = attributes[name]
-    except KeyError:
+    attr = _single_extended_attribute(name, attributes)
+    if attr is None:
         return
 
     if attr.rhs:
@@ -112,21 +173,28 @@ def visit_version_extended_attribute(
 
 
 def flag_extended_attribute(name: str):
-    def impl(bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]):
+    def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_flag_extended_attribute(name, bag, attributes)
 
     return impl
 
 
 def string_extended_attribute(name: str):
-    def impl(bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]):
+    def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_string_extended_attribute(name, bag, attributes)
 
     return impl
 
 
+def string_list_extended_attribute(name: str):
+    def impl(bag: dict[str, Any], attributes: ExtAttrMap):
+        return visit_string_list_extended_attribute(name, bag, attributes)
+
+    return impl
+
+
 def version_extended_attribute(name: str, is_max: bool = False, is_min: bool = False):
-    def impl(bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]):
+    def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_version_extended_attribute(
             name, bag, attributes, is_max=is_max, is_min=is_min
         )
@@ -137,11 +205,19 @@ def version_extended_attribute(name: str, is_max: bool = False, is_min: bool = F
 ATTR_TYPE = {
     "bool": flag_extended_attribute,
     "str": string_extended_attribute,
+    "str-list": string_list_extended_attribute,
     "min-version": lambda name: version_extended_attribute(name, is_min=True),
     "max-version": lambda name: version_extended_attribute(name, is_max=True),
 }
 
-ExtAttrsVisitor = Callable[[dict[str, Any], dict[str, expr.ExtendedAttribute]], None]
+GENERIC_WRAPPER = "generic-wrapper"
+"""Kind of a `type` extended attribute: `[name] T` is read as `name<T>`.
+
+Declared in the config as `"ext_attrs": {"type": {"name": "generic-wrapper"}}`;
+the C++ (or other) name of `name` comes from the types file, like for any other
+generic. Allowed only for `type` and the only kind allowed there."""
+
+ExtAttrsVisitor = Callable[[dict[str, Any], ExtAttrMap], None]
 
 
 @dataclass
@@ -155,7 +231,10 @@ class ExtAttrsContextBuilder:
     def add_string(self, name: str):
         self.visitors[name] = string_extended_attribute(name)
 
-    def visit(self, bag: dict[str, Any], attributes: dict[str, expr.ExtendedAttribute]):
+    def add_string_list(self, name: str):
+        self.visitors[name] = string_list_extended_attribute(name)
+
+    def visit(self, bag: dict[str, Any], attributes: ExtAttrMap):
         for visitor in self.visitors.values():
             visitor(bag, attributes)
 
@@ -183,6 +262,10 @@ class BuilderBuilder:
         self.tgt.add_string(name)
         return self
 
+    def string_list(self, name: str):
+        self.tgt.add_string_list(name)
+        return self
+
     def build(self):
         return self.tgt
 
@@ -196,6 +279,8 @@ class ExtAttrsContextBuilders:
     return_type: ExtAttrsContextBuilder = field(default_factory=ExtAttrsContextBuilder)
     argument: ExtAttrsContextBuilder = field(default_factory=ExtAttrsContextBuilder)
     type: ExtAttrsContextBuilder = field(default_factory=ExtAttrsContextBuilder)
+    generic_wrappers: list[str] = field(default_factory=list)
+    """Names of the `generic-wrapper` type attributes, in config order."""
 
     def from_idl(
         self,
@@ -203,7 +288,7 @@ class ExtAttrsContextBuilders:
         ext_attrs: list[expr.ExtendedAttribute],
     ):
         result: dict[str, Any] = {}
-        attributes = {attr.name: attr for attr in ext_attrs}
+        attributes = group_extended_attributes(ext_attrs)
         builder = selector(self)
         builder.visit(result, attributes)
         if builder.applies_to_type:
@@ -219,6 +304,14 @@ class ExtAttrsContextBuilders:
             return_type=self.return_type.merge(rhs.return_type),
             argument=self.argument.merge(rhs.argument),
             type=self.type.merge(rhs.type),
+            generic_wrappers=[
+                *self.generic_wrappers,
+                *(
+                    name
+                    for name in rhs.generic_wrappers
+                    if name not in self.generic_wrappers
+                ),
+            ],
         )
 
     @staticmethod
@@ -232,10 +325,23 @@ class ExtAttrsContextBuilders:
             ("operation", result.operation),
             ("return_type", result.return_type),
             ("argument", result.argument),
+            ("type", result.type),
         ]
         for key, target in targets:
             group = ext_attrs.get(key, {})
+            is_type = key == "type"
             for name, type_name in group.items():
+                if is_type != (type_name == GENERIC_WRAPPER):
+                    if is_type:
+                        message = f"type attributes must be `{GENERIC_WRAPPER}', got `{type_name}' when reading {key}.{name}"
+                    else:
+                        message = f"only type attributes can be `{GENERIC_WRAPPER}', when reading {key}.{name}"
+                    raise RuntimeError(message)
+                if is_type:
+                    # the flag tells Type.from_idl to wrap the type
+                    target.visitors[name] = flag_extended_attribute(name)
+                    result.generic_wrappers.append(name)
+                    continue
                 ctor = ATTR_TYPE.get(type_name)
                 if not ctor:
                     message = f"unknown user-defined extended attribute `{type_name}' when reading {key}.{name}"
@@ -257,15 +363,27 @@ class ExtAttrsContextBuilders:
                     type[key] = cast(str, type.get(key)) or value
                     continue
 
+                if isinstance(value, list):
+                    type[key] = cast(list[str], type.get(key)) or value
+                    continue
+
                 if isinstance(value, VersionAttribute):
                     type[key] = cast(VersionAttribute, type.get(key)) or value
                     continue
+
+        # `has_<name>` of a moved str-list follows its list
+        for key in self.type.visitors:
+            flag = has_name(key)
+            if flag in parent:
+                del parent[flag]
+                type[flag] = bool(type.get(key))
 
     @staticmethod
     def builtin():
         return ExtAttrsContextBuilders(
             attribute=BuilderBuilder().string("default").build(),
             operation=BuilderBuilder()
+            .flag("defaulted")
             .flag("in")
             .flag("out")
             .flag("mutable")
