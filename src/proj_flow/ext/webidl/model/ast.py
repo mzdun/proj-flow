@@ -11,7 +11,6 @@ from pywebidl2 import expr, parser, raw_parse, validate
 from proj_flow.ext.webidl.base.config import ExtAttrsContextBuilders, TypeReplacement
 from proj_flow.ext.webidl.model.builders import ExtAttrError
 
-
 SELECTOR = "selector"
 """`([selector="ctx.type == x"] A or ...)`: the condition choosing a union
 member; kept in the member type's `ext_attrs`, and required for every member of
@@ -26,7 +25,7 @@ def _selector_of(ast: expr.IdlType) -> str | None:
         raise ExtAttrError(f"`{SELECTOR}' can only be used once")
     rhs = selectors[0].rhs
     if rhs is None or isinstance(rhs, expr.LiteralList):
-        raise ExtAttrError(f'`{SELECTOR}\' takes a single value: `[{SELECTOR}="..."]\'')
+        raise ExtAttrError(f"`{SELECTOR}' takes a single value: `[{SELECTOR}=\"...\"]'")
     value = cast(str, rhs.value)
     if value.startswith('"') and value.endswith('"') and len(value) > 1:
         value = value[1:-1]
@@ -246,13 +245,17 @@ class Attribute:
         for arg in type.arguments:
             member = arg.arg_type
             alt_name = member.idl_name if isinstance(member, Type) else str(member)
-            selector = member.ext_attrs.get(SELECTOR) if isinstance(member, Type) else None
+            selector = (
+                member.ext_attrs.get(SELECTOR) if isinstance(member, Type) else None
+            )
             if selector is None:
                 raise ExtAttrError(
                     f"`{name}': union alternative `{alt_name}' needs "
                     f'`[{SELECTOR}="..."]\''
                 )
-            alternatives.append({"alt_name": alt_name, "selector": selector, "type": member})
+            alternatives.append(
+                {"alt_name": alt_name, "selector": selector, "type": member}
+            )
         return alternatives
 
     @staticmethod
@@ -405,6 +408,12 @@ class Interface:
     has_attributes: bool = field(default=False)
     has_operations: bool = field(default=False)
 
+    def __post_init__(self):
+        # also for interfaces rebuilt later, e.g. filtered by version
+        self.has_constants = len(self.constants) > 0
+        self.has_attributes = len(self.attributes) > 0
+        self.has_operations = len(self.operations) > 0
+
     def populate_references(self, visitor: TypeVisitor):
         if self.inheritance:
             visitor.on_type_name(self.inheritance)
@@ -483,9 +492,18 @@ class MergedDefinitions:
             visitor = TypeVisitor(known_names, types)
             interface.populate_references(visitor)
             modules_or_includes.update(visitor.modules_or_includes)
-            if name in visitor.local_references:
-                visitor.local_references.remove(name)
-            dependency_tree[name] = visitor.local_references
+
+            dependencies = TypeVisitor(known_names, types)
+            if interface.inheritance:
+                dependencies.on_type_name(interface.inheritance)
+            for item in [*interface.constants, *interface.attributes]:
+                item.populate_references(dependencies)
+
+            dependency_tree[name] = {
+                ref
+                for ref in dependencies.local_references
+                if ref in self.interfaces and ref != name
+            }
 
         order = list[str]()
         while dependency_tree:
@@ -494,12 +512,15 @@ class MergedDefinitions:
                 for name in sorted(dependency_tree.keys())
                 if not dependency_tree[name]
             ]
-            order.extend(layer)
 
             if not layer:
+                # a dependency cycle: break it by taking one of the remaining
+                # interfaces anyway (C++ templates can forward-declare it)
                 for key in dependency_tree:
                     layer.append(key)
                     break
+
+            order.extend(layer)
 
             for key in layer:
                 del dependency_tree[key]

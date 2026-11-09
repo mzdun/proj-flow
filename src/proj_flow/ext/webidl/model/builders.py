@@ -92,8 +92,10 @@ def _single_extended_attribute(name: str, attributes: ExtAttrMap):
 def visit_flag_extended_attribute(
     name: str, bag: dict[str, Any], attributes: ExtAttrMap
 ):
-    if _single_extended_attribute(name, attributes):
-        bag[name] = True
+    # Always present, false if absent: a missing key would make Mustache
+    # look the name up in outer contexts (e.g. an argument's `ext_attrs.in`
+    # found in its operation's `ext_attrs`).
+    bag[name] = _single_extended_attribute(name, attributes) is not None
 
 
 def visit_string_extended_attribute(
@@ -355,8 +357,8 @@ class ExtAttrsContextBuilders:
                 value = parent[key]
                 del parent[key]
                 if isinstance(value, bool):
-                    val = cast(bool | None, type.get(key))
-                    type[key] = val if val is not None else value
+                    # flags are always present, so either one being set wins
+                    type[key] = bool(type.get(key)) or value
                     continue
 
                 if isinstance(value, str):
