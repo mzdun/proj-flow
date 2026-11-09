@@ -9,6 +9,28 @@ from typing import Any, TypeVar, cast
 from pywebidl2 import expr, parser, raw_parse, validate
 
 from proj_flow.ext.webidl.base.config import ExtAttrsContextBuilders, TypeReplacement
+from proj_flow.ext.webidl.model.builders import ExtAttrError
+
+
+SELECTOR = "selector"
+"""`([selector="ctx.type == x"] A or ...)`: the condition choosing a union
+member; kept in the member type's `ext_attrs`, and required for every member of
+a union-typed attribute."""
+
+
+def _selector_of(ast: expr.IdlType) -> str | None:
+    selectors = [attr for attr in ast.ext_attrs if attr.name == SELECTOR]
+    if not selectors:
+        return None
+    if len(selectors) > 1:
+        raise ExtAttrError(f"`{SELECTOR}' can only be used once")
+    rhs = selectors[0].rhs
+    if rhs is None or isinstance(rhs, expr.LiteralList):
+        raise ExtAttrError(f'`{SELECTOR}\' takes a single value: `[{SELECTOR}="..."]\'')
+    value = cast(str, rhs.value)
+    if value.startswith('"') and value.endswith('"') and len(value) > 1:
+        value = value[1:-1]
+    return value
 
 
 def _flatten_union(ast: expr.IdlType) -> expr.IdlType:
@@ -18,6 +40,8 @@ def _flatten_union(ast: expr.IdlType) -> expr.IdlType:
         if not argument.union:
             result.append(argument)
             continue
+        # no `[selector]` on a nested union: WebIDL allows no extended
+        # attributes there, so it is already a syntax error
         argument = _flatten_union(argument)
         if argument.nullable:
             result.append(argument)
@@ -96,8 +120,34 @@ class Type:
                 del self.ext_attrs[attr]
         return self
 
+    def __wrapped(self, builders: ExtAttrsContextBuilders) -> "Type":
+        """`[name] T` (with `name` a `generic-wrapper`) becomes `name<T>`; the
+        nullable flag stays with T, so `[name] T?` is `name<T?>`."""
+
+        result = self
+        for wrapper in reversed(builders.generic_wrappers):
+            if not self.ext_attrs.pop(wrapper, False):
+                continue
+            result = Type(
+                idl_name=wrapper,
+                arguments=[TypeArg(result, True)],
+                generic=True,
+            )
+        return result
+
     @staticmethod
     def from_idl(
+        ast: expr.IdlType,
+        builders: ExtAttrsContextBuilders,
+        parent_ast_attrs: list[expr.ExtendedAttribute],
+    ) -> "Type | expr.IdlType":
+        result = Type.__from_idl(ast, builders, parent_ast_attrs)
+        if isinstance(result, Type):
+            result = result.__wrapped(builders)
+        return result
+
+    @staticmethod
+    def __from_idl(
         ast: expr.IdlType,
         builders: ExtAttrsContextBuilders,
         parent_ast_attrs: list[expr.ExtendedAttribute],
@@ -112,7 +162,13 @@ class Type:
         if ast.union:
             ast = _flatten_union(ast)
             args = cast(list[expr.IdlType], ast.idl_type)
-            arguments = [TypeArg(Type.from_idl(arg, builders, [])) for arg in args]
+            arguments: list[TypeArg] = []
+            for arg in args:
+                member = Type.from_idl(arg, builders, [])
+                selector = _selector_of(arg)
+                if selector is not None and isinstance(member, Type):
+                    member.ext_attrs[SELECTOR] = selector
+                arguments.append(TypeArg(member))
             if arguments:
                 arguments[0].first = True
             return Type(
@@ -176,9 +232,36 @@ class Attribute:
             self.type.populate_references(visitor)
 
     @staticmethod
+    def __union_alternatives(name: str, type: "Type | expr.IdlType"):
+        """For an attribute of a union type, `(A or B)` or `(A or B)?`, the
+        alternatives as `{alt_name, selector, type}`: `alt_name` is the IDL
+        name of the alternative (`tiles_config`), `type` its full type (for
+        `{{> pkg-cxx:type}}`) and `selector` its `[selector="..."]`, which
+        is required here."""
+
+        if not isinstance(type, Type) or not type.generic or type.idl_name != "union":
+            return None
+
+        alternatives: list[dict[str, Any]] = []
+        for arg in type.arguments:
+            member = arg.arg_type
+            alt_name = member.idl_name if isinstance(member, Type) else str(member)
+            selector = member.ext_attrs.get(SELECTOR) if isinstance(member, Type) else None
+            if selector is None:
+                raise ExtAttrError(
+                    f"`{name}': union alternative `{alt_name}' needs "
+                    f'`[{SELECTOR}="..."]\''
+                )
+            alternatives.append({"alt_name": alt_name, "selector": selector, "type": member})
+        return alternatives
+
+    @staticmethod
     def from_idl(ast: expr.Attribute, builders: ExtAttrsContextBuilders):
         ext_attrs = builders.from_idl(lambda b: b.attribute, ast.ext_attrs)
         type = Type.from_idl(ast.idl_type, builders, ast.ext_attrs)
+        alternatives = Attribute.__union_alternatives(ast.name, type)
+        ext_attrs["is_union"] = alternatives is not None
+        ext_attrs["union"] = alternatives or []
         return Attribute(
             name=ast.name,
             type=type,
@@ -578,7 +661,10 @@ class Definitions:
                 continue
 
             ast = cast(expr.Definitions, raw_parse(text))
-            definitions = Definitions.from_idl(ast, builders)
+            try:
+                definitions = Definitions.from_idl(ast, builders)
+            except ExtAttrError as e:
+                raise ExtAttrError(f"{name}: error: {e}") from e
             partials.append(definitions)
 
         if syntax_errors:

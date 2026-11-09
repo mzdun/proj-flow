@@ -2,29 +2,32 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 from __future__ import annotations
+
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from pprint import pprint
-import sys
+
 from pywebidl2 import expr
 
-from proj_flow.ext.webidl.registry import webidl_visitors
 from proj_flow.ext.webidl.base.config import TemplateRule
 from proj_flow.ext.webidl.model.ast import (
     Argument,
+    Attribute,
     Constant,
     Definitions,
     EnumInfo,
     Interface,
-    Attribute,
     MergedDefinitions,
     Operation,
     Type,
 )
 from proj_flow.ext.webidl.model.builders import (
+    ExtAttrError,
     ExtAttrsContextBuilders,
     VersionAttribute,
 )
+from proj_flow.ext.webidl.registry import webidl_visitors
 
 
 @dataclass
@@ -185,6 +188,9 @@ def load_unversioned_idl(rule: TemplateRule, ext_attrs: ExtAttrsContextBuilders)
     except FileNotFoundError as e:
         p = Path(e.filename)
         print(f"{e.strerror}: {p.as_posix()}")
+        sys.exit(1)
+    except ExtAttrError as e:
+        print(e)
         sys.exit(1)
     if isinstance(idl, list):
         for error in idl:
