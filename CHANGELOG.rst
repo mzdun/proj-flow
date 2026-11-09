@@ -4,6 +4,19 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.33.0 <https://github.com/mzdun/proj-flow/compare/v0.32.0...v0.33.0>`_ (2026-11-09)
+=====================================================================================
+
+New Features
+------------
+
+- add support for (`0253735 <https://github.com/mzdun/proj-flow/commit/0253735ae0df3d0e2bc95a05e31db044f2213d20>`_)
+
+Bug Fixes
+---------
+
+- break dependency cycle in WebIDLs (`508cbdd <https://github.com/mzdun/proj-flow/commit/508cbdd139ed95517f4a1de83c6d186e09eba887>`_)
+
 `0.32.0 <https://github.com/mzdun/proj-flow/compare/v0.31.1...v0.32.0>`_ (2026-07-02)
 =====================================================================================
 
