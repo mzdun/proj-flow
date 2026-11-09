@@ -46,12 +46,10 @@ class ConanConfig:
             os.makedirs(CONAN_DIR, exist_ok=True)
             with open(profile_gen, "w", encoding="UTF-8") as profile:
                 print(
-                    textwrap.dedent(
-                        f"""\
+                    textwrap.dedent(f"""\
                         include({CONAN_PROFILE})
 
-                        [settings]"""
-                    ),
+                        [settings]"""),
                     file=profile,
                 )
 

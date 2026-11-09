@@ -6,7 +6,6 @@ The **proj_flow.ext.github.publishing** provides utilities for ``github
 publish`` command.
 """
 
-
 import hashlib
 import io
 import os
