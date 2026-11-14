@@ -265,7 +265,8 @@ an empty object, or ``{}``).
 ``when``
     If present, names a mustache context, which must be true-ish in order for
     any file to be copied over. If this property is missing, the layer is always
-    added to the project.
+    added to the project. Name prefixed with ``^`` must be false-ish instead,
+    just like an inverted section in mustache.
 ``filelist``
     If present, it is an object allowing special treatment of files in the
     layer. Any file not mentioned here will be treated as if both their ``when``
@@ -274,7 +275,9 @@ an empty object, or ``{}``).
 ``filelist.<in-layer-path>.when``
     If present, names a mustache context, which must be true-ish in order for
     *this file* to be copied over. If this property is missing, the file is
-    added as if naming an always-true context.
+    added as if naming an always-true context. Can also be a list of such
+    names, in which case all of them must hold, e.g.
+    ``["with.libs", "^with.conan"]``.
 ``filelist.<in-layer-path>.path``
     If present, names a mustache expression, which will be used for destination
     filename. If this property is missing, the source filename is used, with
