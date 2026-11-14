@@ -1,0 +1,35 @@
+# Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+# This file is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+set(SRCS
+  {{SRCDIR}}/main{{EXT.cxx}}
+)
+
+{{cmake.cmd}}(${PROJECT_NAME}{{cmake.type}} ${SRCS})
+
+add_win32_icon(${PROJECT_NAME} "appicon.ico")
+target_compile_options(${PROJECT_NAME} PRIVATE {{${}}{{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS})
+target_link_options(${PROJECT_NAME} PUBLIC {{${}}{{NAME_PREFIX}}_ADDITIONAL_LINK_FLAGS})
+{{#cmake.win32}}
+if (MSVC)
+  # standard `main` in a WIN32 executable
+  target_link_options(${PROJECT_NAME} PRIVATE /ENTRY:mainCRTStartup)
+endif()
+{{/cmake.win32}}
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}/src
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE {{LIB_NAME}})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+)
+
+##################################################################
+##  INSTALL
+##################################################################
+
+if ({{NAME_PREFIX}}_INSTALL)
+  install(TARGETS ${PROJECT_NAME})
+endif()

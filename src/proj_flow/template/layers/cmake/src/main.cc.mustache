@@ -1,6 +1,14 @@
 // Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
 // This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
 
+{{#with.libs}}
+#include <{{INCLUDE_PREFIX}}/helper{{EXT.hxx}}>
+
+int main(int argc, char* argv[]) {
+	return {{NAMESPACE}}::helper(argc, argv);
+}
+{{/with.libs}}
+{{^with.libs}}
 {{#with.conan}}
 #include <args/parser.hpp>
 {{/with.conan}}
@@ -38,3 +46,4 @@ int main() {
 	std::println("Hello, world!");
 }
 {{/with.conan}}
+{{/with.libs}}
