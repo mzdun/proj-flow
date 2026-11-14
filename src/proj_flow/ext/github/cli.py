@@ -67,6 +67,21 @@ def matrix(
         json.dump(usable, sys.stdout)
 
 
+def _check_default_branch(rt: env.Runtime, git: commit.Git):
+    branch = git.current_branch()
+    if not branch and "GITHUB_ACTIONS" in os.environ:
+        # Detached HEAD in a workflow; for pull_request events the target
+        # branch is in GITHUB_BASE_REF, otherwise the ref is in GITHUB_REF_NAME
+        branch = os.environ.get("GITHUB_BASE_REF") or os.environ.get(
+            "GITHUB_REF_NAME", ""
+        )
+
+    expected = rt.default_branch
+    if branch != expected:
+        current = f"`{branch}`" if branch else "a detached HEAD"
+        rt.fatal(f"Releases are made from `{expected}`, currently on {current}.")
+
+
 @arg.command("github", "release")
 def release_cmd(
     rt: env.Runtime,
@@ -115,12 +130,54 @@ def release_cmd(
             default=lambda: list(),
         ),
     ],
+    retract: typing.Annotated[
+        bool,
+        arg.FlagArgument(
+            help="Instead of releasing, undo the release, whose \"chore\" commit "
+            "is at HEAD: remove the GitHub release, delete the tag locally and "
+            "remotely, reset the branch to HEAD~ and push it with lease."
+        ),
+    ],
+    force_retract: typing.Annotated[
+        bool,
+        arg.FlagArgument(
+            help="With --retract, remove the GitHub release even if it is no "
+            "longer a draft.",
+            names=["--force-retract"],
+        ),
+    ],
 ):
     """
     Bump the project version based on current git logs, create a "chore"
     commit for the change, attach an annotated tag with the version number
     and push it all to GitHub.
     """
+
+    git = commit.Git(rt)
+    _check_default_branch(rt, git)
+
+    if force_retract and not retract:
+        rt.fatal("--force-retract can only be used with --retract.")
+
+    if retract:
+        gh = hosting.github.GitHub.from_repo(git)
+        if gh is None:
+            rt.message(
+                "No GitHub repository found among git remotes, retracting locally",
+                level=env.Msg.STATUS,
+            )
+        try:
+            tag = log.release.retract_release(
+                rt=rt,
+                git=git,
+                hosting=gh or commit.NoHosting(),
+                remote=gh.remote if gh else None,
+                force=force_retract,
+            )
+        except log.error.ReleaseError as err:
+            rt.fatal(err.message)
+        rt.message(f"Retracted {tag}", level=env.Msg.ALWAYS)
+        return
 
     with_types = [
         with_type for type_group in (with_types or []) for with_type in type_group
@@ -131,9 +188,7 @@ def release_cmd(
         or rich_text.markdown.ChangelogGenerator()
     )
     forced_level = commit.FORCED_LEVEL.get(force) if force else None
-    git = commit.Git(rt)
     gh_links = hosting.github.GitHub.from_repo(git) or commit.NoHosting()
-    released = False
 
     released = False
     next_tag = ""

@@ -12,7 +12,7 @@ from proj_flow import api
 from proj_flow.api import env
 from proj_flow.base import registry
 from proj_flow.log import commit, fmt, rich_text
-from proj_flow.log.error import NoProjectError, VersionNotAdvancing
+from proj_flow.log.error import NoProjectError, ReleaseError, VersionNotAdvancing
 
 OneOrMoreStrings = Union[str, Iterable[str]]
 
@@ -150,3 +150,64 @@ def add_release(
             rt.message(msg, info.url, level=env.Msg.ALWAYS)
 
     return setup.curr_tag
+
+
+RELEASE_SUBJECT_PREFIX = "chore: release "
+
+
+def retract_release(
+    rt: env.Runtime,
+    git: commit.Git,
+    hosting: commit.Hosting,
+    remote: typing.Optional[str],
+    force: bool = False,
+):
+    """
+    Undoes the most recent :func:`add_release`, provided its "chore" commit is
+    still at HEAD: removes the release from hosting, deletes the version tag
+    both locally and on the ``remote``, resets the branch to ``HEAD~`` and
+    pushes it with lease. Without a ``remote``, only the local tag and commit
+    are retracted. A release, which is no longer a draft, is only removed, if
+    ``force`` is set.
+    """
+
+    head, subject = git.head_commit()
+    if not subject.startswith(RELEASE_SUBJECT_PREFIX):
+        raise ReleaseError(
+            f"HEAD is not a release commit: {subject!r}" if head else "No HEAD commit."
+        )
+
+    version = subject[len(RELEASE_SUBJECT_PREFIX) :].strip()
+    tag = f"v{version}"
+    if tag not in git.tags_at(head):
+        raise ReleaseError(f"Tag {tag} does not point at HEAD ({head[:8]}).")
+
+    branch = git.current_branch()
+    if remote and not branch:
+        raise ReleaseError("Cannot push retraction from a detached HEAD.")
+
+    info = hosting.locate_release(tag)
+    if info is not None and not info.is_draft and not force:
+        raise ReleaseError(
+            f"Release {tag} is already published; use --force-retract to retract it anyway."
+        )
+
+    if info is None:
+        if hosting.is_active:
+            rt.message(
+                f"No release named {tag} found, skipping", level=env.Msg.STATUS
+            )
+    else:
+        kind = "draft" if info.is_draft else "published release"
+        rt.message(f"Removing {kind} {tag}", level=env.Msg.STATUS)
+        if not hosting.delete_release(info):
+            raise ReleaseError(f"Could not remove release {tag}.")
+
+    if remote:
+        git.delete_remote_tag(remote, tag)
+    git.delete_tag(tag)
+    git.reset_keep("HEAD~")
+    if remote:
+        git.push_with_lease(remote, branch, head)
+
+    return tag
