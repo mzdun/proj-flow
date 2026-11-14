@@ -14,7 +14,7 @@
 - [ ] Tests
 - [ ] `proj-flow init <lang> --update`
 - [ ] C++
-  - [ ] Update package dependencies in Conan / default to CMake 4+
+  - [x] Update package dependencies in Conan / default to CMake 4+
   - [ ] Allow for `libs/` vs `src/`/`include/`
   - [x] `.github/ISSUE_TEMPLATE` to YAML
   - [x] Fix Conan cache directory
