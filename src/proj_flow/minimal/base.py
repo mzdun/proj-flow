@@ -39,7 +39,8 @@ class GitInit(api.init.InitStep):
         if len(executables):
             git("update-index", "--chmod=+x", *executables)
 
-        git("commit", "-m", "Initial commit")
+        git("commit", "-m", "chore: initial commit")
+        git("tag", "v0.0.0")
 
 
 api.init.register_init_step(GitInit())
