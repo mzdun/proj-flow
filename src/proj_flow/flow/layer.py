@@ -9,12 +9,37 @@ import json
 import os
 import shutil
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import List, Optional, Union, cast
 
 import chevron
 
 from proj_flow.api import ctx, env
 from proj_flow.base import path_get
+
+When = Union[str, List[str], None]
+
+
+def _when_conditions(when: When) -> List[str]:
+    if not when:
+        return []
+    if isinstance(when, str):
+        return [when]
+    return when
+
+
+def _wrap_in_conditions(text: str, when: When) -> str:
+    """
+    Wraps ``text`` in mustache sections, one for each condition in ``when``.
+    All conditions must hold. A condition starting with ``^`` is negated,
+    just like an inverted section in mustache.
+    """
+    for condition in reversed(_when_conditions(when)):
+        kind = "#"
+        if condition.startswith("^"):
+            kind = "^"
+            condition = condition[1:]
+        text = f"{{{{{kind}{condition}}}}}\n{text}{{{{/{condition}}}}}\n"
+    return text
 
 
 @dataclass
@@ -23,7 +48,7 @@ class FileInfo:
     dst: str
     is_mustache: bool
     is_executable: bool
-    when: Optional[str] = None
+    when: When = None
 
     @classmethod
     def from_json(cls, src: str, filelist: dict, context: ctx.SettingsType):
@@ -32,7 +57,7 @@ class FileInfo:
         key = src.replace(os.sep, "/")
         json_file = cast(dict, filelist.get(key, {}))
         path = cast(Optional[str], json_file.get("path"))
-        when = cast(Optional[str], json_file.get("when"))
+        when = cast(When, json_file.get("when"))
         is_executable = cast(bool, json_file.get("executable"))
         dst = (
             chevron.render(path, context).replace("/", os.sep)
@@ -48,11 +73,7 @@ class FileInfo:
         )
 
     def template(self):
-        open_mstch = "{{"
-        close_mstch = "}}"
-        if self.when:
-            return f"{open_mstch}#{self.when}{close_mstch}\n{self.src}\n{open_mstch}/{self.when}{close_mstch}\n"
-        return f"{self.src}\n"
+        return _wrap_in_conditions(f"{self.src}\n", self.when)
 
     def run(self, root: str, rt: env.Runtime, context: ctx.SettingsType):
         if not rt.silent:
@@ -140,15 +161,9 @@ class LayerInfo:
         )
 
     def template(self):
-        open_mstch = "{{"
-        close_mstch = "}}"
-        result = ""
-        if self.when:
-            result += f"{open_mstch}#{self.when}{close_mstch}\n"
-        result += "".join(file.template() for file in self.files)
-        if self.when:
-            result += f"{open_mstch}/{self.when}{close_mstch}\n"
-        return result
+        return _wrap_in_conditions(
+            "".join(file.template() for file in self.files), self.when
+        )
 
     def run(self, rt: env.Runtime, context: ctx.SettingsType):
         if not rt.silent:
