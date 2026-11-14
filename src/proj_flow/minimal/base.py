@@ -16,13 +16,13 @@ from proj_flow.flow import layer
 class GitInit(api.init.InitStep):
     layers: List[layer.LayerInfo] = []
 
-    def priority(self):
+    def priority(self) -> int:
         return sys.maxsize
 
     def platform_dependencies(self):
         return ["git"]
 
-    def postprocess(self, rt: api.env.Runtime, context: dict):
+    def postprocess(self, rt: api.env.Runtime, context: dict) -> None:
         def git(*args):
             rt.cmd("git", *args)
 

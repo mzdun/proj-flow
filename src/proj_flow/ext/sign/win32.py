@@ -24,14 +24,14 @@ if sys.platform == "win32":
 
     @signing_tool.add
     class Win32SigningTool(SigningTool):
-        def is_active(self, config: Config, rt: Runtime):
+        def is_active(self, config: Config, rt: Runtime) -> bool:
             return _is_active(config.os, rt)
 
-        def sign(self, config: Config, rt: Runtime, files: List[str]):
+        def sign(self, config: Config, rt: Runtime, files: List[str]) -> int:
             rt.print("signtool", *(os.path.basename(file) for file in files))
             return _sign(files, rt)
 
-        def is_signable(self, filename: str, as_package: bool):
+        def is_signable(self, filename: str, as_package: bool) -> bool:
             if as_package:
                 _, ext = os.path.splitext(filename)
                 if ext.lower() == ".msi":

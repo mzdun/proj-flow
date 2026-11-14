@@ -39,7 +39,7 @@ class ChangelogMessage:
     def nothing_to_report(self, lines: List[str]):
         lines.extend(["*Nothing to report.*", ""])
 
-    def outro_lines(self, _: List[str]) -> None:
+    def outro_lines(self, lines: List[str]) -> None:
         pass
 
     def post_process(self, lines: List[str]):

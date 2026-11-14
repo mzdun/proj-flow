@@ -37,7 +37,7 @@ class FileUpdate(api.FileUpdate):
     def summary(self, text: str) -> str:
         return text.replace("`", "``")
 
-    def outro_lines(self, _: List[str]) -> None:
+    def outro_lines(self, lines: List[str]) -> None:
         pass
 
     def short_hash_link(self, link: commit.Link):
@@ -49,11 +49,11 @@ class FileUpdate(api.FileUpdate):
 
 class ChangelogGenerator(api.ChangelogGenerator):
     @property
-    def ext(self):
+    def ext(self) -> str:
         return ".rst"
 
     @property
-    def split_re(self):
+    def split_re(self) -> str:
         return r"\n`[0-9]+\.[0-9]+[^>]+\>`\_ \([^)]+\)\n==+\n"
 
     @property

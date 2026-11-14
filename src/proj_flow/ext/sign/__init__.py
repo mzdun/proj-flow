@@ -141,7 +141,7 @@ class SignMsi(SignBase):
 
 
 class SignInit(init.InitStep):
-    def postprocess(self, rt: env.Runtime, context: dict):
+    def postprocess(self, rt: env.Runtime, context: dict) -> None:
         with open(".gitignore", "ab") as ignoref:
             ignoref.write("\n/signature.key\n".encode("UTF-8"))
 

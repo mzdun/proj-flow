@@ -262,7 +262,7 @@ class Hosting(ABC):
         release: ReleaseInfo,
         directory: str,
         names: list[str],
-    ):
+    ) -> None:
         """
         Upload package artifacts to the release.
         """

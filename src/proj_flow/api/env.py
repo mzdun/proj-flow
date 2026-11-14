@@ -416,7 +416,7 @@ class Runtime(FlowConfig):
                 *args, use_color=self.use_color, secrets=self.secrets, raw=raw
             )
 
-    def cmd(self, *args: str):
+    def cmd(self, *args: str) -> int:
         self.print(*args)
         if self.dry_run:
             return 0
@@ -435,7 +435,7 @@ class Runtime(FlowConfig):
             self.print(*args)
         return subprocess.run(args, shell=False, encoding="UTF-8", capture_output=True)
 
-    def mkdirs(self, dirname: str):
+    def mkdirs(self, dirname: str) -> int:
         self.print("mkdir", "-p", dirname)
 
         if self.dry_run:

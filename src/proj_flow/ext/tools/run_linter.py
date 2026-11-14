@@ -85,7 +85,7 @@ def run_linter(
         ),
     ],
     rt: Runtime,
-):
+) -> int:
     """Run dockerized super-linter with all the settings from local GitHub workflows"""
 
     WORKFLOWS = Path(".github/workflows")

@@ -206,9 +206,9 @@ class GitHub(commit.Hosting):
         release: commit.ReleaseInfo,
         directory: str,
         names: list[str],
-    ):
+    ) -> None:
         with cmd.cd(directory):
-            return self._run(
+            self._run(
                 "gh",
                 "release",
                 "upload",

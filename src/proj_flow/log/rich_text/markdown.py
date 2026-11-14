@@ -23,7 +23,7 @@ class FileUpdate(api.FileUpdate):
             return [f"## [{version}]({compare}) ({self.commit_date})", ""]
         return [f"## {version} ({self.commit_date})", ""]
 
-    def outro_lines(self, _: List[str]) -> None:
+    def outro_lines(self, lines: List[str]) -> None:
         pass
 
     def issue_link(self, ref: str):
@@ -35,11 +35,11 @@ class FileUpdate(api.FileUpdate):
 
 class ChangelogGenerator(api.ChangelogGenerator):
     @property
-    def ext(self):
+    def ext(self) -> str:
         return ".md"
 
     @property
-    def split_re(self):
+    def split_re(self) -> str:
         return r"\n## "
 
     @property

@@ -23,7 +23,7 @@ class RTDocs:
     """Runs the jobs defined by ``.readthedocs.yaml`` to build the docs"""
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "RTD"
 
     def platform_dependencies(self):
@@ -215,7 +215,7 @@ def _get_venv_path(root: str):
     return None
 
 
-def _activate_virtual_env(venv, root: str):
+def _activate_virtual_env(venv, root: str) -> int:
     global PYTHON_EXECUTABLE
 
     with cmd.cd(root):

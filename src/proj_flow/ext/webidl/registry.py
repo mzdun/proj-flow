@@ -11,13 +11,13 @@ from proj_flow.ext.webidl.model.ast import MergedDefinitions
 
 
 class WebIDLVisitor(ABC):
-    def on_definitions(self, definitions: MergedDefinitions): ...
+    def on_definitions(self, definitions: MergedDefinitions) -> None: ...
 
 
 class WebIDLCustomExtAttr(ABC):
     def on_attribute(
         self, name: str, ext_attrs: expr.ExtendedAttribute, result: dict[str, Any]
-    ): ...
+    ) -> None: ...
 
 
 webidl_visitors = Registry[WebIDLVisitor]("WebIDLVisitor")

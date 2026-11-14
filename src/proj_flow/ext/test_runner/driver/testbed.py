@@ -88,7 +88,7 @@ def run_and_report_tests(
     rt: env.Runtime,
     ctrf: str | None,
     report_name: str | None,
-):
+) -> int:
     counters = Counters(env.target_name, env.source_dir())
 
     if independent_tests:
