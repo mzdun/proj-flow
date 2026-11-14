@@ -243,6 +243,7 @@ defaults: List[Setting] = [
 ]
 
 hidden: List[Setting] = [
+    Setting("FLOW_PACKAGE", fix="{PROJECT.NAME$safe$lower}"),
     Setting("EXT.cxx", fix="{EXT}", project="cxx"),
     Setting("EXT.hxx", fix="{EXT.cxx$header}", project="cxx"),
 ]

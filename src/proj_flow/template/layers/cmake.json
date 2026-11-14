@@ -10,6 +10,15 @@
         },
         "src/version.hpp.in.mustache": {
             "path": "{{SRCDIR}}/version{{EXT.hxx}}.in"
+        },
+        ".flow/extensions/project/__init__.py.mustache": {
+            "path": ".flow/extensions/{{FLOW_PACKAGE}}/__init__.py"
+        },
+        ".flow/extensions/project/icons/__init__.py.mustache": {
+            "path": ".flow/extensions/{{FLOW_PACKAGE}}/icons/__init__.py"
+        },
+        ".flow/extensions/project/icons/magick.py.mustache": {
+            "path": ".flow/extensions/{{FLOW_PACKAGE}}/icons/magick.py"
         }
     }
 }
