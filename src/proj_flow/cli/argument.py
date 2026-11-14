@@ -8,6 +8,10 @@ supporting the functions decorated with :func:`@arg.command()
 """
 
 import argparse
+import dis
+import shutil
+import sys
+import textwrap
 import typing
 from dataclasses import dataclass, field
 
@@ -237,6 +241,9 @@ class Command:
 
             return subcommand.run(args, rt, level=level + 1)
 
+        if len(self.children) and _has_empty_body(self.entry):
+            return self.needs_subcommand()
+
         kwargs = {}
         for arg in self.annotated:
             kwargs[arg.name] = getattr(args, arg.name, None)
@@ -247,6 +254,65 @@ class Command:
 
         result = self.entry(**kwargs)
         return 0 if result is None else result
+
+    @property
+    def full_name(self) -> str:
+        names: typing.List[str] = []
+        current: typing.Optional[Command] = self
+        while current is not None:
+            if current.name:
+                names.append(current.name)
+            current = current.parent
+        return " ".join(reversed(names))
+
+    def needs_subcommand(self) -> int:
+        """
+        Report that this command cannot be called on its own, list the known
+        subcommands with the first paragraph of their docs and return 1.
+        """
+
+        print(
+            f"{self.full_name} needs a subcommand; known subcommands are:",
+            file=sys.stderr,
+        )
+        children = sorted(self.children, key=lambda child: child.name)
+        name_width = max(len(child.name) for child in children)
+        indent = " " * (name_width + 4)
+        columns = max(shutil.get_terminal_size().columns - 1, len(indent) + 20)
+        for child in children:
+            summary = child.doc.split("\n\n")[0]
+            line = textwrap.fill(
+                f"  {child.name:<{name_width}}  {summary}",
+                width=columns,
+                subsequent_indent=indent,
+            )
+            print(line, file=sys.stderr)
+        return 1
+
+
+def _instructions(function: typing.Callable) -> typing.List[typing.Tuple[str, object]]:
+    # argval instead of raw bytes: an empty function with a docstring keeps
+    # None at a different co_consts index than one without
+    return [(instr.opname, instr.argval) for instr in dis.get_instructions(function)]
+
+
+def _empty_body():
+    pass
+
+
+_EMPTY_BODY = _instructions(_empty_body)
+
+
+def _has_empty_body(function: typing.Callable) -> bool:
+    """
+    Tells, if the function body is nothing more than docstring, ``pass`` or
+    ``...``, by comparing its bytecode with a reference function compiled by
+    the same interpreter.
+    """
+    try:
+        return _instructions(function) == _EMPTY_BODY
+    except TypeError:
+        return False
 
 
 T = typing.TypeVar("T")
@@ -296,7 +362,7 @@ def _argparse_visit_all(
 def _build_menu(cmd: arg._Command, parent: typing.Optional[Command]):
     name = cmd.name
     doc = cmd.doc or ""
-    entry = cmd.entry or (lambda: 0)
+    entry = cmd.entry or _empty_body
 
     args = _extract_args(entry)
     additional = [entry for entry in args if isinstance(entry, AdditionalArgument)]
