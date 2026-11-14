@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.34.0 <https://github.com/mzdun/proj-flow/compare/v0.33.0...v0.34.0>`_ (2026-11-14)
+=====================================================================================
+
+New Features
+------------
+
+- retract latest release (`8052f1b <https://github.com/mzdun/proj-flow/commit/8052f1bf9f63a53f70ba18553776a7029741b076>`_)
+
 `0.33.0 <https://github.com/mzdun/proj-flow/compare/v0.32.0...v0.33.0>`_ (2026-11-09)
 =====================================================================================
 
