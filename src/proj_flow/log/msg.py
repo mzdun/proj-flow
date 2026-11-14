@@ -211,8 +211,6 @@ class ReleaseMessage(ChangelogMessage):
 def _find_breaking_notes(links: List[commit.Link]) -> List[str]:
     breaking: List[str] = []
     for link in links:
-        if link.breaking_message is None:
-            continue
         for para in link.breaking_message:
             text = re.sub(r"\s+", " ", para.strip())
             if text != "":

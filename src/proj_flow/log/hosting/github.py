@@ -83,7 +83,7 @@ class GitHub(commit.Hosting):
 
     def reference_link(self, ref: str) -> Optional[str]:
         if ref[:1] == "#" and ref[1:].isdigit():
-            f"{self.host_link}/issues/{ref[1:]}"
+            return f"{self.host_link}/issues/{ref[1:]}"
 
         return None
 
@@ -128,11 +128,10 @@ class GitHub(commit.Hosting):
         res: str,
         *args: str,
         method: Optional[str] = None,
-        server: Optional[str] = None,
         default: Any = {},
         ro_call: bool = False,
     ):
-        proc = self.gh(res, *args, method=method, server=server, ro_call=ro_call)
+        proc = self.gh(res, *args, method=method, ro_call=ro_call)
         if proc is None:
             return default
 
