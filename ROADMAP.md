@@ -17,7 +17,7 @@
   - [ ] Update package dependencies in Conan / default to CMake 4+
   - [ ] Allow for `libs/` vs `src/`/`include/`
   - [ ] `.github/ISSUE_TEMPLATE` to YAML
-  - [ ] Fix Conan cache directory
+  - [x] Fix Conan cache directory
   - [ ] Overall refresh the template
   - [x] Icons extension uses "wall" as package name
   - [x] `find_package(GTest REQUIRED)` duplicated
