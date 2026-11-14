@@ -11,13 +11,13 @@ from proj_flow.api.env import Runtime
 
 
 class InitStep:
-    def priority(self):
+    def priority(self) -> int:
         return 100
 
     def platform_dependencies(self) -> List[str]:
         return []
 
-    def postprocess(self, rt: Runtime, context: dict):
+    def postprocess(self, rt: Runtime, context: dict) -> None:
         pass
 
 

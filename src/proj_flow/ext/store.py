@@ -30,7 +30,7 @@ class StorePackages(step.Step):
     """Stores archives and installers build for ``preset`` config value."""
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "StorePackages"
 
     @property
@@ -85,7 +85,7 @@ class StoreTests(step.Step):
     """Stores test results gathered during tests for ``preset`` config value."""
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "StoreTests"
 
     @property
@@ -103,7 +103,7 @@ class StoreBoth(step.SerialStep):
     """Stores all artifacts created for ``preset`` config value."""
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "Store"
 
     def __init__(self):

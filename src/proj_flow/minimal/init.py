@@ -83,7 +83,7 @@ def main(
         arg.FlagArgument(help="Save the mustache context as YAML.", names=["--ctx"]),
     ],
     rt: env.Runtime,
-):
+) -> int:
     """Initialize new project"""
 
     api.load_common_init_setting_extensions()

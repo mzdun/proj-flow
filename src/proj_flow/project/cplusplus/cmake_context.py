@@ -33,7 +33,7 @@ cmake:
 
 
 class CMakeInit(api.init.InitStep):
-    def postprocess(self, rt: api.env.Runtime, context: dict):
+    def postprocess(self, rt: api.env.Runtime, context: dict) -> None:
         patch = chevron.render(config_json_mustache, context).rstrip()
         if not patch:
             return

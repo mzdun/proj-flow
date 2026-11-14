@@ -61,7 +61,7 @@ class Project:
         return f"{self.archive_name}-"
 
     @property
-    def package_suffix(self):
+    def package_suffix(self) -> str:
         return ""
 
 

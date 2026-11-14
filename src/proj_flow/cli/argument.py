@@ -44,8 +44,15 @@ class Parser(argparse.ArgumentParser):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def add_subparsers(self, **kwargs) -> Subparsers:
-        return typing.cast(Subparsers, super().add_subparsers(**kwargs))
+    def add_command_subparsers(self, **kwargs) -> Subparsers:
+        """
+        Add the subparsers for the commands, typed so they create
+        :class:`Parser` instances and can point back to their parent.
+
+        :param kwargs: arguments passed to
+            :meth:`argparse.ArgumentParser.add_subparsers`
+        """
+        return typing.cast(Subparsers, self.add_subparsers(**kwargs))
 
     def find_and_run_command(self, args: argparse.Namespace):
         commands = {entry.name for entry in self.menu}
@@ -211,12 +218,12 @@ class Command:
             annotated.argparse_visit(parser)
 
         if len(self.children):
-            subparsers = parser.add_subparsers(
+            subparsers = parser.add_command_subparsers(
                 dest=f"command_{level}",
                 metavar="command",
                 help="Known command name, see below",
             )
-            subparsers.parent = parser  # type: ignore
+            subparsers.parent = parser
 
             for entry in self.children:
                 entry.argparse_visit(subparsers, level=level + 1)
@@ -336,7 +343,7 @@ def _argparse_visit_all(
     parser.flow = cfg
     parser.shortcuts = shortcut_configs
 
-    subparsers = parser.add_subparsers(
+    subparsers = parser.add_command_subparsers(
         dest="command", metavar="command", help="Known command name, see below"
     )
 
