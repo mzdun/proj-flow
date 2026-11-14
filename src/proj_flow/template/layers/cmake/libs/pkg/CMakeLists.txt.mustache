@@ -1,0 +1,70 @@
+# Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+# This file is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+configure_file({{SRCDIR}}/version{{EXT.hxx}}.in {{INCLUDEDIR}}/version{{EXT.hxx}} @ONLY)
+
+set(SRCS
+  {{INCLUDEDIR}}/helper{{EXT.hxx}}
+  {{SRCDIR}}/helper{{EXT.cxx}}
+  "${CMAKE_CURRENT_BINARY_DIR}/{{INCLUDEDIR}}/version{{EXT.hxx}}"
+)
+
+{{#cmake.application}}
+add_library({{LIB_NAME}} STATIC ${SRCS})
+{{/cmake.application}}
+{{#cmake.library}}
+{{cmake.cmd}}({{LIB_NAME}}{{cmake.type}} ${SRCS})
+{{/cmake.library}}
+
+target_compile_options({{LIB_NAME}} PRIVATE {{${}}{{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS})
+target_link_options({{LIB_NAME}} PUBLIC {{${}}{{NAME_PREFIX}}_ADDITIONAL_LINK_FLAGS})
+target_include_directories({{LIB_NAME}}
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/include
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}/src
+)
+{{#with.conan}}
+target_link_libraries({{LIB_NAME}} PRIVATE mbits::args)
+{{/with.conan}}
+set_target_properties({{LIB_NAME}} PROPERTIES
+  VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+{{#cmake.shared}}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+  WINDOWS_EXPORT_ALL_SYMBOLS ON
+{{/cmake.shared}}
+{{#cmake.plugin}}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+{{/cmake.plugin}}
+)
+
+{{#cmake.library}}
+##################################################################
+##  INSTALL
+##################################################################
+
+if ({{NAME_PREFIX}}_INSTALL)
+  install(TARGETS {{LIB_NAME}})
+endif()
+
+{{/cmake.library}}
+##################################################################
+##  TESTING
+##################################################################
+
+if ({{NAME_PREFIX}}_TESTING)
+  file(GLOB EXCLUDES_TEST_SRCS_CC tests/*.cc)
+  file(GLOB EXCLUDES_TEST_SRCS_CPP tests/*.cpp)
+  file(GLOB EXCLUDES_TEST_SRCS_CXX tests/*.cxx)
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/tests FILES
+    ${EXCLUDES_TEST_SRCS_CC}
+    ${EXCLUDES_TEST_SRCS_CPP}
+    ${EXCLUDES_TEST_SRCS_CXX})
+
+  add_project_test({{LIB_NAME}} ${EXCLUDES_TEST_SRCS_CC} ${EXCLUDES_TEST_SRCS_CPP} ${EXCLUDES_TEST_SRCS_CXX})
+  target_link_libraries({{LIB_NAME}}-test PUBLIC GTest::gmock_main{{^cmake.plugin}} {{LIB_NAME}}{{/cmake.plugin}})
+
+  add_test(NAME {{LIB_NAME}} COMMAND {{LIB_NAME}}-test "--gtest_output=xml:${TEST_REPORT_DIR}/{{LIB_NAME}}/${TEST_REPORT_FILE}")
+endif()

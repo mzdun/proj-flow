@@ -1,0 +1,7 @@
+# Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+# This file is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+add_subdirectory({{LIB_NAME}})
+{{#cmake.application}}
+add_subdirectory(app)
+{{/cmake.application}}

@@ -1,0 +1,46 @@
+// Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+// This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+{{#with.conan}}
+#include <args/parser.hpp>
+{{/with.conan}}
+#include <print>
+{{#with.conan}}
+#include <string>
+{{/with.conan}}
+#include <{{INCLUDE_PREFIX}}/helper{{EXT.hxx}}>
+#include <{{INCLUDE_PREFIX}}/version{{EXT.hxx}}>
+
+namespace {{NAMESPACE}} {
+{{#with.conan}}
+	int helper(int argc, char* argv[]) {
+		std::string path;
+		bool verbose{false};
+		long counter{};
+
+		args::null_translator tr{};
+		args::parser parser{"{{PROJECT.DESCRIPTION}}", args::from_main(argc, argv), &tr};
+
+		parser.arg(path, "path").meta("<file>").help("sets the path of foobar");
+		parser.set<std::true_type>(verbose, "v")
+		    .help("sets the output to be more verbose")
+		    .opt();
+		parser.arg(counter).meta("N").help(
+		    "sets the argument for the plural string");
+		parser.parse();
+
+		if (counter == 1)
+			std::println("you have one foobar");
+		else
+			std::println("you have {} foobars", counter);
+
+		return 0;
+	}
+{{/with.conan}}
+{{^with.conan}}
+	int helper(int, char*[]) {
+		std::println("Hello, world!");
+		return 0;
+	}
+{{/with.conan}}
+}  // namespace {{NAMESPACE}}

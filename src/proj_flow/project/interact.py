@@ -8,6 +8,7 @@ user prompts.
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, List, Optional, Union, cast
 
 from prompt_toolkit import prompt as tk_prompt
@@ -293,7 +294,7 @@ def get_context(setup: ContextSetup, project: Optional[str], rt: env.Runtime):
         overrides["PROJECT.NAME"] = os.path.basename(setup.dest_path)
 
     if setup.load is not None:
-        data = plugins.load_data(setup.load)
+        data = plugins.load_data(Path(setup.load))
         data = _flatten_dict(_split_keys(data))
         for key, value in data.items():
             overrides[key] = value

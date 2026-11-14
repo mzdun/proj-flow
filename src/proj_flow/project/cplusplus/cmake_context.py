@@ -23,6 +23,11 @@ cmake:
     {{NAME_PREFIX}}_COVERAGE: "?config:coverage"
     {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer"
     {{NAME_PREFIX}}_CUTDOWN_OS: "?runtime:cutdown_os"
+    # Treats warnings as errors (/WX, -Werror). Not a matrix key, so it is
+    # always OFF, unless added to the configs with -E, as in
+    #   ./flow run -E w-error=on
+    # ("true", "yes", "1" and "with-w-error" also work).
+    {{NAME_PREFIX}}_W_ERROR: "?config:w-error"
 {{/with.cmake}}
 """
 
@@ -62,9 +67,16 @@ project.cxx.register_init_setting(
     api.ctx.Setting("cmake", fix="{PROJECT.TYPE$map:cmake}"),
     api.ctx.Setting("CMAKE_VERSION", value=CMAKE_VERSION),
     api.ctx.Setting("PROJECT.WIX.UPGRADE_GUID", value=lambda: str(uuid.uuid4())),
+    # library package for the Pitchfork layout: libs/{LIB_NAME}/...
+    api.ctx.Setting("LIB_NAME", fix="lib{PROJECT.NAME}"),
     is_hidden=True,
 )
 project.cxx.register_switch("with.cmake", "Use CMake", True)
+project.cxx.register_switch(
+    "with.libs",
+    "Use Pitchfork submodules in libs/ (as opposed to top-level src/)",
+    True,
+)
 project.cxx.register_internal(
     "cmake",
     {

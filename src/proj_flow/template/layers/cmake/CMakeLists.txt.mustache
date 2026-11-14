@@ -12,12 +12,13 @@ set(PROJECT_VERSION_STABILITY "" # or "-alpha", or "-beta", or "-rc.1", or "-rc.
     CACHE STRING "" FORCE)
 
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
-  message(FATAL_ERROR "Building in source firectory is not supported")
+  message(FATAL_ERROR "Building in source directory is not supported")
 endif()
 
-set({{NAME_PREFIX}}_TESTING ON CACHE BOOL "Compile and/or run self-tests")
+set({{NAME_PREFIX}}_TESTING {{#with.conan}}ON{{/with.conan}}{{^with.conan}}OFF{{/with.conan}} CACHE BOOL "Compile and/or run self-tests")
 set({{NAME_PREFIX}}_INSTALL ON CACHE BOOL "Install the {{#cmake.application}}application{{/cmake.application}}{{#cmake.library}}library{{/cmake.library}}")
 set({{NAME_PREFIX}}_SANITIZE OFF CACHE BOOL "Compile with sanitizers enabled")
+set({{NAME_PREFIX}}_W_ERROR OFF CACHE BOOL "Compile with warnings turned to errors")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -33,20 +34,18 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/.flow/cmake")
 {{/with.conan}}
 
 include(common)
+
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 {{#with.conan}}
-include(output_dirs_setup)
 
 set(CONAN_CMAKE_SILENT_OUTPUT ON)
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_package(mbits-args REQUIRED)
 {{/with.conan}}
 
 if ({{NAME_PREFIX}}_TESTING)
   enable_testing()
 
-{{#with.conan}}
   find_package(GTest REQUIRED)
-{{/with.conan}}
 
   set(TEST_REPORT_DIR "${PROJECT_BINARY_DIR}/test-results")
   set(TEST_SANITIZER_TAG "")
@@ -59,92 +58,15 @@ endif()
 {{#with.conan}}
 include(output_dirs_setup)
 old_conan_output_dirs_setup()
+
 {{/with.conan}}
-
-# See <https://github.com/lefticus/cppbestpractices/blob/v1.0.0/02-Use_the_Tools_Available.md#compilers>
-
-if (MSVC)
-  set({{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS
-    /utf-8
-    /permissive-
-    /Zc:__cplusplus
-    /W4
-    /w14242
-    /w14254
-    /w14263
-    /w14265
-    /w14287
-    /we4289
-    /w14296
-    /w14311
-    /w14545
-    /w14546
-    /w14547
-    /w14549
-    /w14555
-    /w14619
-    /w14640
-    /w14826
-    /w14905
-    /w14906
-    /w14928
-    /w14946)
-  if ({{NAME_PREFIX}}_SANITIZE)
-    list(APPEND {{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
-      /fsanitize=address
-      /D_DISABLE_VECTOR_ANNOTATION
-      /D_DISABLE_STRING_ANNOTATION
-    )
-  endif()
-else()
-  set({{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
-      -Wall -Wextra
-      -Wnon-virtual-dtor
-      -Wold-style-cast
-      -Wcast-align
-      -Wunused
-      -Woverloaded-virtual
-      -Wpedantic
-      -Wconversion
-      -Wsign-conversion
-      -Wnull-dereference
-      -Wdouble-promotion
-      -Wformat=2
-  )
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    list(APPEND {{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
-      -fcolor-diagnostics
-      -Wno-braced-scalar-init
-    # -Wlifetime
-    )
-  else()
-    list(APPEND {{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
-      -fdiagnostics-color
-      -Wmisleading-indentation
-      -Wduplicated-cond
-      -Wduplicated-branches
-      -Wlogical-op
-      -Wuseless-cast
-      )
-  endif()
-  if ({{NAME_PREFIX}}_SANITIZE)
-    list(APPEND {{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS
-      -fsanitize=address
-      -fsanitize=undefined
-
-    )
-    list(APPEND {{NAME_PREFIX}}_ADDITIONAL_LINK_FLAGS
-      -fsanitize=address
-      -fsanitize=undefined
-    )
-  endif()
-endif()
-
 include(${PROJECT_SOURCE_DIR}/.flow/packages/config.cmake)
 include(CPack)
 
+{{#with.libs}}
+add_subdirectory(libs)
+{{/with.libs}}
+{{^with.libs}}
 configure_file({{SRCDIR}}/version{{EXT.hxx}}.in {{INCLUDEDIR}}/version{{EXT.hxx}} @ONLY)
 
 set(SRCS
@@ -167,6 +89,12 @@ add_win32_icon(${PROJECT_NAME} "appicon.ico")
 {{/cmake.application}}
 target_compile_options(${PROJECT_NAME} PRIVATE {{${}}{{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS})
 target_link_options(${PROJECT_NAME} PUBLIC {{${}}{{NAME_PREFIX}}_ADDITIONAL_LINK_FLAGS})
+{{#cmake.win32}}
+if (MSVC)
+  # standard `main` in a WIN32 executable
+  target_link_options(${PROJECT_NAME} PRIVATE /ENTRY:mainCRTStartup)
+endif()
+{{/cmake.win32}}
 target_include_directories(${PROJECT_NAME}
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -209,3 +137,4 @@ if ({{NAME_PREFIX}}_TESTING)
 
   add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME}-test "--gtest_output=xml:${TEST_REPORT_DIR}/${PROJECT_NAME}/${TEST_REPORT_FILE}")
 endif()
+{{/with.libs}}

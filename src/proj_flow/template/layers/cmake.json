@@ -2,14 +2,34 @@
     "when": "with.cmake",
     "filelist": {
         "src/main.cc.mustache": {
-            "path": "{{SRCDIR}}/main{{EXT.cxx}}",
+            "path": "{{#with.libs}}libs/app/{{/with.libs}}{{SRCDIR}}/main{{EXT.cxx}}",
             "when": "cmake.application"
         },
         "tests/test.cc.mustache": {
-            "path": "tests/test{{EXT.cxx}}"
+            "path": "{{#with.libs}}libs/{{LIB_NAME}}/{{/with.libs}}tests/test{{EXT.cxx}}"
         },
         "src/version.hpp.in.mustache": {
-            "path": "{{SRCDIR}}/version{{EXT.hxx}}.in"
+            "path": "{{#with.libs}}libs/{{LIB_NAME}}/{{/with.libs}}{{SRCDIR}}/version{{EXT.hxx}}.in"
+        },
+        "libs/CMakeLists.txt.mustache": {
+            "path": "libs/CMakeLists.txt",
+            "when": "with.libs"
+        },
+        "libs/app/CMakeLists.txt.mustache": {
+            "path": "libs/app/CMakeLists.txt",
+            "when": ["with.libs", "cmake.application"]
+        },
+        "libs/pkg/CMakeLists.txt.mustache": {
+            "path": "libs/{{LIB_NAME}}/CMakeLists.txt",
+            "when": "with.libs"
+        },
+        "libs/pkg/src/helper.cc.mustache": {
+            "path": "libs/{{LIB_NAME}}/{{SRCDIR}}/helper{{EXT.cxx}}",
+            "when": "with.libs"
+        },
+        "libs/pkg/include/helper.hpp.mustache": {
+            "path": "libs/{{LIB_NAME}}/{{INCLUDEDIR}}/helper{{EXT.hxx}}",
+            "when": "with.libs"
         },
         ".flow/extensions/project/__init__.py.mustache": {
             "path": ".flow/extensions/{{FLOW_PACKAGE}}/__init__.py"
