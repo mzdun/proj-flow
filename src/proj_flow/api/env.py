@@ -296,6 +296,11 @@ class FlowConfig:
     def shortcuts(self) -> Dict[str, dict]:
         return self._cfg.get("shortcuts", {})
 
+    @property
+    def default_branch(self) -> str:
+        """Branch, from which releases are made; ``main``, unless configured otherwise."""
+        return cast(str, self._cfg.get("default-branch", "main")) or "main"
+
 
 def _mkdir(dirname: str):
     os.makedirs(dirname, exist_ok=True)

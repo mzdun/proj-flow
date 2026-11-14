@@ -170,7 +170,7 @@ class GitHub(commit.Hosting):
         if setup.curr_tag is None:
             git.rt.fatal(f"New tag is needed.")
 
-        git.push_with_refs(self.remote, "main")
+        git.push_with_refs(self.remote, git.current_branch() or self.rt.default_branch)
 
         body = msg.ReleaseMessage(setup).format_changelog(log)
 
@@ -231,6 +231,18 @@ class GitHub(commit.Hosting):
             method="PATCH",
         )
         return self._release_from_json(data)
+
+    def delete_release(self, release: commit.ReleaseInfo) -> bool:
+        if not isinstance(release, ReleaseInfo):
+            return False
+
+        proc = self.gh(f"/releases/{release.id}", method="DELETE")
+        if proc is None:
+            return True  # dry run
+        if proc.returncode != 0:
+            self.rt.message(proc.stderr.strip(), level=env.Msg.ALWAYS)
+            return False
+        return True
 
     @staticmethod
     def from_repo(git: commit.Git, remote: Optional[str] = None):

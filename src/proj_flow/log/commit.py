@@ -275,6 +275,13 @@ class Hosting(ABC):
         """
         ...
 
+    def delete_release(self, release: ReleaseInfo) -> bool:
+        """
+        Remove given release (draft or not) from hosting. Does not touch the
+        underlying tag.
+        """
+        return False
+
 
 class NoHosting(Hosting):
     """
@@ -535,6 +542,36 @@ class Git:
 
     def push_with_refs(self, remote: str, branch: str):
         return self.cmd("push", remote, branch, "--follow-tags", "--force-with-lease")
+
+    def head_commit(self) -> tuple[str, str]:
+        """Get hash and subject line of the HEAD commit"""
+        proc = self.rt.capture("git", "log", "-1", "--format=%H%n%s", silent=True)
+        lines = proc.stdout.strip().split("\n", 1)
+        if proc.returncode != 0 or len(lines) != 2:
+            return "", ""
+        return lines[0], lines[1]
+
+    def tags_at(self, ref: str) -> list[str]:
+        """Get list of tags pointing at given ref"""
+        proc = self.rt.capture("git", "tag", "--points-at", ref, silent=True)
+        return [tag for tag in proc.stdout.split("\n") if tag]
+
+    def delete_tag(self, tag: str):
+        return self.cmd("tag", "-d", tag)
+
+    def delete_remote_tag(self, remote: str, tag: str):
+        return self.cmd("push", remote, "--delete", f"refs/tags/{tag}")
+
+    def reset_keep(self, ref: str):
+        return self.cmd("reset", "--keep", ref)
+
+    def push_with_lease(self, remote: str, branch: str, expected: str):
+        return self.cmd(
+            "push",
+            remote,
+            f"HEAD:refs/heads/{branch}",
+            f"--force-with-lease=refs/heads/{branch}:{expected}",
+        )
 
 
 class HostingFactory(ABC):

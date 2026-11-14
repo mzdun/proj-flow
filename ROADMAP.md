@@ -4,6 +4,7 @@
 - [x] Auto-release
 - [x] Breaking change works
 - [x] `chmod +x`, but on Windows
+- [x] `./flow github release --retract`, retract a release, if chore commit is at HEAD
 - [ ] bug_report's `version.options`: change to
   1. Current (vX.Y.Z)
   2. Previous (vX.Y-1.Z)
@@ -18,3 +19,5 @@
   - [ ] `.github/ISSUE_TEMPLATE` to YAML
   - [ ] Fix Conan cache directory
   - [ ] Overall refresh the template
+  - [ ] Icons extension uses "wall" as package name
+  - [ ] `find_package(GTest REQUIRED)` duplicated
