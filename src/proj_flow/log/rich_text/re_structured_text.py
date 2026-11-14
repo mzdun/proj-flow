@@ -23,7 +23,7 @@ class FileUpdate(api.FileUpdate):
         if compare:
             heading = f"`{version} <{compare}>`_ ({self.commit_date})"
         else:
-            heading = f"{version}"
+            heading = f"{version} ({self.commit_date})"
 
         return [
             heading,
@@ -54,7 +54,8 @@ class ChangelogGenerator(api.ChangelogGenerator):
 
     @property
     def split_re(self) -> str:
-        return r"\n`[0-9]+\.[0-9]+[^>]+\>`\_ \([^)]+\)\n==+\n"
+        # linked heading from a hosting service, or a plain one without it
+        return r"\n(?:`[0-9]+\.[0-9]+[^>]+\>`\_|[0-9]+\.[0-9]+\S*) \([^)]+\)\n==+\n"
 
     @property
     def formatter(self):
