@@ -47,14 +47,15 @@ body:
       - Older, than v0.33.0
   validations:
     required: true
-- type: checkboxes
+- type: dropdown
   id: project
   attributes:
     label: Project Template
     description: If this is about `proj-flow init`, which project is used?
     options:
-      - label: cxx
-      - label: Other
+      - Not applicable
+      - cxx
+      - Other
   validations:
     required: true
 - type: checkboxes
@@ -67,8 +68,6 @@ body:
       - label: Windows
       - label: Linux
       - label: Other
-  validations:
-    required: false
 - type: textarea
   id: context
   attributes:
