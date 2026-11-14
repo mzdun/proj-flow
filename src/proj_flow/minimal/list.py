@@ -7,6 +7,7 @@ The **proj_flow.minimal.list** implements ``./flow list`` command.
 
 import os
 import re
+import shutil
 import sys
 from typing import Annotated, Dict, Iterable, List, Set, cast
 
@@ -226,7 +227,7 @@ def _cursor_pos():
 
 
 def _write_console_para(text: Iterable[str]):
-    term_width = os.get_terminal_size().columns
+    term_width = shutil.get_terminal_size().columns
     margin = min(_cursor_pos()[0], term_width // 2) - 1
     width = term_width - 1
     pos = margin
