@@ -213,6 +213,7 @@ class Type:
             inner.generic = inner.generic or ast.generic
             return Type.from_idl(inner, builders, [])
 
+        # future-unproofing -- we do not know what it is, but at least we can see it
         print(type(ast.idl_type), ast.generic != "")
         print(ast)
         return ast
