@@ -21,10 +21,13 @@ class CPlusPlus(api.ProjectType):
         super().__init__("C++ plus CMake plus Conan", "cxx")
 
     def get_extension_list(self, context: dict):
-        with_github_actions = not not path_get(context, "with.github.actions")
-        if with_github_actions:
-            return [*CPP_EXTENSIONS, "proj_flow.ext.github"]
-        return CPP_EXTENSIONS
+        extensions = [*CPP_EXTENSIONS]
+        if path_get(context, "with.github.actions"):
+            extensions.append("proj_flow.ext.github")
+        if path_get(context, "with.github.social"):
+            # keeps the version dropdown in bug_report.yaml in sync with releases
+            extensions.append("proj_flow.minimal.ext.bug_report")
+        return extensions
 
 
 cxx = api.get_project_type("cxx")
