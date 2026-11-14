@@ -29,6 +29,9 @@ def _version(ver: str) -> tuple[int, int, int, str]:
 def _prev_version(new_version: str, tags: list[str]):
     current = _version(new_version)
     versions = [_version(tag) for tag in reversed(tags)]
+    if not versions:
+        return None
+
     index = 0
     while index < len(versions):
         comp = versions[index]
@@ -39,7 +42,7 @@ def _prev_version(new_version: str, tags: list[str]):
     if index >= len(versions):
         index = 0
 
-    return None if index > len(versions) else versions[index][-1]
+    return versions[index][-1]
 
 
 @release.version_updaters.add
