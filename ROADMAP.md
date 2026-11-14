@@ -19,5 +19,5 @@
   - [ ] `.github/ISSUE_TEMPLATE` to YAML
   - [ ] Fix Conan cache directory
   - [ ] Overall refresh the template
-  - [ ] Icons extension uses "wall" as package name
-  - [ ] `find_package(GTest REQUIRED)` duplicated
+  - [x] Icons extension uses "wall" as package name
+  - [x] `find_package(GTest REQUIRED)` duplicated

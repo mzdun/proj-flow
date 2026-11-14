@@ -38,8 +38,6 @@ include(output_dirs_setup)
 
 set(CONAN_CMAKE_SILENT_OUTPUT ON)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
-find_package(fmt REQUIRED)
-find_package(GTest REQUIRED)
 find_package(mbits-args REQUIRED)
 {{/with.conan}}
 
@@ -177,7 +175,7 @@ target_include_directories(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}/src
 )
-target_link_libraries(${PROJECT_NAME}{{#with.conan}} fmt::fmt mbits::args{{/with.conan}})
+target_link_libraries(${PROJECT_NAME}{{#with.conan}} mbits::args{{/with.conan}})
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 {{#cmake.dynamic-library}}
@@ -207,7 +205,7 @@ if ({{NAME_PREFIX}}_TESTING)
     ${EXCLUDES_TEST_SRCS_CXX})
 
   add_project_test(${PROJECT_NAME} ${EXCLUDES_TEST_SRCS_CC} ${EXCLUDES_TEST_SRCS_CPP} ${EXCLUDES_TEST_SRCS_CXX})
-  target_link_libraries(${PROJECT_NAME}-test PUBLIC GTest::gmock_main fmt::fmt)
+  target_link_libraries(${PROJECT_NAME}-test PUBLIC GTest::gmock_main)
 
   add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME}-test "--gtest_output=xml:${TEST_REPORT_DIR}/${PROJECT_NAME}/${TEST_REPORT_FILE}")
 endif()
