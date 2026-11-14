@@ -1,14 +1,19 @@
 Flow config
 ===========
 
-Flow config file is a YAML file saved as ``.flow/config.yml``. It is used by
-various parts of *Project Flow* to negotiate some details with the project
-maintainer.
+Flow config file is a YAML file saved as ``.flow/config.yml`` (a ``.yaml`` or
+``.json`` file is read as well). It is used by various parts of *Project Flow*
+to negotiate some details with the project maintainer. Before reading the
+project config, *Project Flow* reads the user config from
+``~/.config/proj-flow.yml`` (or ``.yaml``, or ``.json``); the project config
+is then merged over it.
 
 ``cmake``
 ---------
 
 Settings used by various CMake-based steps.
+
+.. _config-cmake-vars:
 
 ``cmake.vars``
 --------------
@@ -32,6 +37,10 @@ Currently the default value is passed through Mustache engine:
         {{NAME_PREFIX}}_COVERAGE: "?config:coverage"
         {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer"
         {{NAME_PREFIX}}_CUTDOWN_OS: "?runtime:cutdown_os"
+        {{NAME_PREFIX}}_W_ERROR: "?config:w-error"
+
+The ``w-error`` is not a key in ``.flow/matrix.yml``, so it is ``OFF``, unless
+added to the configs with ``./flow run -E w-error=on``.
 
 ``compiler``
 ------------
@@ -85,6 +94,60 @@ of steps.
 -----------------
 
 List of step names, which should be run, when this alias is used as command.
+Alternatively, an object with ``steps`` list and ``doc`` string, which will be
+used as the help for the alias. Without the ``doc``, the help is
+``Shortcut for "run -s <steps>"``.
+
+.. code-block:: yaml
+
+    entry:
+      config: [ Conan, CMake ]
+      docs:
+        doc: Build the documentation
+        steps: [ RTD ]
+
+.. _config-extensions:
+
+``extensions``
+--------------
+
+A list of Python modules to import, before any command is run. Each of them
+can register new commands, steps, changelog generators, etc. Modules can be
+taken from installed packages, or from the ``.flow/extensions`` directory of
+the project.
+
+.. code-block:: yaml
+
+    extensions:
+      - proj_flow.ext.github
+      - proj_flow.ext.tests
+
+The built-in extensions are:
+
+``proj_flow.ext.cplusplus``
+    Conan and CMake steps for C++ projects.
+``proj_flow.ext.github``
+    The :ref:`github<command-github-matrix>` commands.
+``proj_flow.ext.python``
+    Steps for Python projects; cannot be used together with
+    ``proj_flow.ext.cplusplus``.
+``proj_flow.ext.markdown_changelog`` / ``proj_flow.ext.re_structured_changelog``
+    Changelog in ``CHANGELOG.md`` or ``CHANGELOG.rst`` format.
+``proj_flow.ext.sign``
+    Sign and SignPackages steps.
+``proj_flow.ext.store``
+    StoreTests, StorePackages and Store steps.
+``proj_flow.ext.tests``
+    The :ref:`tests<command-tests>` command, JUnitToCtrf and MergeCtrfFiles
+    steps.
+``proj_flow.ext.test_runner``
+    The :ref:`tests runner<command-tests>` command.
+``proj_flow.ext.tools``
+    The :ref:`tools<command-tools>` commands.
+``proj_flow.ext.webidl``
+    The :ref:`webidl<command-webidl>` commands.
+
+.. _config-lts:
 
 ``lts``
 -------
@@ -95,15 +158,35 @@ current LTS variants.
 ``lts.ubuntu``
 --------------
 
-A list of Ubuntu LTS systems. Currently
+.. deprecated:: 0.13
+
+    Remove this list from the config; the Ubuntu LTS systems are taken from
+    the list of GitHub runners, see :ref:`command-github-matrix`.
+
+A list of Ubuntu LTS systems, e.g.
 
 .. code-block:: yaml
 
     lts:
       ubuntu:
-        - ubuntu-20.04
         - ubuntu-22.04
         - ubuntu-24.04
+
+``lts.windows``
+---------------
+
+A list of Windows Server systems available as GitHub runners. Unlike Ubuntu,
+this list is not downloaded, so without it, ``"windows"`` configs run on
+``windows-latest``. Currently, the runners are:
+
+.. code-block:: yaml
+
+    lts:
+      windows:
+        - windows-2022
+        - windows-2025-vs2026
+        - windows-2025
+        - windows-11-arm
 
 ``package``
 -----------
@@ -134,9 +217,8 @@ to limit configurations created by exploding the LTS platforms:
 
     postproc:
       exclude:
-        - { github_os: ubuntu-20.04, sanitizer: true }
         - { github_os: ubuntu-24.04, sanitizer: true }
-        - { github_os: ubuntu-20.04, compiler: clang }
+        - { github_os: ubuntu-24.04, compiler: clang }
 
 ``shortcuts``
 -------------
@@ -181,3 +263,60 @@ signed. When missing, defaults to
 .. code-block:: python
 
     ["*-test"]
+
+.. _config-test:
+
+``test``
+--------
+
+An object used by the JUnitToCtrf and MergeCtrfFiles steps from
+``proj_flow.ext.tests`` extension. All the directories are relative to the
+build directory of current config.
+
+``test.gtest-dir`` / ``test.junit-dir`` / ``test.junit-dirs``
+    A directory, or a list of directories, with JUnit XML reports to convert.
+``test.ctrf-dir``
+    A directory for converted CTRF JSON files. Defaults to ``test-results``.
+``test.ctrf-report``
+    The merged CTRF report. Defaults to ``ctrf-tests.json``.
+
+.. _config-test-runner:
+
+``test-runner``
+---------------
+
+An object used by the ``./flow tests runner`` command from
+``proj_flow.ext.test_runner`` extension.
+
+``test-runner.target``
+    *(required)* Name of the executable to test, without the ``.exe``
+    extension.
+``test-runner.install``
+    A list of CMake install components to install before the tests are run.
+``test-runner.patches``
+    An object of built-in patches applied to output of the tested program.
+``test-runner.report_env``
+    Prefix of environment variables to report together with the tests.
+``test-runner.testsuite.root``
+    *(required)* A directory with the JSON test cases.
+``test-runner.testsuite.data``
+    A directory with the data for the tests, relative to the root.
+``test-runner.testsuite.default-set``
+    A subdirectory of the root to look into, when ``--tests`` does not name
+    a directory directly under the root.
+
+Each test case is a JSON or YAML file described by the
+``schema/test-runner.yaml`` JSON schema from *Project Flow* repository.
+
+``version-updates``
+-------------------
+
+An object used by ``proj_flow.minimal.ext.versions`` extension during
+``./flow github release``. Each key is a path of a file and each value is
+a text containing ``$VERSION``. When the version changes, the text with
+previous version is replaced with the text with new version in that file.
+
+.. code-block:: yaml
+
+    version-updates:
+      schema/test-runner.yaml: tags/v$VERSION/

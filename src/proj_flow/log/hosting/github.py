@@ -2,7 +2,9 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.log.hosting.github** builds a log message for GiHub Releases.
+The **proj_flow.log.hosting.github** implements the GitHub hosting: commit
+and reference links for changelogs and, through ``gh`` CLI, management of
+GitHub Releases.
 """
 
 import json
@@ -24,6 +26,16 @@ _NO_GITHUB = _GitHub("", "", "")
 
 
 class ReleaseInfo(commit.ReleaseInfo):
+    """
+    Release on GitHub, identified by its GitHub id.
+
+    :param url: web page of the release
+    :param is_draft: release is still a draft
+    :param id: GitHub id of the release
+    :param ref: name of the release
+    :param tag: tag the release is attached to
+    """
+
     id: int
 
     def __init__(
@@ -40,7 +52,11 @@ class ReleaseInfo(commit.ReleaseInfo):
 
 class GitHub(commit.Hosting):
     """
-    Generates links to GitHub.
+    Hosting on GitHub: generates links to GitHub and manages its releases
+    through ``gh`` CLI.
+
+    :param info: remote, owner and repository found among git remotes
+    :param rt: runtime to run ``gh`` with
     """
 
     _info: _GitHub
@@ -57,18 +73,22 @@ class GitHub(commit.Hosting):
 
     @property
     def remote(self):
+        """Name of the git remote pointing to GitHub."""
         return self._info.remote
 
     @property
     def owner(self):
+        """Owner of the GitHub repository."""
         return self._info.owner
 
     @property
     def repo(self):
+        """Name of the GitHub repository."""
         return self._info.repo
 
     @property
     def root(self):
+        """Path of the repository in GitHub REST API."""
         return f"/repos/{self.owner}/{self.repo}"
 
     def single_commit_link(self, link: commit.Link) -> Optional[str]:
@@ -96,6 +116,21 @@ class GitHub(commit.Hosting):
         ro_call: bool = False,
         **kwargs,
     ):
+        """
+        Call GitHub REST API for this repository through ``gh api``. With
+        ``--dry-run``, calls, which are not read-only, are only printed.
+
+        :param res: resource path, relative to :attr:`root`
+        :param args: additional arguments to ``gh api``
+        :param method: HTTP method; when missing, ``gh api`` chooses one
+        :param capture_output: capture the output of the call, instead of
+            passing it through
+        :param ro_call: the call only reads data, so it runs even with
+            ``--dry-run``
+        :param kwargs: ``accept`` overrides the ``Accept`` header; other
+            keywords are ignored
+        :returns: finished process, or ``None``, if the call was skipped
+        """
         url = f"{self.root}{res}"
         accept = kwargs.get("accept", "application/vnd.github+json")
         call = [
@@ -131,6 +166,17 @@ class GitHub(commit.Hosting):
         default: Any = {},
         ro_call: bool = False,
     ):
+        """
+        Call GitHub REST API with :meth:`gh` and parse the JSON response.
+
+        :param res: resource path, relative to :attr:`root`
+        :param args: additional arguments to ``gh api``
+        :param method: HTTP method; when missing, ``gh api`` chooses one
+        :param default: value returned, if the call was skipped
+        :param ro_call: the call only reads data, so it runs even with
+            ``--dry-run``
+        :returns: parsed response, or ``default``
+        """
         proc = self.gh(res, *args, method=method, ro_call=ro_call)
         if proc is None:
             return default
@@ -232,6 +278,14 @@ class GitHub(commit.Hosting):
         return self._release_from_json(data)
 
     def delete_release(self, release: commit.ReleaseInfo) -> bool:
+        """
+        Remove given release (draft or not) from GitHub. Does not touch the
+        underlying tag. Releases not created by this hosting are ignored.
+
+        :param release: release to remove
+        :returns: ``True``, if the release was removed (or would be, with
+            ``--dry-run``)
+        """
         if not isinstance(release, ReleaseInfo):
             return False
 
@@ -245,6 +299,15 @@ class GitHub(commit.Hosting):
 
     @staticmethod
     def from_repo(git: commit.Git, remote: Optional[str] = None):
+        """
+        Find the GitHub repository among the git remotes. The repository
+        reported by ``gh repo view`` is preferred, then any remote pointing to
+        GitHub.
+
+        :param git: git wrapper to read the remotes with
+        :param remote: name of the remote to prefer, if there are many
+        :returns: the hosting, or ``None``, if no remote points to GitHub
+        """
         info = _find_github(git, remote)
         if info == _NO_GITHUB:
             return None

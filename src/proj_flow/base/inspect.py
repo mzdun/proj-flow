@@ -6,6 +6,7 @@ The **proj_flow.base.inspect** provides unified access to function and class
 metadata used in argument parser, command and step metadata.
 """
 
+import dis
 import inspect
 import typing
 from dataclasses import dataclass
@@ -102,3 +103,32 @@ def type_name(t: type) -> str:
         return f"{origin.__name__}[{arg_list}]"
 
     return typing.cast(str, origin.__name__)
+
+
+
+def _instructions(function: typing.Callable) -> typing.List[typing.Tuple[str, object]]:
+    # argval instead of raw bytes: an empty function with a docstring keeps
+    # None at a different co_consts index than one without
+    return [(instr.opname, instr.argval) for instr in dis.get_instructions(function)]
+
+
+def _empty_body():
+    pass
+
+
+_EMPTY_BODY = _instructions(_empty_body)
+
+
+def has_empty_body(function: typing.Callable) -> bool:
+    """
+    Tells, if the function body is nothing more than docstring, ``pass`` or
+    ``...``, by comparing its bytecode with a reference function compiled by
+    the same interpreter.
+
+    :param function: the function to check
+    :returns: ``True``, if calling the function would do nothing
+    """
+    try:
+        return _instructions(function) == _EMPTY_BODY
+    except TypeError:
+        return False

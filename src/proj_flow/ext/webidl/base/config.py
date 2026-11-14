@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.base.config** loads the WebIDL code generation config: the
+template rules, their outputs and the CMake directories the outputs are
+written to.
+"""
 
 import copy
 import json
@@ -18,12 +23,25 @@ templates_dir = package_root / "data" / "templates"
 
 
 def load_package_template(name: str):
+    """
+    Read a mustache template shipped with this package.
+
+    :param name: name of the template, relative to ``data/templates`` and
+        without the ``.mustache`` extension
+    :returns: text of the template
+    """
     path = templates_dir / f"{name}.mustache"
     return path.read_text(encoding="UTF-8")
 
 
 @dataclass
 class CMakeDirs:
+    """
+    CMake directories of the WebIDL config: the directory of the config
+    itself, the project directories and the current directories of the
+    ``CMakeLists.txt`` the config belongs to.
+    """
+
     base_dir: Path
     project_source_dir: Path
     project_binary_dir: Path
@@ -32,6 +50,15 @@ class CMakeDirs:
 
     @staticmethod
     def from_config_path(config: Path, project_binary_dir: Path):
+        """
+        Find the CMake directories for a config file. The current source dir is
+        the closest parent of the config with a ``CMakeLists.txt``, the project
+        source dir is the current working directory.
+
+        :param config: path to the WebIDL config
+        :param project_binary_dir: project binary directory
+        :returns: the directories of the config
+        """
         config = config.absolute()
         project_binary_dir = project_binary_dir.absolute()
         base_dir = config.parent
@@ -57,17 +84,40 @@ class CMakeDirs:
         )
 
     def filename_from_config(self, config: Path, ext: str):
+        """
+        Path in the current binary dir, mirroring the location of the config in
+        the current source dir, with the extension appended.
+
+        :param config: path to the WebIDL config
+        :param ext: extension to append to the config file name
+        """
         in_source = config.absolute().relative_to(self.current_source_dir)
         in_build = self.current_binary_dir / in_source
         return Path(in_build.as_posix() + ext)
 
     def dependency_from_config(self, config: Path):
+        """
+        Path of the dependency file generated for the config.
+
+        :param config: path to the WebIDL config
+        """
         return self.filename_from_config(config, ".deps")
 
     def cmake_from_config(self, config: Path):
+        """
+        Path of the CMake file generated for the config.
+
+        :param config: path to the WebIDL config
+        """
         return self.filename_from_config(config, ".cmake")
 
     def my_defines(self):
+        """
+        Values of the CMake variables known here, for :meth:`expand_prefix`.
+
+        :returns: ``PROJECT_SOURCE_DIR``, ``PROJECT_BINARY_DIR``,
+            ``CMAKE_CURRENT_SOURCE_DIR`` and ``CMAKE_CURRENT_BINARY_DIR``
+        """
         return {
             "PROJECT_SOURCE_DIR": self.project_source_dir.as_posix(),
             "PROJECT_BINARY_DIR": self.project_binary_dir.as_posix(),
@@ -76,6 +126,12 @@ class CMakeDirs:
         }
 
     def expand_prefix(self, filename: str):
+        """
+        Replace the ``${VAR}`` references to known CMake directories with their
+        values; unknown variables are left as they are.
+
+        :param filename: path, which may use the CMake variables
+        """
         if "${" not in filename:
             return Path(filename)
         defs = self.my_defines()
@@ -88,6 +144,14 @@ class CMakeDirs:
         return Path(result)
 
     def prefix(self, filename: str):
+        """
+        Turn a path relative to the config into one starting with the closest
+        CMake directory variable, e.g. ``${CMAKE_CURRENT_BINARY_DIR}/file.hpp``.
+        Paths already using a variable, or outside the known directories, are
+        returned unchanged.
+
+        :param filename: path relative to the config directory
+        """
         if "${" in filename:
             return Path(filename)
 
@@ -113,6 +177,10 @@ class CMakeDirs:
         return Path(filename)
 
     def make_abs_path(self):
+        """
+        Wrap :meth:`prefix` into a callable usable as ``abs_path`` of the
+        template rules.
+        """
         def impl(filename: str):
             return self.prefix(filename)
 
@@ -126,6 +194,11 @@ def _relative(path: Path, basedir: Path | None):
 
 
 class Rebuild:
+    """
+    Renders the strings of a context with mustache, recursing into lists and
+    dictionaries.
+    """
+
     @staticmethod
     def __rebuild_map(data: dict, global_ctx: dict[str, str]):
         for key, value in data.items():
@@ -155,15 +228,36 @@ class Rebuild:
 
     @staticmethod
     def rebuild(initial_context: dict, global_ctx: dict[str, str]):
+        """
+        Render every value of the dictionary in place.
+
+        :param initial_context: dictionary to render
+        :param global_ctx: values available to the templates
+        :returns: the same, updated dictionary
+        """
         return Rebuild.__rebuild_map(initial_context, global_ctx)
 
     @staticmethod
     def rebuild_any(initial_context, global_ctx: dict[str, str]):
+        """
+        Render a single value: a string, a list or a dictionary. Lists and
+        dictionaries are updated in place, other values are returned unchanged.
+
+        :param initial_context: value to render
+        :param global_ctx: values available to the templates
+        :returns: the rendered value
+        """
         return Rebuild.__rebuild_any(initial_context, global_ctx)
 
 
 @dataclass
 class ConfigOutput:
+    """
+    Single output of a template suite, as read from the config. Unset
+    values are taken from the suite default (output named ``""``) and then from
+    the root default.
+    """
+
     output_name: str
     mustache_template: str | None
     output_template: str | None
@@ -181,6 +275,16 @@ class ConfigOutput:
         root_default: "ConfigOutput",
         allow_versioned: bool,
     ):
+        """
+        Read all outputs of a template suite. The output named ``""``, if
+        present, is removed from the list and used as defaults for the others,
+        before the ``root_default``.
+
+        :param data: the template suite, output name to output config
+        :param root_default: defaults for every output in the config
+        :param allow_versioned: read ``version_context`` of the outputs
+        :returns: list of the outputs
+        """
         result = [
             ConfigOutput.from_dict(key, item, allow_versioned)
             for key, item in data.items()
@@ -206,6 +310,15 @@ class ConfigOutput:
     def from_dict(
         output_name: str, data: str | dict[str, str | dict], allow_versioned: bool
     ) -> "ConfigOutput":
+        """
+        Read single output. A string is the path to the mustache template, a
+        dictionary may contain ``template``, ``path``, ``lang``, ``types``,
+        ``partials``, ``context``, ``version_context``, ``debug`` and ``ndebug``.
+
+        :param output_name: name of the output, a mustache template of the path
+        :param data: the output config
+        :param allow_versioned: read ``version_context`` of the output
+        """
         if isinstance(data, str):
             return ConfigOutput(
                 output_name=output_name,
@@ -248,6 +361,13 @@ class ConfigOutput:
         )
 
     def update_from(self, default: "ConfigOutput", allow_versioned: bool):
+        """
+        Fill unset values from the default. Contexts are merged, with own values
+        winning.
+
+        :param default: output to take the missing values from
+        :param allow_versioned: merge the ``version_context`` too
+        """
         self.mustache_template = self.mustache_template or default.mustache_template
         self.output_template = self.output_template or default.output_template
         self.lang = self.lang or default.lang
@@ -295,11 +415,23 @@ def _rel_file_props(path: Path, root: Path, version: int):
 
 @dataclass
 class OutputTemplate:
+    """
+    Output with paths still to be rendered for a version.
+    """
+
     config: ConfigOutput
     context: dict
     abs_path: Callable[[str], Path]
 
     def freeze(self, version: int, versions: list[int] | None = None):
+        """
+        Render the paths and the initial context of the output for a version.
+
+        :param version: version to render the output for
+        :param versions: all versions, when generating a versioned output; each
+            value of ``version_context`` becomes a list with an item per version
+        :returns: the output ready for code generation
+        """
         context = copy.deepcopy(self.context)
         context["version"] = version
         expand_path = lambda text: chevron.render(template=text, data=context)
@@ -352,6 +484,15 @@ class OutputTemplate:
         abs_path: Callable[[str], Path],
         allow_versioned: bool,
     ):
+        """
+        Read all outputs of a template suite.
+
+        :param context: values available to the path templates
+        :param root_default: defaults for every output in the config
+        :param data: the template suite, output name to output config
+        :param abs_path: turns paths from the config into usable paths
+        :param allow_versioned: read ``version_context`` of the outputs
+        """
         return [
             OutputTemplate(config=config, context=context, abs_path=abs_path)
             for config in ConfigOutput.from_config(data, root_default, allow_versioned)
@@ -360,6 +501,10 @@ class OutputTemplate:
 
 @dataclass
 class Output:
+    """
+    Output ready for code generation, with all paths rendered.
+    """
+
     output: Path
     mustache_template: Path | None
     lang: str | None
@@ -371,18 +516,44 @@ class Output:
 
     @staticmethod
     def filename_context(filename: str | Path, root_dir: Path, version: int):
+        """
+        Describe a file for the templates: ``filename``, ``dirname``,
+        ``basename``, ``stem``, ``suffix``, ``suffixes``, ``shortest_stem``,
+        ``version`` and, for files inside ``root_dir``, ``relative.filename`` and
+        ``relative.dirname``.
+
+        :param filename: file to describe
+        :param root_dir: directory for the relative paths
+        :param version: version to put into the description
+        """
         return _rel_file_props(Path(filename), root_dir, version=version)
 
     @staticmethod
     def abs_path(basedir: Path, path: str):
+        """
+        Join the path with the base directory.
+
+        :param basedir: base directory
+        :param path: path relative to ``basedir``
+        """
         return basedir / path
 
     def get_type_replacements(self):
+        """
+        Load the type replacements for the language and types file of the
+        output.
+        """
         return TypeReplacement.load_config(self.lang, self.types)
 
 
 @dataclass
 class TemplateRule:
+    """
+    Set of WebIDL inputs with the outputs generated from them: one copy of
+    each output per version and one copy of each versioned output for all
+    versions together.
+    """
+
     inputs: list[Path]
     outputs: list[OutputTemplate]
     versioned_outputs: list[OutputTemplate]
@@ -391,6 +562,16 @@ class TemplateRule:
     def from_config(
         global_ctx: dict, source_dir: Path, data: dict, abs_path: Callable[[str], Path]
     ):
+        """
+        Read all rules from the ``inputs`` of the config. Inputs without
+        a ``template`` are skipped.
+
+        :param global_ctx: values available to the path templates
+        :param source_dir: directory for the relative ``input`` paths in the
+            templates
+        :param data: the whole config
+        :param abs_path: turns paths from the config into usable paths
+        """
         templates = cast(dict[str, dict[str, str | dict]], data.get("templates", {}))
         inputs = cast(list[dict[str, str]], data.get("inputs", []))
         return cast(
@@ -462,6 +643,16 @@ class TemplateRule:
         CMAKE_CURRENT_BINARY_DIR: Path | None,
         *additional_inputs: Path,
     ) -> dict[str, list[str]]:
+        """
+        List the inputs of each output: the IDL files, the additional inputs and
+        the mustache template.
+
+        :param max_version: highest version to generate outputs for
+        :param CMAKE_CURRENT_BINARY_DIR: directory to make the output paths
+            relative to, if any
+        :param additional_inputs: inputs added to every output, e.g. the config
+        :returns: output path mapped to its inputs
+        """
         def rel(path: Path):
             return _relative(path, CMAKE_CURRENT_BINARY_DIR)
 
@@ -489,6 +680,10 @@ class TemplateRule:
 
 @dataclass
 class TemplateConfig:
+    """
+    WebIDL code generation config, as loaded from its JSON file.
+    """
+
     version: int
     rules: list[TemplateRule]
     ext_attrs: ExtAttrsContextBuilders
@@ -500,6 +695,16 @@ class TemplateConfig:
         source_dir: Path,
         abs_path: Callable[[str], Path] | None = None,
     ):
+        """
+        Load the config from a JSON file.
+
+        :param config: path to the config
+        :param context: values available to the path templates
+        :param source_dir: directory for the relative ``input`` paths in the
+            templates
+        :param abs_path: turns paths from the config into usable paths; defaults to
+            joining them with the directory of the config
+        """
         with config.open(encoding="UTF-8") as json_file:
             data = cast(dict, json.load(json_file))
 

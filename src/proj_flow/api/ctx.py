@@ -25,14 +25,44 @@ SettingsType = Dict[str, StrOrBool]
 
 @dataclass
 class Setting:
+    """
+    Value of the project template context, asked for by ``proj-flow init``,
+    unless hidden or given on the command line.
+    """
+
+    #: Key of the value in the context; dots create nested objects, e.g.
+    #: ``PROJECT.NAME``.
     json_key: str
+
+    #: Question shown when asking for the value.
     prompt: str = ""
+
+    #: Default value: a string, a flag, or a list of choices with the default
+    #: first. Can also be a function returning one of those; a function with
+    #: a ``settings`` parameter gets the values set so far.
     value: Union[Values, Callable[[], Values], Callable[[SettingsType], Values]] = ""
+
+    #: Template for the value, used when the value is empty, e.g.
+    #: ``"{PROJECT.NAME$safe$upper}"``. A ``{KEY}`` reference takes another
+    #: value, which may be passed through ``$safe``, ``$upper``, ``$lower``,
+    #: ``$header`` or ``$map:<internal>`` filters.
     fix: Optional[str] = None
+
+    #: Apply :attr:`fix` even if the value is not empty.
     force_fix: bool = False
+
+    #: Id of the project type this setting belongs to; ``None`` for settings
+    #: of all project types.
     project: Optional[str] = None
 
     def calc_value(self, previous: SettingsType):
+        """
+        Calculate the default value.
+
+        :param previous: values set so far, passed to a :attr:`value`
+            function with a ``settings`` parameter
+        :returns: the default value
+        """
         if callable(self.value):
             kwargs = {}
 
@@ -46,6 +76,15 @@ class Setting:
 
 
 def register_init_setting(*settings: Setting, is_hidden=False, project: Optional[str]):
+    """
+    Add settings for one project type. Project types usually call this
+    through :meth:`ProjectType.register_init_setting()
+    <proj_flow.project.api.ProjectType.register_init_setting>`.
+
+    :param settings: settings to add
+    :param is_hidden: never ask for these settings, only calculate them
+    :param project: id of the project type, set on each setting, if given
+    """
     if project is not None:
         for setting in settings:
             setting.project = project
@@ -53,18 +92,48 @@ def register_init_setting(*settings: Setting, is_hidden=False, project: Optional
 
 
 def register_common_init_setting(*setting: Setting, is_hidden=False):
+    """
+    Add settings for all project types.
+
+    :param setting: settings to add
+    :param is_hidden: never ask for these settings, only calculate them
+    """
     (hidden if is_hidden else defaults).extend(setting)
 
 
 def register_switch(key: str, prompt: str, enabled: bool, project: Optional[str]):
+    """
+    Add a yes/no question for one project type, asked after all the other
+    settings.
+
+    :param key: key of the flag in the context, e.g. ``with.cmake``
+    :param prompt: question to ask
+    :param enabled: default answer
+    :param project: id of the project type, or ``None`` for all types
+    """
     switches.append(Setting(key, prompt, value=enabled, project=project))
 
 
 def register_common_switch(key: str, prompt: str, enabled: bool):
+    """
+    Add a yes/no question for all project types, asked after all the other
+    settings.
+
+    :param key: key of the flag in the context, e.g. ``with.github.actions``
+    :param prompt: question to ask
+    :param enabled: default answer
+    """
     switches.append(Setting(key, prompt, value=enabled))
 
 
 def register_internal(key: str, value: Any):
+    """
+    Store a value for the ``init`` machinery, which is not asked for, e.g.
+    a mapping used by the ``$map:<key>`` filter of :attr:`Setting.fix`.
+
+    :param key: name of the value
+    :param value: the value
+    """
     internals[key] = value
 
 
@@ -79,6 +148,13 @@ def _git_config(name: str):
 
 
 def move_to_front(preferred: str, values: Iterable[Optional[str]]):
+    """
+    Make a value the default choice of a list.
+
+    :param preferred: value to put first, if present
+    :param values: choices; ``None`` entries are dropped
+    :returns: the choices, with ``preferred`` first
+    """
     result: List[str] = []
 
     has_preferred = False

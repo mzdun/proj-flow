@@ -1,6 +1,13 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.test_runner.driver.commands** defines the helper commands (``mkdirs``,
+``cd``, ``rm``, ``touch``, ``unpack``, ``store``, ``cp``, ``ro``, ``wo``,
+``rw``, ``ls``, ``cat`` and ``shell``) available to the test case's
+preparation and cleanup steps.
+"""
+
 import os
 import stat
 import subprocess

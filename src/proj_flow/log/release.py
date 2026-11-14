@@ -2,7 +2,9 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.log.release** performs a relase on the hosting service.
+The **proj_flow.log.release** performs a release on the hosting service, or
+retracts the latest one. It also defines the :data:`version_updaters`
+extension point for files, which need to follow the project version.
 """
 
 import typing
@@ -14,22 +16,46 @@ from proj_flow.base import registry
 from proj_flow.log import commit, fmt, rich_text
 from proj_flow.log.error import NoProjectError, ReleaseError, VersionNotAdvancing
 
+#: Single path or a list of paths.
 OneOrMoreStrings = Union[str, Iterable[str]]
 
 
 class VersionUpdater:
+    """
+    Extension point for updating additional files with the new version,
+    registered with :data:`version_updaters`. Implementations override either
+    of the methods; the files they modify are committed with the release.
+    """
 
     def on_version_change(
         self, rt: env.Runtime, new_version: str
     ) -> Optional[OneOrMoreStrings]:
+        """
+        React to the version change. The default implementation does nothing.
+
+        :param rt: runtime of the release
+        :param new_version: version being released, without the ``v`` prefix
+        :returns: path or paths of modified files, if any
+        """
         return None
 
     def on_version_change_tags(
         self, rt: env.Runtime, new_version: str, tags: list[str]
     ) -> Optional[OneOrMoreStrings]:
+        """
+        React to the version change, knowing previous releases. The default
+        implementation calls :meth:`on_version_change`.
+
+        :param rt: runtime of the release
+        :param new_version: version being released, without the ``v`` prefix
+        :param tags: existing version tags, as returned by
+            :meth:`Git.tag_list() <proj_flow.log.commit.Git.tag_list>`
+        :returns: path or paths of modified files, if any
+        """
         return self.on_version_change(rt, new_version)
 
 
+#: Registry of additional version updaters.
 version_updaters = registry.Registry[VersionUpdater]("VersionUpdater")
 
 
@@ -76,8 +102,31 @@ def add_release(
 ):
     """
     Bumps the project version based on current git logs, creates a "chore"
-    commit for the change, attaches an annotated tag with the version number
-    and pushes it all to hosting.
+    commit for the change and attaches an annotated tag with the version
+    number. If the hosting is active, its :meth:`Hosting.add_release()
+    <proj_flow.log.commit.Hosting.add_release>` pushes the commit with the tag
+    and creates the release; otherwise, nothing is pushed.
+
+    With ``--dry-run`` (and no ``dbg_changelog``), the project files are not
+    modified, while the git commands are only printed.
+
+    :param rt: runtime of the release
+    :param dbg_changelog: modify project files, changelog included, even with
+        ``--dry-run``
+    :param forced_level: use this level instead of one calculated from the
+        log
+    :param take_all: put all Conventional Commits into the changelog
+    :param with_types: commit types to put into the changelog in addition to
+        breaking changes, features and fixes
+    :param draft: create the release on hosting as a draft
+    :param generator: generator of the changelog file
+    :param omit: refs and ranges of commits to hide in the changelog
+    :param git: git wrapper for the repository
+    :param hosting: hosting service to release on
+    :returns: the new version tag
+    :raises NoProjectError: no project suite recognizes the project
+    :raises VersionNotAdvancing: no change since previous tag bumps the
+        version
     """
 
     suite, project = api.release.project_suites.find(_get_project(rt))
@@ -152,6 +201,7 @@ def add_release(
     return setup.curr_tag
 
 
+#: Subject prefix of the commits created by :func:`add_release`.
 RELEASE_SUBJECT_PREFIX = "chore: release "
 
 
@@ -169,6 +219,22 @@ def retract_release(
     pushes it with lease. Without a ``remote``, only the local tag and commit
     are retracted. A release, which is no longer a draft, is only removed, if
     ``force`` is set.
+
+    Resetting with ``--keep`` reverts every file committed by the release,
+    which includes the changelog, the project version file and all the files
+    modified by :data:`version_updaters`, so the next release bumps the
+    version from the same base again.
+
+    :param rt: runtime of the retraction
+    :param git: git wrapper for the repository
+    :param hosting: hosting service the release may be on
+    :param remote: name of the remote to remove the tag from and push the
+        reset branch to
+    :param force: remove the release even if it is already published
+    :returns: the retracted version tag
+    :raises ReleaseError: HEAD is not a release commit with its tag, a remote
+        is given on a detached HEAD, the release is already published without
+        ``force`` or hosting failed to remove it
     """
 
     head, subject = git.head_commit()

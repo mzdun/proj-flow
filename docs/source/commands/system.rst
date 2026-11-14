@@ -8,7 +8,7 @@ Synopsis
 
 .. code-block::
 
-   $ ./flow system --format {props,platform,debug}
+   $ ./flow system --format {props,platform,os,debug}
 
 Description
 -----------
@@ -41,6 +41,11 @@ while deciding on the file name of packages produced by CPack.
     When used to pack version "3.14.15" of a project named "tools", this may
     result in package files, such as ``tools-3.14.15-ubuntu-24.04-x86_64.tar.gz``
     or ``tools-3.14.15-windows-x86_64.zip``.
+
+``--format os``
+    Print the system name in form of ``<platform>-<version>``, or
+    ``<platform>-latest`` on systems with no version, e.g. ``ubuntu-24.04`` or
+    ``windows-latest``. This matches the names of GitHub runners.
 
 ``--format debug``
     Print values returned by various :py:mod:`platform` functions, contrasted

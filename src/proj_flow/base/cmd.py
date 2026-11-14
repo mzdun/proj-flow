@@ -54,6 +54,12 @@ def run(app: str, *args: str, capture_output=False):
 
 @contextmanager
 def cd(path: str):
+    """
+    Context manager changing the current directory, restoring the previous one
+    on exit.
+
+    :param path: directory to change to
+    """
     prev = os.getcwd()
     os.chdir(path)
     try:

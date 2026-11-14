@@ -1,6 +1,10 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.model.builders** turns WebIDL extended attributes into values
+of the template context, as declared in the code generation config.
+"""
 
 import copy
 import json
@@ -17,6 +21,10 @@ TR = list[str] | str | None
 
 @dataclass
 class VersionAttribute:
+    """
+    Value of a ``min-version`` or ``max-version`` extended attribute.
+    """
+
     value: int
     is_max: bool = False
     is_min: bool = False
@@ -24,11 +32,26 @@ class VersionAttribute:
 
 @dataclass
 class TypeReplacement:
+    """
+    Name of a type in the target language, with the module or include
+    providing it.
+    """
+
     name: str
     module_or_include: str | None = None
 
     @staticmethod
     def load_config(lang: str | None, types: Path | None):
+        """
+        Load the type replacements: first the ones shipped for the language,
+        then the ones from the types file, for the language (or for ``""``, when
+        there is no language). A ``null`` keeps the IDL name, a string renames the
+        type and a ``[module, name]`` pair also names the module or include.
+
+        :param lang: target language, if any
+        :param types: path to the project types file, if any
+        :returns: IDL type name mapped to its replacement
+        """
         data = {}
         if lang:
             path = package_root / "data" / "types" / f"{lang}.json"
@@ -68,6 +91,11 @@ ExtAttrMap = dict[str, list[expr.ExtendedAttribute]]
 
 
 def group_extended_attributes(ext_attrs: list[expr.ExtendedAttribute]) -> ExtAttrMap:
+    """
+    Group the extended attributes by name, in source order.
+
+    :param ext_attrs: extended attributes of one IDL node
+    """
     result: ExtAttrMap = {}
     for attr in ext_attrs:
         result.setdefault(attr.name, []).append(attr)
@@ -92,6 +120,14 @@ def _single_extended_attribute(name: str, attributes: ExtAttrMap):
 def visit_flag_extended_attribute(
     name: str, bag: dict[str, Any], attributes: ExtAttrMap
 ):
+    """
+    Store, whether the flag is present. The flag is stored even when absent.
+
+    :param name: name of the attribute
+    :param bag: context to store the value in
+    :param attributes: grouped extended attributes
+    :raises ExtAttrError: the attribute is used more than once
+    """
     # Always present, false if absent: a missing key would make Mustache
     # look the name up in outer contexts (e.g. an argument's `ext_attrs.in`
     # found in its operation's `ext_attrs`).
@@ -101,6 +137,15 @@ def visit_flag_extended_attribute(
 def visit_string_extended_attribute(
     name: str, bag: dict[str, Any], attributes: ExtAttrMap
 ):
+    """
+    Store the string value of the attribute; an absent attribute or one
+    without a value is not stored.
+
+    :param name: name of the attribute
+    :param bag: context to store the value in
+    :param attributes: grouped extended attributes
+    :raises ExtAttrError: the attribute is used more than once or with a list
+    """
     bag[name] = None
     attr = _single_extended_attribute(name, attributes)
     if attr is None:
@@ -128,7 +173,11 @@ def visit_string_list_extended_attribute(
 
     Next to it, `has_<name>` tells if there are any values, so that templates
     can render a block once, instead of once per item:
-    `{{#has_name}}...{{#name}}{{.}}{{/name}}...{{/has_name}}`."""
+    `{{#has_name}}...{{#name}}{{.}}{{/name}}...{{/has_name}}`.
+
+    :param name: name of the attribute
+    :param bag: context to store the values in
+    :param attributes: grouped extended attributes"""
 
     bag[name] = None
     values: list[str] = []
@@ -146,6 +195,11 @@ def visit_string_list_extended_attribute(
 
 
 def has_name(name: str):
+    """
+    Name of the flag telling, if a ``str-list`` attribute has any values.
+
+    :param name: name of the attribute
+    """
     return f"has_{name}"
 
 
@@ -156,6 +210,16 @@ def visit_version_extended_attribute(
     is_max: bool = False,
     is_min: bool = False,
 ):
+    """
+    Store the version given by the attribute as :class:`VersionAttribute`,
+    or ``None``, if the attribute is absent or its value is not a number.
+
+    :param name: name of the attribute
+    :param bag: context to store the value in
+    :param attributes: grouped extended attributes
+    :param is_max: the attribute gives the last version
+    :param is_min: the attribute gives the first version
+    """
     bag[name] = None
     attr = _single_extended_attribute(name, attributes)
     if attr is None:
@@ -175,6 +239,11 @@ def visit_version_extended_attribute(
 
 
 def flag_extended_attribute(name: str):
+    """
+    Create the visitor for a flag attribute.
+
+    :param name: name of the attribute
+    """
     def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_flag_extended_attribute(name, bag, attributes)
 
@@ -182,6 +251,11 @@ def flag_extended_attribute(name: str):
 
 
 def string_extended_attribute(name: str):
+    """
+    Create the visitor for a string attribute.
+
+    :param name: name of the attribute
+    """
     def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_string_extended_attribute(name, bag, attributes)
 
@@ -189,6 +263,11 @@ def string_extended_attribute(name: str):
 
 
 def string_list_extended_attribute(name: str):
+    """
+    Create the visitor for a string list attribute.
+
+    :param name: name of the attribute
+    """
     def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_string_list_extended_attribute(name, bag, attributes)
 
@@ -196,6 +275,13 @@ def string_list_extended_attribute(name: str):
 
 
 def version_extended_attribute(name: str, is_max: bool = False, is_min: bool = False):
+    """
+    Create the visitor for a version attribute.
+
+    :param name: name of the attribute
+    :param is_max: the attribute gives the last version
+    :param is_min: the attribute gives the first version
+    """
     def impl(bag: dict[str, Any], attributes: ExtAttrMap):
         return visit_version_extended_attribute(
             name, bag, attributes, is_max=is_max, is_min=is_min
@@ -224,23 +310,55 @@ ExtAttrsVisitor = Callable[[dict[str, Any], ExtAttrMap], None]
 
 @dataclass
 class ExtAttrsContextBuilder:
+    """
+    Visitors turning the extended attributes of one kind of IDL node into
+    template context values.
+    """
+
     visitors: dict[str, ExtAttrsVisitor] = field(default_factory=dict)
     applies_to_type: bool = False
 
     def add_flag(self, name: str):
+        """
+        Add a flag attribute.
+
+        :param name: name of the attribute
+        """
         self.visitors[name] = flag_extended_attribute(name)
 
     def add_string(self, name: str):
+        """
+        Add a string attribute.
+
+        :param name: name of the attribute
+        """
         self.visitors[name] = string_extended_attribute(name)
 
     def add_string_list(self, name: str):
+        """
+        Add a string list attribute.
+
+        :param name: name of the attribute
+        """
         self.visitors[name] = string_list_extended_attribute(name)
 
     def visit(self, bag: dict[str, Any], attributes: ExtAttrMap):
+        """
+        Run all the visitors.
+
+        :param bag: context to store the values in
+        :param attributes: grouped extended attributes
+        """
         for visitor in self.visitors.values():
             visitor(bag, attributes)
 
     def merge(self, rhs: "ExtAttrsContextBuilder"):
+        """
+        Combine with another builder; visitors of ``rhs`` win. The
+        ``applies_to_type`` flag is taken from this builder.
+
+        :param rhs: builder to merge in
+        """
         left = copy.deepcopy(self.visitors)
         right = copy.deepcopy(rhs.visitors)
         left.update(right)
@@ -251,29 +369,61 @@ class ExtAttrsContextBuilder:
 
 
 class BuilderBuilder:
+    """
+    Fluent helper for building an :class:`ExtAttrsContextBuilder`.
+
+    :param applies_to_type: also read the extended attributes, which are meant
+        for the type of the member
+    """
+
     tgt: ExtAttrsContextBuilder
 
     def __init__(self, applies_to_type: bool = False):
         self.tgt = ExtAttrsContextBuilder(applies_to_type=applies_to_type)
 
     def flag(self, name: str):
+        """
+        Add a flag attribute.
+
+        :param name: name of the attribute
+        :returns: this helper
+        """
         self.tgt.add_flag(name)
         return self
 
     def string(self, name: str):
+        """
+        Add a string attribute.
+
+        :param name: name of the attribute
+        :returns: this helper
+        """
         self.tgt.add_string(name)
         return self
 
     def string_list(self, name: str):
+        """
+        Add a string list attribute.
+
+        :param name: name of the attribute
+        :returns: this helper
+        """
         self.tgt.add_string_list(name)
         return self
 
     def build(self):
+        """
+        Get the built :class:`ExtAttrsContextBuilder`.
+        """
         return self.tgt
 
 
 @dataclass
 class ExtAttrsContextBuilders:
+    """
+    Extended attribute builders for every kind of IDL node.
+    """
+
     enum: ExtAttrsContextBuilder = field(default_factory=ExtAttrsContextBuilder)
     interface: ExtAttrsContextBuilder = field(default_factory=ExtAttrsContextBuilder)
     attribute: ExtAttrsContextBuilder = field(default_factory=ExtAttrsContextBuilder)
@@ -289,6 +439,13 @@ class ExtAttrsContextBuilders:
         selector: Callable[["ExtAttrsContextBuilders"], ExtAttrsContextBuilder],
         ext_attrs: list[expr.ExtendedAttribute],
     ):
+        """
+        Turn the extended attributes of an IDL node into context values.
+
+        :param selector: picks the builder for the kind of node
+        :param ext_attrs: extended attributes of the node
+        :returns: context values of the attributes
+        """
         result: dict[str, Any] = {}
         attributes = group_extended_attributes(ext_attrs)
         builder = selector(self)
@@ -298,6 +455,11 @@ class ExtAttrsContextBuilders:
         return result
 
     def merge(self, rhs: "ExtAttrsContextBuilders"):
+        """
+        Combine with other builders, kind by kind; visitors of ``rhs`` win.
+
+        :param rhs: builders to merge in
+        """
         return ExtAttrsContextBuilders(
             enum=self.enum.merge(rhs.enum),
             interface=self.interface.merge(rhs.interface),
@@ -318,6 +480,15 @@ class ExtAttrsContextBuilders:
 
     @staticmethod
     def from_config(data: dict):
+        """
+        Read the user-defined extended attributes from ``ext_attrs`` of the
+        config. Each kind maps attribute names to ``bool``, ``str``, ``str-list``,
+        ``min-version`` or ``max-version``; the ``type`` kind only allows
+        ``generic-wrapper``.
+
+        :param data: the whole config
+        :raises RuntimeError: an attribute has unknown or disallowed kind
+        """
         ext_attrs = cast(dict[str, dict[str, str]], data.get("ext_attrs", {}))
         result = ExtAttrsContextBuilders()
         targets = [
@@ -352,6 +523,12 @@ class ExtAttrsContextBuilders:
         return result
 
     def property_fixup(self, type: dict[str, Any], parent: dict[str, Any]):
+        """
+        Move the values of type attributes found on the member to its type.
+
+        :param type: context values of the type, updated
+        :param parent: context values of the member, updated
+        """
         for key in self.type.visitors:
             if key in parent:
                 value = parent[key]
@@ -382,6 +559,12 @@ class ExtAttrsContextBuilders:
 
     @staticmethod
     def builtin():
+        """
+        Builders for the attributes always known: ``default`` on attributes;
+        ``defaulted``, ``in``, ``out``, ``mutable`` and ``throws`` on operations;
+        ``defaulted``, ``default``, ``in`` and ``out`` on arguments; ``unique``,
+        ``span``, ``nullable`` and ``key`` on types.
+        """
         return ExtAttrsContextBuilders(
             attribute=BuilderBuilder().string("default").build(),
             operation=BuilderBuilder()

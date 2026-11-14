@@ -2,7 +2,9 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.project.cplusplus.cmake_presets** check build directories for CMake step.
+The **proj_flow.base.cmake_presets** reads ``CMakePresets.json``, together
+with its includes, to find the build directories of the presets for the CMake
+step.
 """
 
 import json
@@ -15,8 +17,15 @@ from typing import Callable, TypeVar, cast
 
 
 class MacroType(Enum):
+    """
+    Macros of ``binaryDir``, whose values depend on the preset.
+    """
+
+    #: ``${presetName}``
     PRESET_NAME = 1
+    #: ``${generator}``
     GENERATOR = 2
+    #: ``${fileDir}``
     FILE_DIR = 3
 
 
@@ -38,14 +47,34 @@ MACROS: dict[str, Path | str | MacroType] = {
 
 @dataclass
 class Preset:
+    """
+    Configure preset, with the values used by *Project Flow*. After
+    :meth:`Presets.visit_file`, missing values are taken from the inherited
+    presets.
+    """
+
+    #: Name of the preset.
     name: str
+    #: The ``binaryDir``, with the macros not expanded yet.
     binary_dir: str | None
+    #: The ``CMAKE_BUILD_TYPE`` cache variable.
     build_type: str | None
+    #: The ``generator``.
     generator: str | None
+    #: Names of the presets this one inherits from.
     inherits: list[str]
+    #: Directory of the file defining the preset.
     file_dir: Path
 
     def expand(self):
+        """
+        Expand the macros of :attr:`binary_dir`. Unknown macros expand to an
+        empty string; a macro expanding to an absolute path drops everything
+        before it.
+
+        :returns: the binary directory, or ``None``, if the preset has none or
+            its ``binaryDir`` has an unclosed macro
+        """
         if not self.binary_dir:
             return None
         chunks = self.binary_dir.split("${")
@@ -74,11 +103,25 @@ class Preset:
 
 
 class Presets:
+    """
+    Reader of ``CMakePresets.json`` files. Each file is read only once, so
+    includes can form a graph.
+    """
+
     def __init__(self):
         self.seen = cast(set[Path], set())
         self.result = cast(dict[str, Preset], {})
 
     def visit_file(self, filename: Path):
+        """
+        Read the configure presets of the file and of all the files it
+        includes, then fill missing values of each preset from the presets it
+        inherits from.
+
+        :param filename: path of a presets file
+        :returns: all the presets read so far, by name, or ``None``, if a file
+            is missing
+        """
         dirname = self.__parent_from_file(filename)
         if dirname is None:
             return self.result
@@ -153,6 +196,14 @@ class Presets:
 
 
 def binary_dir_from_preset(preset: Preset, cwd: Path):
+    """
+    Mapper for :func:`visit_presets`, returning the binary directory of the
+    preset.
+
+    :param preset: the preset
+    :param cwd: directory to make the path relative to, if possible
+    :returns: the binary directory, or ``None``, if the preset has none
+    """
     path = preset.expand()
     if not path:
         return None
@@ -162,6 +213,11 @@ def binary_dir_from_preset(preset: Preset, cwd: Path):
 
 
 def get_binary_dirs():
+    """
+    :returns: binary directories of all the presets in ``CMakePresets.json``
+        of the current directory, by preset name, or ``None``, if there is no
+        such file
+    """
     return visit_presets(binary_dir_from_preset)
 
 
@@ -169,6 +225,14 @@ T = TypeVar("T")
 
 
 def visit_presets(mapper: Callable[[Preset, Path], T | None]):
+    """
+    Map all the presets of ``CMakePresets.json`` in the current directory.
+
+    :param mapper: called with each preset and the current directory; presets
+        mapped to ``None`` are left out
+    :returns: mapped presets, by preset name, or ``None``, if there is no
+        ``CMakePresets.json``
+    """
     presets = Presets().visit_file(Path("CMakePresets.json"))
     if presets is None:
         return None

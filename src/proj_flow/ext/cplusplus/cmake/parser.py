@@ -23,21 +23,37 @@ TOKENS = [
 
 
 class Token(NamedTuple):
+    """Token of the CMake source."""
+
+    #: Token type, one of the names from ``TOKENS``.
     type: str
+    #: Text of the token.
     value: str
+    #: Offset of the token in the source.
     offset: int
 
 
 class Command(NamedTuple):
+    """CMake command invocation."""
+
+    #: Name of the command.
     name: str
+    #: Arguments of the command, with quotes removed from strings.
     args: List[Arg]
+    #: Offset of the command name in the source.
     offset: int
 
 
 class CMakeProject(NamedTuple):
+    """Project information found in ``CMakeLists.txt``."""
+
+    #: Project name from ``project()``.
     name: Arg
+    #: ``VERSION`` from ``project()``.
     version: Arg
+    #: Value of ``PROJECT_VERSION_STABILITY``.
     stability: Arg
+    #: ``DESCRIPTION`` from ``project()``.
     description: Arg
 
 

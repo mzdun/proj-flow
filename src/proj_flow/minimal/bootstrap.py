@@ -48,6 +48,11 @@ def main(
 
 
 def get_versions() -> dict[str, str]:
+    """
+    Read the versions of installed packages from ``pip freeze``.
+
+    :returns: package versions by package name; empty, if ``pip`` failed
+    """
     pip_run = cast(
         subprocess.CompletedProcess[bytes],
         subprocess.run(
@@ -65,6 +70,18 @@ def get_versions() -> dict[str, str]:
 
 
 def get_version(name: str, versions: dict[str, str]):
+    """
+    Find the version of a package. If neither the name nor its dashed
+    variant is listed in ``versions``, the module is imported and its
+    ``__version__`` or ``VERSION`` is used; a module, which cannot be
+    imported, has an unknown version. A leading ``v`` is removed from the
+    version.
+
+    :param name: name of the package
+    :param versions: package versions, e.g. from :func:`get_versions`
+    :returns: tuple of the name, under which the package was found, and its
+        version, or an empty string, if the version is unknown
+    """
     label = name
     ver = versions.get(name)
     if not ver:
@@ -87,6 +104,12 @@ def get_version(name: str, versions: dict[str, str]):
 
 
 def print_versions(rt: env.Runtime, packages: set[str]):
+    """
+    Print the sorted list of packages with their versions.
+
+    :param rt: runtime used to print the list
+    :param packages: names of the packages to print
+    """
     length = 0
     lines: list[tuple[str, str]] = []
     versions = get_versions()

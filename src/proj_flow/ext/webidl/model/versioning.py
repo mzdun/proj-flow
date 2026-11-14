@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.model.versioning** filters the definitions by API version and
+splits enums and interfaces reused between versioned outputs.
+"""
+
 from __future__ import annotations
 
 import sys
@@ -32,6 +37,11 @@ from proj_flow.ext.webidl.registry import webidl_visitors
 
 @dataclass
 class VersionedUse:
+    """
+    Definition unchanged since an earlier version, which the generated code
+    can reuse.
+    """
+
     version: int
     name: str
 
@@ -65,6 +75,13 @@ class _FindMaxVersion:
 
 
 def find_max_version(definitions: MergedDefinitions, config_version: int) -> int | None:
+    """
+    Find the highest version mentioned by the version attributes.
+
+    :param definitions: definitions to search
+    :param config_version: version from the config, the lowest result
+    :returns: the highest version
+    """
     visitor = _FindMaxVersion(config_version)
     for collection in [definitions.interfaces.values(), definitions.enum]:
         for item in collection:
@@ -168,6 +185,12 @@ def __filter_interface_by_version(iface: Interface, version: int, name: str):
 
 
 def filter_by_version(definitions: MergedDefinitions, version: int):
+    """
+    Keep only the definitions and members available in given version.
+
+    :param definitions: definitions to filter
+    :param version: version to filter for
+    """
     output = MergedDefinitions()
     for key, iface in definitions.interfaces.items():
         if __version_matches(iface.ext_attrs, version, f"interface {key}"):
@@ -181,6 +204,14 @@ def filter_by_version(definitions: MergedDefinitions, version: int):
 
 
 def load_unversioned_idl(rule: TemplateRule, ext_attrs: ExtAttrsContextBuilders):
+    """
+    Parse and merge the inputs of the rule, then pass them to the registered
+    :data:`webidl_visitors <proj_flow.ext.webidl.registry.webidl_visitors>`.
+    Any error is printed and exits the program.
+
+    :param rule: rule with the IDL inputs
+    :param ext_attrs: extended attribute builders
+    """
     names = list(map(lambda path: path.as_posix(), rule.inputs))
 
     try:
@@ -206,6 +237,14 @@ def load_unversioned_idl(rule: TemplateRule, ext_attrs: ExtAttrsContextBuilders)
 def load_versions_idl(
     rule: TemplateRule, ext_attrs: ExtAttrsContextBuilders, config_version: int
 ):
+    """
+    Enumerate the versions to generate for the rule.
+
+    :param rule: rule with the IDL inputs
+    :param ext_attrs: extended attribute builders
+    :param config_version: version from the config, the lowest maximum
+    :returns: generator of versions, from 1 to the highest one
+    """
     unversioned_idl = load_unversioned_idl(rule, ext_attrs)
     max_version = find_max_version(unversioned_idl, config_version) or 1
     for version in range(1, max_version + 1):
@@ -215,6 +254,15 @@ def load_versions_idl(
 def split_reused_enums(
     current: list[EnumInfo], previous: list[EnumInfo], previous_version: int
 ):
+    """
+    Split the enumerations into the ones changed since previous version and
+    the ones to reuse from it.
+
+    :param current: enumerations of current version
+    :param previous: enumerations of previous version
+    :param previous_version: number of previous version
+    :returns: changed enumerations and the reused ones
+    """
     curr = {enum.name: enum for enum in current}
     prev = {enum.name: enum for enum in previous}
 
@@ -274,12 +322,28 @@ class __InterfaceVisitor:
 
 
 def interface_uses_modified_types(interface: Interface, modified: set[str]):
+    """
+    Check, if any member of the interface uses one of the types.
+
+    :param interface: interface to check
+    :param modified: names of the modified types
+    """
     return __InterfaceVisitor(modified).on_interface(interface)
 
 
 def split_reused_interfaces(
     current: list[Interface], previous: list[Interface], previous_version: int
 ):
+    """
+    Split the interfaces into the ones changed since previous version and the
+    ones to reuse from it. An interface using a changed interface is changed
+    too.
+
+    :param current: interfaces of current version
+    :param previous: interfaces of previous version
+    :param previous_version: number of previous version
+    :returns: changed interfaces and the reused ones
+    """
     curr = {enum.name: enum for enum in current}
     prev = {enum.name: enum for enum in previous}
 

@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.test_runner.driver.testbed** runs the selected test cases, either
+sequentially or on a thread pool, and reports the results.
+"""
+
 import concurrent.futures
 import json
 import os
@@ -89,6 +94,26 @@ def run_and_report_tests(
     ctrf: str | None,
     report_name: str | None,
 ) -> int:
+    """
+    Runs the independent tests on a thread pool and then the linear tests
+    one by one, reporting each result as it arrives. Afterwards, removes the
+    install directory and ``build/.testing``, optionally writes the CTRF
+    report and prints the summary.
+
+    :param independent_tests: tests, which may run in parallel, each paired
+        with its position in the progress counter
+    :param linear_tests: tests, which must run sequentially, each paired with
+        its position in the progress counter
+    :param install_dir: directory with installed project, removed after all
+        tests are finished
+    :param env: test environment shared by all the tests
+    :param thread_count: number of worker threads for the independent tests
+    :param rt: runtime used to query current git branch for the CTRF report
+    :param ctrf: path to the CTRF report to write, or ``None`` to skip the
+        report
+    :param report_name: name of the report stored in the CTRF environment
+    :returns: process exit code, ``0`` if no test failed, ``1`` otherwise
+    """
     counters = Counters(env.target_name, env.source_dir())
 
     if independent_tests:

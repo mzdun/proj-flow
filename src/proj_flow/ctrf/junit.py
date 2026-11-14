@@ -2,7 +2,7 @@
 # This file is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ctrf.googletest** allows conversion from XML JUnit files
+The **proj_flow.ctrf.junit** allows conversion from XML JUnit files
 to JSON ctrf.io files.
 """
 
@@ -20,6 +20,24 @@ def read_junit_testcase(
     element: ET.Element,
     source_dir: Path,
 ):
+    """
+    Convert a single ``<testcase>`` element to a CTRF test. Google Test's
+    ``value_param`` is appended to the name in parentheses, ``file`` is made
+    relative to the source directory and ``time`` (in seconds) becomes the
+    duration in milliseconds. A ``timestamp`` (local time, unless it names
+    the time zone) becomes the start of the test, and the start plus the
+    duration becomes its stop. The test fails, if it has any ``<failure>``
+    children, otherwise is skipped, if it has any ``<skipped>`` children,
+    otherwise it passes. Messages of these children become the message of
+    the test, ``<system-out>`` and ``<system-err>`` become its output.
+
+    :param suite: names of the suites containing the test, outermost first
+    :param element: the ``<testcase>`` element
+    :param source_dir: directory, against which test file path is made
+        relative
+    :returns: new CTRF test, or ``None``, if the test case has no name, no
+        time, or a ``status`` other than ``run``
+    """
     attrib = element.attrib
 
     name = attrib.get("name")
@@ -117,6 +135,17 @@ def read_junit_testsuite(
     source_dir: Path,
     testsuite: ET.Element,
 ):
+    """
+    Add all ``<testcase>`` children of a ``<testsuite>`` element to the
+    results. The tests are placed in two suites: the group and the name of
+    the test suite. Test suites without a name are ignored.
+
+    :param ctrf: results to add the tests to
+    :param testsuite_group: name of the outermost suite
+    :param source_dir: directory, against which test file paths are made
+        relative
+    :param testsuite: the ``<testsuite>`` element
+    """
     testsuite_name = testsuite.attrib.get("name")
     if not testsuite_name:
         return
@@ -133,6 +162,18 @@ def read_junit_testsuite(
 def read_junit_testsuites(
     ctrf: ctrf.Results, testsuite_group: str, filename: Path, source_dir: Path
 ):
+    """
+    Read a JUnit XML file and add its tests to the results. The root element
+    is either a single ``<testsuite>`` (e.g. from Qt QTest), or a
+    ``<testsuites>`` element, whose children are read as test suites (e.g.
+    from Google Test).
+
+    :param ctrf: results to add the tests to
+    :param testsuite_group: name of the outermost suite
+    :param filename: path of the JUnit XML file
+    :param source_dir: directory, against which test file paths are made
+        relative
+    """
     tree = ET.parse(filename)
     root = tree.getroot()
     if root.tag == "testsuite":

@@ -1,6 +1,12 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.test_runner.driver.test** defines :class:`Test`, a single test case loaded
+from a test file, with means to run it and report the differences between the
+expected and actual results.
+"""
+
 import os
 import random
 import shlex
@@ -41,6 +47,14 @@ def _diff(expected, actual):
 
 
 def str_presenter(dumper: Dumper, data: str):
+    """
+    YAML representer for strings, which uses the literal block style for
+    multiline strings, keeping the stored test files readable.
+
+    :param dumper: YAML dumper writing the node
+    :param data: string to represent
+    :returns: Scalar node for the string.
+    """
     if "\n" in data:
         return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
 
@@ -78,6 +92,14 @@ def _paths(key: str, dirs: list[str]):
 
 
 class Test:
+    """
+    Single test case, loaded from a test file.
+
+    :param data: parsed contents of the test file
+    :param filename: path to the test file
+    :param count: position of the test in the test suite; currently unused
+    """
+
     cwd: str
     data: dict
     filename: Path
@@ -213,6 +235,20 @@ class Test:
         return result, _rebuild
 
     def run_cmds(self, env: Env, ops: list[list[str]], tempdir: str) -> bool | None:
+        """
+        Runs ``prepare`` or ``cleanup`` commands through :attr:`Env.handlers
+        <proj_flow.ext.test_runner.driver.env.Env.handlers>`, with expanded
+        arguments. While running, ``env`` is available as
+        :attr:`current_env`. Exceptions from a command prefixed with
+        ``safe-``, e.g. ``safe-rm``, are ignored; other exceptions are printed
+        and re-raised.
+
+        :param env: environment of the test run
+        :param ops: list of commands, each a list of the name and arguments
+        :param tempdir: value for ``$TMP``
+        :returns: ``True``, if all commands were run, ``None``, if a command
+            had too few arguments.
+        """
         saved = self.current_env
         self.current_env = env
         try:
@@ -246,6 +282,17 @@ class Test:
         return True
 
     def run(self, environment: Env) -> tuple[ProcessIO, list[FileWrite]] | None:
+        """
+        Runs the test. Moves :attr:`cwd` to a new random directory under
+        ``build/.testing``, runs ``prepare`` commands, the tested binary with
+        expanded ``args`` (and ``input``, if any), then each ``post`` call
+        for as long as the return code stays zero, loads the files listed in
+        ``writes`` and runs ``cleanup`` commands.
+
+        :param environment: environment of the test run
+        :returns: Patched outputs of all calls and the files to compare, or
+            ``None``, if ``prepare`` or ``cleanup`` failed.
+        """
         root = os.path.join(
             "build",
             ".testing",
@@ -331,6 +378,16 @@ class Test:
         )
 
     def clip(self, actual: ProcessIO) -> str | ProcessIO:
+        """
+        Trims the output streams according to ``check`` setting, so that
+        they can be compared with :attr:`expected`. For ``begin``, only that
+        many first characters are kept as there are in the expected stream;
+        for ``end``, that many last characters.
+
+        :param actual: outputs of the tested binary
+        :returns: Trimmed outputs, ``actual`` itself, if there are no
+            expected values, or the name of an unknown ``check`` value.
+        """
         if not self.expected:
             return actual
 
@@ -356,6 +413,17 @@ class Test:
     def text_diff(
         header: str, expected: str, actual: str, pre_mark: str = "", post_mark: str = ""
     ):
+        """
+        Formats a report of differing values, showing both values and their
+        unified diff.
+
+        :param header: title of the report
+        :param expected: expected value
+        :param actual: actual value
+        :param pre_mark: text placed before both values, e.g. ``...``
+        :param post_mark: text placed after both values, e.g. ``...``
+        :returns: Formatted report.
+        """
         return f"""{header}
   Expected:
     {pre_mark}{repr(expected)}{post_mark}
@@ -367,6 +435,15 @@ Diff:
 """
 
     def report_io(self, actual: ProcessIO):
+        """
+        Reports differences between the expected and actual return code and
+        output streams. Streams checked with ``begin`` or ``end`` are marked
+        with ``...`` on the clipped side.
+
+        :param actual: outputs of the tested binary, already clipped
+        :returns: Report of the differences, or an empty string, if there
+            are no expected values or nothing differs.
+        """
         result = ""
         if not self.expected:
             return result
@@ -405,6 +482,13 @@ Diff:
         self,
         file: FileWrite,
     ):
+        """
+        Reports differences between the generated and expected file.
+
+        :param file: file pair to report
+        :returns: Report with a header naming the file, noting missing or
+            binary files, or with the diff of text files.
+        """
         header = (
             f"{file.generated.filename} [{'BIN' if file.generated.binary else 'TXT'}]"
         )
@@ -429,6 +513,17 @@ Diff:
         )
 
     def test_footer(self, env: Env, tempdir: str):
+        """
+        Formats the information needed to re-run a failed test: the command
+        line, prefixed with the environment variables of the test (and the
+        ones starting with :attr:`Env.reportable_env_prefix
+        <proj_flow.ext.test_runner.driver.env.Env.reportable_env_prefix>`),
+        the working directory and the test file.
+
+        :param env: environment of the test run
+        :param tempdir: value for ``$TMP``
+        :returns: Multiline footer text.
+        """
         _env = {}
         _env["LANGUAGE"] = self.lang
         for key in self.env:
@@ -454,6 +549,12 @@ Diff:
         return f"{call}\ncwd: {self.cwd}\ntest: {self.filename}"
 
     def nullify(self, lang: str | None):
+        """
+        Clears the expected values of the test and stores the test file, so
+        the next run can record new values.
+
+        :param lang: new language for the test, if not ``None``
+        """
         if lang is not None:
             self.lang = lang
             self.data["lang"] = lang
@@ -462,6 +563,9 @@ Diff:
         self.store()
 
     def store(self):
+        """
+        Writes :attr:`data` back to the test file as YAML.
+        """
         with self.filename.open("wb") as f:
             yaml.dump(
                 self.data,
@@ -475,14 +579,32 @@ Diff:
             )
 
     def path(self, filename):
+        """
+        Resolves a path against the working directory of the test.
+
+        :param filename: path relative to the working directory of the test
+        :returns: Path joined with :attr:`cwd`.
+        """
         return os.path.join(self.cwd, filename)
 
     def chdir(self, sub):
+        """
+        Changes the working directory of the test. For a ``linear`` test,
+        changes the working directory of the current process as well.
+
+        :param sub: path relative to the current working directory of the test
+        """
         self.cwd = os.path.abspath(os.path.join(self.cwd, sub))
         if self.linear:
             os.chdir(self.cwd)
 
     def ls(self, sub):
+        """
+        Prints names of the entries of a directory, sorted case-insensitively,
+        with ``/`` appended to subdirectories.
+
+        :param sub: path relative to the working directory of the test
+        """
         name = self.path(sub)
         for _, dirnames, filenames in os.walk(name):
             names = sorted(
@@ -496,15 +618,41 @@ Diff:
                 print(name)
 
     def rmtree(self, sub):
+        """
+        Removes a directory with all its contents.
+
+        :param sub: path relative to the working directory of the test
+        """
         shutil.rmtree(self.path(sub))
 
     def cp(self, src: str, dst: str):
+        """
+        Copies a file, together with its metadata.
+
+        :param src: source path, relative to the working directory of the test
+        :param dst: destination path, relative to the working directory of the
+            test
+        """
         shutil.copy2(self.path(src), self.path(dst))
 
     def makedirs(self, sub):
+        """
+        Creates a directory with all missing parents.
+
+        :param sub: path relative to the working directory of the test
+        """
         os.makedirs(self.path(sub), exist_ok=True)
 
     def store_output(self, name: str, args: list[str]):
+        """
+        Runs a command and stores its stripped standard output as a variable,
+        which can later be used as ``$name`` in the arguments of the test. If
+        the command is the name of the tested binary, it is replaced with the
+        path to that binary.
+
+        :param name: name of the variable
+        :param args: command line to run
+        """
         env = self.current_env
 
         if env is not None and args[0] == env.target_name:
@@ -516,6 +664,13 @@ Diff:
 
     @staticmethod
     def load(filename: Path, count: int):
+        """
+        Loads a test from a JSON or YAML file.
+
+        :param filename: path to the test file
+        :param count: position of the test in the test suite
+        :returns: Loaded test.
+        """
         contents = filename.read_text(encoding="UTF-8")
         tree = cast(dict, yaml.load(contents, Loader=Loader))
         return Test(tree, filename, count)

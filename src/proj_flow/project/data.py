@@ -11,4 +11,12 @@ from proj_flow.api import ctx
 
 
 def get_internal(key: str, value: Any = None):
+    """
+    Read a value stored with :meth:`register_internal
+    <proj_flow.project.api.ProjectType.register_internal>`.
+
+    :param key: name of the value
+    :param value: value returned, if ``key`` was not registered
+    :returns: the stored value or ``value``
+    """
     return ctx.internals.get(key, value)

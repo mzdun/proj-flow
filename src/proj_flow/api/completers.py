@@ -15,6 +15,14 @@ from proj_flow import api
 
 
 def cd_completer(prefix, **kwargs):
+    """
+    Complete directory names for ``-C``.
+
+    :param prefix: part of the argument typed so far
+    :param kwargs: other arguments from :py:mod:`argcomplete`, ignored
+    :returns: generator of matching directories, each with a trailing
+        separator
+    """
     target_dir = os.path.dirname(prefix)
     incomplete_part = os.path.basename(prefix)
     try:
@@ -33,6 +41,17 @@ def cd_completer(prefix, **kwargs):
 
 
 def step_completer(prefix: str, parser, **kwargs):
+    """
+    Complete step names for ``run --steps``; the argument may be
+    a comma-separated list and only its last item is completed,
+    case-insensitively.
+
+    :param prefix: part of the argument typed so far
+    :param parser: parser of the command, with the project config in its
+        ``flow`` attribute
+    :param kwargs: other arguments from :py:mod:`argcomplete`, ignored
+    :returns: generator of completed arguments
+    """
     flow_cfg = cast(api.env.FlowConfig, parser.flow)
 
     comma_sep = prefix.split(",")
@@ -55,6 +74,17 @@ def _str_arg(arg: Union[bool, str]):
 
 
 def matrix_completer(prefix: str, parser, **kwargs):
+    """
+    Complete ``-D key=value`` arguments with the keys and values of
+    ``.flow/matrix.yml``; the argument may be a comma-separated list and
+    only its last item is completed. Flags complete to ``ON``/``OFF``.
+
+    :param prefix: part of the argument typed so far
+    :param parser: parser of the command, with the project config in its
+        ``flow`` attribute
+    :param kwargs: other arguments from :py:mod:`argcomplete`, ignored
+    :returns: list of completed arguments
+    """
     flow_cfg = cast(api.env.FlowConfig, parser.flow)
 
     matrix_yml = flow_cfg.root / ".flow" / "matrix.yml"

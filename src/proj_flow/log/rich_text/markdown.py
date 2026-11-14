@@ -13,6 +13,13 @@ from proj_flow.log.rich_text import api
 
 
 class FileUpdate(api.FileUpdate):
+    """
+    New section of a Markdown changelog, describing a release.
+
+    :param setup: log setup of the release
+    :param commit_date: date of the release, as ``YYYY-MM-DD``
+    """
+
     def __init__(self, setup: commit.LogSetup, commit_date: str):
         super().__init__(setup, commit_date)
 
@@ -24,6 +31,13 @@ class FileUpdate(api.FileUpdate):
         return [f"## {version} ({self.commit_date})", ""]
 
     def outro_lines(self, lines: List[str]) -> None:
+        """
+        Add nothing after the last section; the changelog file has no
+        "Full Changelog" line, as the release heading links to the commit
+        listing instead, when the hosting provides one.
+
+        :param lines: lines of the message, left unchanged
+        """
         pass
 
     def issue_link(self, ref: str):
@@ -34,6 +48,10 @@ class FileUpdate(api.FileUpdate):
 
 
 class ChangelogGenerator(api.ChangelogGenerator):
+    """
+    Generator of ``CHANGELOG.md``, with each release under a ``##`` heading.
+    """
+
     @property
     def ext(self) -> str:
         return ".md"

@@ -16,6 +16,14 @@ from argcomplete import finders
 
 
 def split_line(cli_text: str):
+    """
+    Split the command line being completed into arguments. If the last
+    argument is still being typed and directly follows ``-C``, both the
+    ``-C`` and the unfinished directory are dropped.
+
+    :param cli_text: command line up to the cursor
+    :returns: list of the arguments
+    """
     last_is_finished = len(cli_text) > len(cli_text.rstrip())
     split = shlex.shlex(cli_text, posix=True)
     split.whitespace_split = True
@@ -27,6 +35,14 @@ def split_line(cli_text: str):
 
 
 def find_dash_see(args: List[str]):
+    """
+    Find the value of the last ``-C`` argument. A ``-C`` in the last position,
+    with no value after it, is ignored.
+
+    :param args: arguments of the command line, e.g. from :func:`split_line`
+    :returns: index of the argument following the last ``-C``, or ``-1``, if
+        there is no such argument
+    """
     pos = -1
     max_pos = len(args)
     if max_pos:
@@ -39,10 +55,28 @@ def find_dash_see(args: List[str]):
 
 
 class CompletionFinder(finders.CompletionFinder):
+    """
+    Completion finder, which can also tell, which project directory the
+    completed command line points to with ``-C``.
+    """
+
     def active(self):
+        """
+        Check, if the program was called by the shell to complete a command
+        line.
+
+        :returns: ``True``, if ``$_ARGCOMPLETE`` is set
+        """
         return "_ARGCOMPLETE" in os.environ
 
     def find_project(self):
+        """
+        Find the project directory of the completed command line, based on
+        ``$COMP_LINE`` and ``$COMP_POINT``.
+
+        :returns: directory given with the last ``-C`` argument; current
+            directory, if there is none or the completion is not active
+        """
         if not self.active():
             return Path()
 

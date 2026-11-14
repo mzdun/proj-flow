@@ -1,6 +1,12 @@
 # Copyright (c) 2026 Marcin Zdun
 # This file is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.tools.pragma_once** implements the ``tools pragma-once``
+command, which checks that ``#pragma once`` is present in all C and C++
+headers and absent from all source files.
+"""
+
 from pathlib import Path
 
 from proj_flow.api import arg

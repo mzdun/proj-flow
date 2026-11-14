@@ -41,6 +41,9 @@ class RTDocs:
             data = yaml.load(rtd_yaml, Loader=yaml.Loader)
 
             formats = ["html"]
+            for format in cast(List[str], data.get("formats", [])):
+                if format not in formats:
+                    formats.append(format)
 
             build_jobs = cast(
                 Dict[str, List[str]], data.get("build", {}).get("jobs", {})
@@ -81,15 +84,19 @@ class RTDocs:
                 jobs[f"build/{format}"] = builder.wrap(format)
 
         for name in build_jobs:
+            # bind the calls as default arguments, as the loop variables would be
+            # looked up only after the loop has finished
             if name != "build":
-                jobs[name] = lambda: _script(build_jobs[name])
+                jobs[name] = lambda calls=build_jobs[name]: _script(calls)
                 continue
 
             build_jobs_build = cast(Dict[str, List[str]], build_jobs["build"])
             for format in formats:
                 if format not in build_jobs_build:
                     continue
-                jobs[f"build/{format}"] = lambda: _script(build_jobs_build[name])
+                jobs[f"build/{format}"] = lambda calls=build_jobs_build[
+                    format
+                ]: _script(calls)
 
         for job in _job_listing:
             try:
@@ -108,12 +115,31 @@ class Builder(ABC):
 
     @property
     @abstractmethod
-    def READTHEDOCS_OUTPUT(self) -> str: ...
+    def READTHEDOCS_OUTPUT(self) -> str:
+        """
+        Output directory of the build, also exported as
+        ``$READTHEDOCS_OUTPUT`` for the scripts of the config.
+        """
+        ...
 
     @abstractmethod
-    def build(self, target: str) -> int: ...
+    def build(self, target: str) -> int:
+        """
+        Build the documentation in one format.
+
+        :param target: name of the format, as in ``formats`` of the config,
+            e.g. ``html`` or ``pdf``
+        :returns: exit code of the build tool
+        """
+        ...
 
     def wrap(self, target: str) -> Callable[[], int]:
+        """
+        Bind the format for later call, as a job of the step.
+
+        :param target: name of the format
+        :returns: function calling :meth:`build` with the format
+        """
         return lambda: self.build(target)
 
 
@@ -140,7 +166,6 @@ class Sphinx(Builder):
         :returns: exit code forwarded from the build tool
         """
         builder = "latex" if target == "pdf" else target
-        print(shutil.which("sphinx-build"))
 
         return subprocess.run(
             [

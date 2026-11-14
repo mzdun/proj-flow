@@ -44,14 +44,32 @@ def _wrap_in_conditions(text: str, when: When) -> str:
 
 @dataclass
 class FileInfo:
+    """
+    Single file of a template layer.
+    """
+
+    #: Path of the file, relative to the layer directory.
     src: str
+    #: Path of the file in the new project.
     dst: str
+    #: The file is passed through mustache before being written.
     is_mustache: bool
+    #: The file should be marked executable in Git.
     is_executable: bool
+    #: Condition(s) from the ``filelist.<path>.when`` of the layer config.
     when: When = None
 
     @classmethod
     def from_json(cls, src: str, filelist: dict, context: ctx.SettingsType):
+        """
+        Describe a file using the ``filelist`` object of the layer config. The
+        destination is the rendered ``path`` from the config, if present, or
+        the source path with the ``.mustache`` extension removed.
+
+        :param src: path of the file, relative to the layer directory
+        :param filelist: the ``filelist`` object of the layer config
+        :param context: the mustache context of the new project
+        """
         basename, ext = os.path.splitext(src)
         is_mustache = ext == ".mustache"
         key = src.replace(os.sep, "/")
@@ -73,9 +91,22 @@ class FileInfo:
         )
 
     def template(self):
+        """
+        :returns: mustache template rendering the source path, if the file's
+            conditions hold, or nothing otherwise
+        """
         return _wrap_in_conditions(f"{self.src}\n", self.when)
 
     def run(self, root: str, rt: env.Runtime, context: ctx.SettingsType):
+        """
+        Write the file into the new project, rendering it through mustache, if
+        needed, and keeping the file mode. With ``--dry-run``, only print the
+        destination.
+
+        :param root: directory of the layer
+        :param rt: runtime used for messages and ``--dry-run``
+        :param context: the mustache context of the new project
+        """
         if not rt.silent:
             if rt.use_color:
                 print(f"\033[2;30m+\033[m {self.dst}")
@@ -101,18 +132,36 @@ class FileInfo:
             shutil.copy2(src, dst, follow_symlinks=False)
 
     def get_git_checks(self):
+        """
+        :returns: this file, if it should be marked executable in Git
+        """
         if self.is_executable:
             yield self
 
 
 @dataclass
 class LayerInfo:
+    """
+    Template layer: a directory of files with its JSON config next to it.
+    """
+
+    #: Directory of the layer.
     root: str
+    #: Files of the layer, which pass their conditions.
     files: List[FileInfo]
+    #: Condition(s) from the ``when`` of the layer config.
     when: When = None
 
     @classmethod
     def from_fs(cls, layer_dir: str, context: ctx.SettingsType):
+        """
+        Read the layer config (``<layer_dir>.json``) and the files of the
+        layer, keeping only the files whose conditions, and the conditions of
+        the layer, hold in the context.
+
+        :param layer_dir: directory of the layer
+        :param context: the mustache context of the new project
+        """
         with open(f"{layer_dir}.json", encoding="UTF-8") as f:
             layer_info: dict = json.load(f)
         when = cast(When, layer_info.get("when"))
@@ -150,21 +199,36 @@ class LayerInfo:
 
     @property
     def name(self):
+        """Name of the layer directory."""
         return os.path.basename(self.root)
 
     @property
     def pkg(self):
+        """
+        Name of the package providing the layer, shown before the layer files
+        in the ``[pkg:name]`` header.
+        """
         # <package>/template/layers/<layer>
         return os.path.basename(
             os.path.dirname(os.path.dirname(os.path.dirname(self.root)))
         )
 
     def template(self):
+        """
+        :returns: mustache template rendering the source paths of the files,
+            which pass both their own and the layer's conditions
+        """
         return _wrap_in_conditions(
             "".join(file.template() for file in self.files), self.when
         )
 
     def run(self, rt: env.Runtime, context: ctx.SettingsType):
+        """
+        Write all the files of the layer into the new project.
+
+        :param rt: runtime used for messages and ``--dry-run``
+        :param context: the mustache context of the new project
+        """
         if not rt.silent:
             if rt.use_color:
                 print(f"\033[2;30m[{self.pkg}:{self.name}]\033[m")
@@ -176,12 +240,22 @@ class LayerInfo:
             print()
 
     def get_git_checks(self):
+        """
+        :returns: the files of the layer, which should be marked executable in
+            Git
+        """
         for file in self.files:
             for special in file.get_git_checks():
                 yield special
 
 
 def copy_license(rt: env.Runtime, context: ctx.SettingsType):
+    """
+    Write the ``LICENSE`` file chosen with ``COPY.LICENSE``, if any.
+
+    :param rt: runtime used for messages and ``--dry-run``
+    :param context: the mustache context of the new project
+    """
     license = path_get(context, "COPY.LICENSE")
     if not license:
         return
@@ -195,6 +269,14 @@ def copy_license(rt: env.Runtime, context: ctx.SettingsType):
 
 
 def gather_package_layers(package_root: str, context: ctx.SettingsType):
+    """
+    Read all the layers of a package's template, i.e. the directories in
+    ``template/layers`` with a JSON config next to them.
+
+    :param package_root: directory of the package providing the template
+    :param context: the mustache context of the new project
+    :returns: the layers having any files left after filtering
+    """
     layers_dir = os.path.abspath(os.path.join(package_root, ctx.template_dir, "layers"))
     for root, dirs, files in os.walk(layers_dir):
         layer_dirs = [

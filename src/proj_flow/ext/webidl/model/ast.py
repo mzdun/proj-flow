@@ -1,6 +1,10 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.model.ast** converts the :py:mod:`pywebidl2` syntax tree into
+the definitions model, merging partial interfaces and interface mixins.
+"""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -52,12 +56,24 @@ def _flatten_union(ast: expr.IdlType) -> expr.IdlType:
 
 @dataclass
 class TypeVisitor:
+    """
+    Collects the types used by the definitions: the local types referenced and
+    the modules or includes needed by the replaced ones. Visited types get their
+    target-language :attr:`Type.name`.
+    """
+
     known_types: set[str]
     types: dict[str, TypeReplacement]
     local_references: set[str] = field(default_factory=set)
     modules_or_includes: set[str] = field(default_factory=set)
 
     def on_type_name(self, type_name: str):
+        """
+        Record a type name and translate it to the target language.
+
+        :param type_name: IDL name of the type
+        :returns: name of the type in the target language
+        """
         if type_name in self.known_types:
             self.local_references.add(type_name)
             return type_name
@@ -71,6 +87,11 @@ class TypeVisitor:
         return type_name
 
     def on_type(self, type: "Type"):
+        """
+        Record a type and set its target-language name.
+
+        :param type: type to visit
+        """
         if type.nullable:
             replacement = self.types.get("optional")
             if replacement and replacement.module_or_include:
@@ -81,12 +102,21 @@ class TypeVisitor:
 
 @dataclass
 class TypeArg:
+    """
+    Argument of a generic type.
+    """
+
     arg_type: "Type | expr.IdlType"
     first: bool = False
 
 
 @dataclass
 class Type:
+    """
+    Type of a WebIDL attribute, constant, argument or return value. Generic
+    types, unions included, keep their arguments in :attr:`arguments`.
+    """
+
     idl_name: str
     name: str | None = field(default=None)
     arguments: list[TypeArg] = field(default_factory=list)
@@ -95,6 +125,11 @@ class Type:
     ext_attrs: dict = field(default_factory=dict)
 
     def populate_references(self, visitor: TypeVisitor):
+        """
+        Pass the type and its arguments to the visitor.
+
+        :param visitor: visitor collecting the types
+        """
         visitor.on_type(self)
         for arg in self.arguments:
             if isinstance(arg.arg_type, Type):
@@ -140,6 +175,16 @@ class Type:
         builders: ExtAttrsContextBuilders,
         parent_ast_attrs: list[expr.ExtendedAttribute],
     ) -> "Type | expr.IdlType":
+        """
+        Convert a type from the syntax tree. Unions are flattened, ``sequence``
+        with ``[unique]`` or ``[span]`` becomes ``set`` or ``span``, ``record``
+        keys follow ``[key]`` and ``generic-wrapper`` attributes wrap the type.
+
+        :param ast: type from the syntax tree
+        :param builders: extended attribute builders
+        :param parent_ast_attrs: extended attributes of the member the type
+            belongs to; type attributes found there are moved to the type
+        """
         result = Type.__from_idl(ast, builders, parent_ast_attrs)
         if isinstance(result, Type):
             result = result.__wrapped(builders)
@@ -221,6 +266,10 @@ class Type:
 
 @dataclass
 class Attribute:
+    """
+    Attribute of an interface.
+    """
+
     name: str
     type: Type | expr.IdlType
     readonly: bool
@@ -228,6 +277,11 @@ class Attribute:
     ext_attrs: dict
 
     def populate_references(self, visitor: TypeVisitor):
+        """
+        Pass the type of the attribute to the visitor.
+
+        :param visitor: visitor collecting the types
+        """
         if isinstance(self.type, Type):
             self.type.populate_references(visitor)
 
@@ -261,6 +315,13 @@ class Attribute:
 
     @staticmethod
     def from_idl(ast: expr.Attribute, builders: ExtAttrsContextBuilders):
+        """
+        Convert an attribute from the syntax tree. For union types, the
+        ``is_union`` and ``union`` extended attributes describe the alternatives.
+
+        :param ast: attribute from the syntax tree
+        :param builders: extended attribute builders
+        """
         ext_attrs = builders.from_idl(lambda b: b.attribute, ast.ext_attrs)
         type = Type.from_idl(ast.idl_type, builders, ast.ext_attrs)
         alternatives = Attribute.__union_alternatives(ast.name, type)
@@ -277,17 +338,32 @@ class Attribute:
 
 @dataclass
 class Constant:
+    """
+    Constant of an interface.
+    """
+
     name: str
     type: Type | expr.IdlType
     value: expr.Expression
     ext_attrs: dict
 
     def populate_references(self, visitor: TypeVisitor):
+        """
+        Pass the type of the constant to the visitor.
+
+        :param visitor: visitor collecting the types
+        """
         if isinstance(self.type, Type):
             self.type.populate_references(visitor)
 
     @staticmethod
     def from_idl(ast: expr.Const, builders: ExtAttrsContextBuilders):
+        """
+        Convert a constant from the syntax tree.
+
+        :param ast: constant from the syntax tree
+        :param builders: extended attribute builders
+        """
         ext_attrs = builders.from_idl(lambda b: b.attribute, ast.ext_attrs)
         type = Type.from_idl(ast.idl_type, builders, ast.ext_attrs)
         return Constant(
@@ -300,17 +376,32 @@ class Constant:
 
 @dataclass
 class Argument:
+    """
+    Argument of an operation.
+    """
+
     name: str
     type: Type | expr.IdlType
     ext_attrs: dict
     first: bool = False
 
     def populate_references(self, visitor: TypeVisitor):
+        """
+        Pass the type of the argument to the visitor.
+
+        :param visitor: visitor collecting the types
+        """
         if isinstance(self.type, Type):
             self.type.populate_references(visitor)
 
     @staticmethod
     def from_idl(ast: expr.Argument, builders: ExtAttrsContextBuilders):
+        """
+        Convert an argument from the syntax tree.
+
+        :param ast: argument from the syntax tree
+        :param builders: extended attribute builders
+        """
         ext_attrs = builders.from_idl(lambda b: b.argument, ast.ext_attrs)
         type = Type.from_idl(ast.idl_type, builders, ast.ext_attrs)
         return Argument(
@@ -322,6 +413,10 @@ class Argument:
 
 @dataclass
 class Operation:
+    """
+    Operation of an interface.
+    """
+
     name: str
     type: Type | expr.IdlType | None
     arguments: list[Argument]
@@ -329,6 +424,11 @@ class Operation:
     ext_attrs: dict
 
     def populate_references(self, visitor: TypeVisitor):
+        """
+        Pass the return type and the argument types to the visitor.
+
+        :param visitor: visitor collecting the types
+        """
         if isinstance(self.type, Type):
             self.type.populate_references(visitor)
         for arg in self.arguments:
@@ -336,6 +436,12 @@ class Operation:
 
     @staticmethod
     def from_idl(ast: expr.Operation, builders: ExtAttrsContextBuilders):
+        """
+        Convert an operation from the syntax tree.
+
+        :param ast: operation from the syntax tree
+        :param builders: extended attribute builders
+        """
         ext_attrs = builders.from_idl(lambda b: b.operation, ast.ext_attrs)
         type = (
             Type.from_idl(ast.idl_type, builders, ast.ext_attrs)
@@ -356,6 +462,10 @@ class Operation:
 
 @dataclass
 class MemberContainer:
+    """
+    Members of an interface or a mixin, split by kind.
+    """
+
     constants: list[Constant]
     attributes: list[Attribute]
     operations: list[Operation]
@@ -364,6 +474,13 @@ class MemberContainer:
     def from_idl(
         ast: expr.Interface | expr.InterfaceMixin, builders: ExtAttrsContextBuilders
     ):
+        """
+        Convert the members from the syntax tree. Unsupported members are
+        reported and skipped.
+
+        :param ast: interface or mixin from the syntax tree
+        :param builders: extended attribute builders
+        """
         constants: list[Constant] = []
         attributes: list[Attribute] = []
         operations: list[Operation] = []
@@ -390,6 +507,13 @@ class MemberContainer:
 
 
 def update(existing: dict, incoming: dict):
+    """
+    Merge extended attributes: values from ``incoming`` win, unless they are
+    empty and the key is already present.
+
+    :param existing: attributes to update
+    :param incoming: attributes to merge in
+    """
     for key in incoming:
         val = incoming[key]
         if val or key not in existing:
@@ -398,6 +522,10 @@ def update(existing: dict, incoming: dict):
 
 @dataclass
 class Interface:
+    """
+    Interface, possibly merged from partial interfaces and mixins.
+    """
+
     name: str
     inheritance: str | None
     partial: bool
@@ -416,6 +544,11 @@ class Interface:
         self.has_operations = len(self.operations) > 0
 
     def populate_references(self, visitor: TypeVisitor):
+        """
+        Pass the base interface and the member types to the visitor.
+
+        :param visitor: visitor collecting the types
+        """
         if self.inheritance:
             visitor.on_type_name(self.inheritance)
         for item in self.constants:
@@ -427,6 +560,12 @@ class Interface:
 
     @staticmethod
     def from_idl(ast: expr.Interface, builders: ExtAttrsContextBuilders):
+        """
+        Convert an interface from the syntax tree.
+
+        :param ast: interface from the syntax tree
+        :param builders: extended attribute builders
+        """
         members = MemberContainer.from_idl(ast, builders)
         return Interface(
             name=ast.name,
@@ -441,6 +580,10 @@ class Interface:
 
 @dataclass
 class InterfaceMixin:
+    """
+    Interface mixin, to be merged into the interfaces including it.
+    """
+
     partial: bool
     constants: list[Constant]
     attributes: list[Attribute]
@@ -449,6 +592,12 @@ class InterfaceMixin:
 
     @staticmethod
     def from_idl(ast: expr.InterfaceMixin, builders: ExtAttrsContextBuilders):
+        """
+        Convert a mixin from the syntax tree.
+
+        :param ast: mixin from the syntax tree
+        :param builders: extended attribute builders
+        """
         members = MemberContainer.from_idl(ast, builders)
         return InterfaceMixin(
             partial=ast.partial,
@@ -461,6 +610,10 @@ class InterfaceMixin:
 
 @dataclass
 class EnumInfo:
+    """
+    Enumeration, with the name also given in upper case.
+    """
+
     name: str
     NAME: str
     items: list[str]
@@ -468,6 +621,12 @@ class EnumInfo:
 
     @staticmethod
     def from_idl(ast: expr.Enum, builders: ExtAttrsContextBuilders):
+        """
+        Convert an enumeration from the syntax tree.
+
+        :param ast: enumeration from the syntax tree
+        :param builders: extended attribute builders
+        """
         return EnumInfo(
             name=ast.name,
             NAME=ast.name.upper(),
@@ -478,10 +637,23 @@ class EnumInfo:
 
 @dataclass
 class MergedDefinitions:
+    """
+    All definitions from a set of IDL files, with partial interfaces and
+    mixins merged.
+    """
+
     interfaces: dict[str, Interface] = field(default_factory=dict)
     enum: list[EnumInfo] = field(default_factory=list)
 
     def order(self, types: dict[str, TypeReplacement]):
+        """
+        Order the interfaces, so each one comes after the interfaces it
+        inherits from or uses in constants and attributes; a cycle is broken by
+        taking any of the remaining interfaces. Visits all the types on the way.
+
+        :param types: type replacements of the target language
+        :returns: ordered interfaces and the modules or includes they need
+        """
         dependency_tree: dict[str, set[str]] = {}
         modules_or_includes: set[str] = set()
 
@@ -539,7 +711,18 @@ AST_ = TypeVar("AST_")
 
 
 class PartialSetDict[P_, AST_](dict[str, list[P_]]):
+    """
+    Partial definitions, grouped by name.
+    """
+
     def append(self, name: str, item: AST_, builders: ExtAttrsContextBuilders):
+        """
+        Convert a definition and add it to the partials of the name.
+
+        :param name: name of the definition
+        :param item: definition from the syntax tree
+        :param builders: extended attribute builders
+        """
         conv = self.convert(item, builders)
         try:
             self[name].append(conv)
@@ -547,39 +730,86 @@ class PartialSetDict[P_, AST_](dict[str, list[P_]]):
             self[name] = [conv]
 
     def extend(self, additional: dict[str, list[P_]]):
+        """
+        Add the partials of another set.
+
+        :param additional: partials to add
+        """
         for name, partials in additional.items():
             try:
                 self[name].extend(partials)
             except KeyError:
                 self[name] = [*partials]
 
-    def convert(self, item: AST_, builders: ExtAttrsContextBuilders) -> P_: ...
+    def convert(self, item: AST_, builders: ExtAttrsContextBuilders) -> P_:
+        """
+        Convert a definition from the syntax tree into a partial.
+
+        :param item: definition from the syntax tree
+        :param builders: extended attribute builders
+        """
+        ...
 
 
 class InterfacePartialSet(PartialSetDict[Interface | str, expr.Interface | str]):
+    """
+    Partial interfaces, with names of included mixins kept as strings.
+    """
+
     def convert(self, item: expr.Interface | str, builders: ExtAttrsContextBuilders):
+        """
+        Convert a partial interface; a mixin name is kept as it is.
+
+        :param item: interface from the syntax tree, or name of a mixin
+        :param builders: extended attribute builders
+        """
         return item if isinstance(item, str) else Interface.from_idl(item, builders)
 
 
 class MixinPartialSet(PartialSetDict[InterfaceMixin, expr.InterfaceMixin]):
+    """
+    Partial interface mixins.
+    """
+
     def convert(self, item: expr.InterfaceMixin, builders: ExtAttrsContextBuilders):
+        """
+        Convert a partial mixin.
+
+        :param item: mixin from the syntax tree
+        :param builders: extended attribute builders
+        """
         return InterfaceMixin.from_idl(item, builders)
 
 
 @dataclass
 class IdlSyntaxError:
+    """
+    Syntax error found in an IDL file.
+    """
+
     path: str
     error: parser.SyntaxErrorInfo
 
 
 @dataclass
 class Definitions:
+    """
+    Definitions from IDL files, before merging the partials.
+    """
+
     interfaces: InterfacePartialSet = field(default_factory=InterfacePartialSet)
     mixins: MixinPartialSet = field(default_factory=MixinPartialSet)
     enums: list[EnumInfo] = field(default_factory=list)
 
     @staticmethod
     def from_idl(ast: expr.Definitions, builders: ExtAttrsContextBuilders):
+        """
+        Collect the interfaces, includes, mixins and enumerations from the
+        syntax tree; other definitions are ignored.
+
+        :param ast: definitions from the syntax tree
+        :param builders: extended attribute builders
+        """
         result = Definitions()
 
         for definition in ast.definitions:
@@ -602,6 +832,12 @@ class Definitions:
 
     @staticmethod
     def merge(*partials: "Definitions"):
+        """
+        Merge the partial interfaces and include the mixins.
+
+        :param partials: definitions to merge
+        :raises RuntimeError: an interface includes an unknown mixin
+        """
         intermediate = Definitions()
         for partial in partials:
             intermediate.interfaces.extend(partial.interfaces)
@@ -670,6 +906,14 @@ class Definitions:
         names: list[str],
         builders: ExtAttrsContextBuilders,
     ):
+        """
+        Parse the IDL files and merge their definitions.
+
+        :param names: paths to the IDL files
+        :param builders: extended attribute builders
+        :returns: merged definitions, or the syntax errors, if any file has them
+        :raises ExtAttrError: an extended attribute is used incorrectly
+        """
         partials: list[Definitions] = []
         syntax_errors: list[IdlSyntaxError] = []
 

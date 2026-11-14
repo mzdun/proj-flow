@@ -13,6 +13,13 @@ from proj_flow.log.rich_text import api
 
 
 class FileUpdate(api.FileUpdate):
+    """
+    New section of a reStructuredText changelog, describing a release.
+
+    :param setup: log setup of the release
+    :param commit_date: date of the release, as ``YYYY-MM-DD``
+    """
+
     def __init__(self, setup: commit.LogSetup, commit_date: str):
         super().__init__(setup, commit_date)
 
@@ -38,6 +45,13 @@ class FileUpdate(api.FileUpdate):
         return text.replace("`", "``")
 
     def outro_lines(self, lines: List[str]) -> None:
+        """
+        Add nothing after the last section; the changelog file has no
+        "Full Changelog" line, as the release heading links to the commit
+        listing instead, when the hosting provides one.
+
+        :param lines: lines of the message, left unchanged
+        """
         pass
 
     def short_hash_link(self, link: commit.Link):
@@ -48,6 +62,11 @@ class FileUpdate(api.FileUpdate):
 
 
 class ChangelogGenerator(api.ChangelogGenerator):
+    """
+    Generator of ``CHANGELOG.rst``, with each release under a title linking
+    to its commit listing.
+    """
+
     @property
     def ext(self) -> str:
         return ".rst"

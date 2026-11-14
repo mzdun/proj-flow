@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.cli.cmake** implements the ``webidl cmake`` command, which
+writes the CMake configuration based on given config.
+"""
+
 import sys
 import typing
 from pathlib import Path
@@ -19,6 +24,11 @@ from proj_flow.ext.webidl.model.versioning import load_versions_idl
 
 
 def enum_rule_outputs(config: TemplateConfig):
+    """
+    List the paths of all the files generated from the config.
+
+    :param config: code generation config
+    """
     for rule in config.rules:
         versions = list(load_versions_idl(rule, config.ext_attrs, config.version))
         for version in versions:

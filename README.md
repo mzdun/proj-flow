@@ -23,7 +23,7 @@ To create a new project with _Project Flow_, first install it using pip:
 Every project created with _Project Flow_ has a self-bootstrapping helper script,
 which will install `proj-flow` if it is needed, using either current virtual
 environment or switching to a private virtual environment (created inside
-`.flow/.venv` directory). This is used by the GitHub workflow in the generated
+`.venv` directory). This is used by the GitHub workflow in the generated
 projects through the `bootstrap` command.
 
 On any platform, this command (and any other) may be called from the root of the

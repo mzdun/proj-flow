@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.cli.init** implements the ``webidl init`` command, which copies
+the main WebIDL CMake config to ``.flow/cmake``.
+"""
+
 import typing
 from pathlib import Path
 

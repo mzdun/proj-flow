@@ -18,6 +18,16 @@ from . import api, win32
 
 
 def should_exclude(filename: str, exclude: List[str], config_os: str):
+    """
+    Check, if the file matches any of the exclude patterns. On Windows, the
+    extension is removed before matching, so ``*-test`` matches
+    ``unit-test.exe``.
+
+    :param filename: name of the file
+    :param exclude: list of :func:`fnmatch.fnmatch` patterns
+    :param config_os: OS of current config, e.g. ``"windows"``
+    :returns: ``True``, if the file should not be signed
+    """
     basename = os.path.splitext(filename)[0] if config_os == "windows" else filename
 
     for pattern in exclude:
@@ -28,6 +38,15 @@ def should_exclude(filename: str, exclude: List[str], config_os: str):
 
 
 class SignBase(step.Step):
+    """
+    Base of the signing steps, which sign files with the signing tools
+    active on current platform.
+
+    :param name: name of the step
+    :param runs_after: names of the steps this one runs after
+    :param runs_before: names of the steps this one runs before
+    """
+
     _name: str
     _runs_after: List[str] = []
     _runs_before: List[str] = []
@@ -63,7 +82,17 @@ class SignBase(step.Step):
     @abstractmethod
     def get_files(
         self, tool: api.SigningTool, config: env.Config, rt: env.Runtime
-    ) -> List[str]: ...
+    ) -> List[str]:
+        """
+        List the files this step should sign with given tool.
+
+        :param tool: one of the signing tools active in this run
+        :param config: config of current run
+        :param rt: runtime of current run
+        :returns: paths of the files accepted by
+            :meth:`~proj_flow.ext.sign.api.SigningTool.is_signable`
+        """
+        ...
 
     def run(self, config: env.Config, rt: env.Runtime) -> int:
         for tool in self._active_tools:
@@ -91,6 +120,19 @@ class SignFiles(SignBase):
     def get_files(
         self, tool: api.SigningTool, config: env.Config, rt: env.Runtime
     ) -> List[str]:
+        """
+        List the signable binaries in ``bin``, ``lib``, ``libexec`` and
+        ``share`` subdirectories of the build directory, or in the
+        directories from ``sign.directories`` in the config file. Files
+        matching ``sign.exclude`` patterns (defaulting to ``["*-test"]``) are
+        skipped.
+
+        :param tool: one of the signing tools active in this run
+        :param config: config of current run
+        :param rt: runtime of current run
+        :returns: paths of the files accepted by
+            :meth:`~proj_flow.ext.sign.api.SigningTool.is_signable`
+        """
         cfg = cast(dict, rt._cfg.get("sign", {}))
         roots = cfg.get("directories", ["bin", "lib", "libexec", "share"])
         exclude = cfg.get("exclude", ["*-test"])
@@ -128,6 +170,16 @@ class SignMsi(SignBase):
     def get_files(
         self, tool: api.SigningTool, config: env.Config, rt: env.Runtime
     ) -> List[str]:
+        """
+        List the signable packages directly inside the ``packages``
+        subdirectory of the build directory.
+
+        :param tool: one of the signing tools active in this run
+        :param config: config of current run
+        :param rt: runtime of current run
+        :returns: paths of the files accepted by
+            :meth:`~proj_flow.ext.sign.api.SigningTool.is_signable`
+        """
         result: List[str] = []
         pkg_dir = os.path.join(config.build_dir, "packages")
         for curr_dir, dirnames, filenames in os.walk(pkg_dir):
@@ -141,6 +193,8 @@ class SignMsi(SignBase):
 
 
 class SignInit(init.InitStep):
+    """Adds ``/signature.key`` to ``.gitignore`` of new projects."""
+
     def postprocess(self, rt: env.Runtime, context: dict) -> None:
         try:
             with open(".gitignore", encoding="UTF-8") as ignoref:

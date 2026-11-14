@@ -18,11 +18,23 @@ except ImportError:
 
 
 def load_yaml(filename: Path):
+    """
+    Read a YAML file.
+
+    :param filename: path of the file
+    :returns: the document
+    """
     with open(filename) as src:
         return cast(dict, yaml.load(src, Loader=Loader))
 
 
 def load_json(filename: Path):
+    """
+    Read a JSON file.
+
+    :param filename: path of the file
+    :returns: the document
+    """
     with open(filename) as src:
         return cast(dict, json.load(src))
 
@@ -35,6 +47,14 @@ LOADERS = {
 
 
 def load_data(filename: Path):
+    """
+    Read a JSON or YAML file, whichever exists. The file is first read
+    according to its extension; if that fails, the same name is tried with
+    ``.json``, ``.yml`` and ``.yaml`` extensions, in that order.
+
+    :param filename: path of the file
+    :returns: the first document read, or an empty dictionary
+    """
     ext = filename.suffix
     loader = LOADERS.get(ext.lower())
     if loader:

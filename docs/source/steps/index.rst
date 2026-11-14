@@ -15,11 +15,20 @@ Conan
 Prepares the external dependencies, by downloading and compiling Conan packages
 as needed. Produces the ``build/conan`` directory with all the CMake targets.
 
+The settings for the profile are taken from ``conan2_settings`` of the current
+config or, if missing, from ``conan_settings``.
+
+.. deprecated:: 0.35
+
+    Conan v1 has reached its end of support at JFrog. It is still used, when
+    found on ``PATH``, but the support will be removed in a future version.
+    When the version of Conan cannot be read, Conan v2 is assumed.
+
 CMake
 -----
 
 +-------------------+----------------------------------------------+
-| **Uses:**         | ``cmake>=3.28``                              |
+| **Uses:**         | ``cmake>=4.0``                               |
 +-------------------+----------------------------------------------+
 | **Needs:**        | ``CMakeLists.txt`` and ``CMakePresets.json`` |
 +-------------------+----------------------------------------------+
@@ -49,7 +58,7 @@ Build
 -----
 
 +-------------------+----------------------------------------------+
-| **Uses:**         | ``cmake>=3.28``                              |
+| **Uses:**         | ``cmake>=4.0``                               |
 +-------------------+----------------------------------------------+
 | **Needs:**        | ``CMakeLists.txt`` and ``CMakePresets.json`` |
 +-------------------+----------------------------------------------+
@@ -65,7 +74,7 @@ Test
 ----
 
 +-------------------+----------------------------------------------+
-| **Uses:**         | ``cmake>=3.28`` and ``ctest>=3.28``          |
+| **Uses:**         | ``cmake>=4.0`` and ``ctest>=4.0``            |
 +-------------------+----------------------------------------------+
 | **Needs:**        | ``CMakeLists.txt`` and ``CMakePresets.json`` |
 +-------------------+----------------------------------------------+
@@ -74,15 +83,15 @@ Test
 | **Aliased with:** | ``./flow test`` and ``./flow verify``        |
 +-------------------+----------------------------------------------+
 
-Runs all tests registered with CPack.
+Runs all tests registered with CTest.
 
 Sign
 ----
 
 +-------------------+------------------------------------------------+
-| **Needs:**        | A Windows run, a valid ``signtool`` exe path   |
-|                   | and a key in either ``$SIGN_TOKEN``,           |
-|                   | ``signature.json`` or ``~/signature.json``.    |
+| **Needs:**        | A Windows run, a valid ``signtool`` path and a |
+|                   | key in either ``$SIGN_TOKEN``,                 |
+|                   | ``signature.key`` or ``~/signature.key``.      |
 +-------------------+------------------------------------------------+
 | **Runs after:**   | Build                                          |
 +-------------------+------------------------------------------------+
@@ -97,11 +106,16 @@ Sign
 Signs all PE files in directories with binaries. For more information, see
 :ref:`config-sign` flow config.
 
+.. note::
+
+    ``$SIGN_TOKEN`` holds the JSON document of the key itself, not a path to
+    a file with it.
+
 Pack
 ----
 
 +-------------------+-------------------------------------------+
-| **Uses:**         | ``cmake>=3.28`` and ``cpack>=3.28``;      |
+| **Uses:**         | ``cmake>=4.0`` and ``cpack>=4.0``;        |
 |                   | if the ``"cpack_generator"`` contains     |
 |                   | ``WIX``, also ``wix>=4,<5``               |
 +-------------------+-------------------------------------------+
@@ -132,9 +146,9 @@ SignPackages
 ------------
 
 +-------------------+------------------------------------------------+
-| **Needs:**        | A Windows run, a valid ``signtool`` exe path   |
-|                   | and a key in either ``$SIGN_TOKEN``,           |
-|                   | ``signature.json`` or ``~/signature.json``.    |
+| **Needs:**        | A Windows run, a valid ``signtool`` path and a |
+|                   | key in either ``$SIGN_TOKEN``,                 |
+|                   | ``signature.key`` or ``~/signature.key``.      |
 +-------------------+------------------------------------------------+
 | **Runs after:**   | Pack                                           |
 +-------------------+------------------------------------------------+
@@ -147,6 +161,11 @@ SignPackages
     quietly removed.
 
 Signs all ``.msi`` files in packages directory.
+
+.. note::
+
+    ``$SIGN_TOKEN`` holds the JSON document of the key itself, not a path to
+    a file with it.
 
 
 StorePackages
@@ -168,3 +187,77 @@ Store
 
 Runs both StoreTests and StorePackages
 
+
+JUnitToCtrf
+-----------
+
++-------------------+-------------------------------------------------+
+| **Needs:**        | ``proj_flow.ext.tests`` extension               |
++-------------------+-------------------------------------------------+
+| **Runs after:**   | Test                                            |
++-------------------+-------------------------------------------------+
+
+Converts JUnit XML reports produced by Google Test and Qt QTest to CTRF JSON
+files. The XML files are searched for in directories named by
+``test.gtest-dir``, ``test.junit-dir`` and ``test.junit-dirs`` and the JSON
+files are written to ``test.ctrf-dir``. For more information, see
+:ref:`config-test` flow config.
+
+MergeCtrfFiles
+--------------
+
++-------------------+-------------------------------------------------+
+| **Needs:**        | ``proj_flow.ext.tests`` extension               |
++-------------------+-------------------------------------------------+
+| **Runs after:**   | Test and JUnitToCtrf                            |
++-------------------+-------------------------------------------------+
+
+Merges all CTRF JSON files from ``test.ctrf-dir`` into a single
+``test.ctrf-report`` file and prints the summary of the tests.
+
+Python projects
+---------------
+
+The ``proj_flow.ext.python`` extension replaces the C++ steps with ones
+maintaining a Python package. It is used by *Project Flow* itself.
+
+Install
+:::::::
+
++-------------------+---------------------+
+| **Uses:**         | ``python -m pip``   |
++-------------------+---------------------+
+
+Installs the project into the current environment with ``pip install``.
+
+Build
+:::::
+
++-------------------+---------------------+
+| **Uses:**         | ``python -m build`` |
++-------------------+---------------------+
+
+Builds the source distribution and the wheel in ``dist`` directory.
+
+Check Twine
+:::::::::::
+
++-------------------+---------------------+
+| **Uses:**         | ``twine``           |
++-------------------+---------------------+
+| **Runs after:**   | Build               |
++-------------------+---------------------+
+
+Runs ``twine check`` on the project's packages found in ``dist`` directory.
+
+RTD
+:::
+
++-------------------+--------------------------------+
+| **Uses:**         | ``python -m PyYAML``           |
++-------------------+--------------------------------+
+| **Needs:**        | ``.readthedocs.yaml``          |
++-------------------+--------------------------------+
+
+Runs the jobs defined by ``.readthedocs.yaml`` to build the documentation
+locally.
