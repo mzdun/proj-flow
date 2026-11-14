@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.cli.gen** implements the ``webidl gen`` command, which runs
+mustache code generation on WebIDL definitions.
+"""
+
 import json
 import sys
 import typing
@@ -29,6 +34,11 @@ from proj_flow.ext.webidl.model.versioning import (
 
 
 def aslist(items: list):
+    """
+    Convert a list of dataclasses into a list of dictionaries.
+
+    :param items: dataclass instances
+    """
     return [asdict(item) for item in items]
 
 
@@ -37,6 +47,13 @@ P = typing.TypeVar("P")
 
 
 def conv(conv: typing.Callable[[T], P], maybe: T | None) -> P | None:
+    """
+    Apply the conversion to a value, which may be missing.
+
+    :param conv: conversion to apply
+    :param maybe: value to convert
+    :returns: converted value or ``None``
+    """
     if maybe is None:
         return None
     return conv(maybe)

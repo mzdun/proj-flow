@@ -233,6 +233,17 @@ def _apply_extras(configs: list[dict], extras: list[dict]):
 
 
 class Configs:
+    """
+    Run configurations of the project: the matrix from ``.flow``, filtered
+    by the ``-D`` switches and expanded with the compilers to use.
+
+    :param rt: runtime of the command
+    :param args: parsed command line, with ``configs`` and, optionally,
+        ``matrix`` and ``extra``
+    :param expand_compilers: replace each compiler name with the compiler
+        executables to use
+    """
+
     usable: List[env.Config] = []
 
     def __init__(

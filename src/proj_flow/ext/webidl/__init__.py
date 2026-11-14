@@ -3,7 +3,7 @@
 
 """
 The **proj_flow.ext.webidl** provides ``webidl init``, ``webidl cmake``,
-``webidl depfile``and ``webidl gen`` commands, allowing for simple
+``webidl depfile`` and ``webidl gen`` commands, allowing for simple
 WebIDL/mustache generation.
 """
 

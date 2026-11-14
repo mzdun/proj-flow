@@ -2,7 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.project.cplusplus** registers a ``"C++"`` projects support.
+The **proj_flow.project.cplusplus.project** defines the ``"C++"`` project
+type, which other C++ initialization contexts register their switches with.
 """
 
 from proj_flow.base import path_get

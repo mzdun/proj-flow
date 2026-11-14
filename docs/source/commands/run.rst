@@ -8,8 +8,8 @@ Synopsis
 
 .. code-block::
 
-   $ ./flow run [--dry-run] [-D [key=value ...]] [--official] [-s [step ...]]
-   $ DEV_CXX=compiler ./flow run [--dry-run] [-D [key=value ...]] [--official] [-s [step ...]]
+   $ ./flow run [--dry-run] [-D [key=value ...]] [-E [key=value ...]] [--official] [-s [step ...]]
+   $ DEV_CXX=compiler ./flow run [--dry-run] [-D [key=value ...]] [-E [key=value ...]] [--official] [-s [step ...]]
 
 Description
 -----------
@@ -77,12 +77,29 @@ Similarly, to build Debug binaries, the ``./flow run`` incantation would be
     If given key is never used, all values from ``.flow/matrix.yaml`` for that
     key are used. Otherwise, only values from command line are used.
 
+``-E key=value``
+    After calculating all the matching configs through ``-D``, extend the
+    configuration with the ``-E`` values. A key given once is simply added to
+    every matching config. A key given more than once creates a new cartesian
+    axis, multiplying the configs by the number of values.
+
+    This allows to set config values, which are not keys of the
+    ``.flow/matrix.yml``. For instance, in a freshly-initialized C++ project the
+    ``w-error`` config is read through :ref:`config-cmake-vars` to turn the
+    compiler warnings into errors:
+
+    .. code-block:: console
+
+        $ ./flow run -E w-error=on --dbg
+
 ``--official``
     Cut matrix to release builds only by merging matrix definition in
     ``.flow/matrix.yml`` with ``.flow/official.yml``.
 
-``-s step`` / ``--step step``
-    List any number of steps to perform during this run.
+``-s step`` / ``--steps step``
+    List any number of steps to perform during this run. Names can be given as
+    separate arguments or as a comma-separated list and are not case-sensitive.
+    If missing, run all the steps.
 
 Other flags
     There might be some additional flags, such as ``--rel``, ``--dbg`` or

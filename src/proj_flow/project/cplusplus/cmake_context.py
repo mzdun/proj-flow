@@ -2,7 +2,7 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ext.cplusplus.cmake.context** provides CMake-specific
+The **proj_flow.project.cplusplus.cmake_context** provides CMake-specific
 initialization context.
 """
 

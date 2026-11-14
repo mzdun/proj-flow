@@ -61,6 +61,14 @@ def main(
 def gather_dependencies_for_all_configs(
     configs: Configs, rt: api.env.Runtime, steps: List[api.step.Step]
 ):
+    """
+    Check the dependencies of the steps active in any of the usable configs.
+
+    :param configs: run configurations
+    :param rt: runtime of the run
+    :param steps: steps selected to run
+    :returns: error messages; empty, if all dependencies are met
+    """
     deps: List[dependency.Dependency] = []
     for config in configs.usable:
         active_steps = [step for step in steps if step.is_active(config, rt)]
@@ -71,6 +79,15 @@ def gather_dependencies_for_all_configs(
 def refresh_directories(
     configs: Configs, rt: api.env.Runtime, steps: List[api.step.Step]
 ):
+    """
+    Remove the directories listed by the steps active in any of the usable
+    configs. In dry run mode, the directories are only listed.
+
+    :param configs: run configurations
+    :param rt: runtime of the run
+    :param steps: steps selected to run
+    :returns: ``True``, if any directory was listed on stderr
+    """
     directories_to_refresh: Set[Path] = set()
     for config in configs.usable:
         for step in steps:
@@ -94,6 +111,15 @@ COMPILER_ENV = ["CC", "CXX"]
 
 @contextmanager
 def compilers_env_setup(compiler: List[str], rt: api.env.Runtime):
+    """
+    Set ``$CC`` and ``$CXX`` to the compilers of the config and, on exit,
+    restore their original values, removing the ones, which were not set
+    before. On Windows, the environment is left untouched.
+
+    :param compiler: C and C++ compilers, as found in the ``compiler`` field
+        of the config
+    :param rt: runtime used to report the changes
+    """
     # only the variables set here are restored on exit; on Windows, nothing
     # is set, so the environment is left alone
     orig_env: dict[str, Optional[str]] = {}
@@ -117,6 +143,18 @@ def compilers_env_setup(compiler: List[str], rt: api.env.Runtime):
 def run_steps(
     configs: Configs, rt: api.env.Runtime, program: List[api.step.Step], printed: bool
 ) -> int:
+    """
+    Run the active steps for each usable config, with the compilers and the
+    ``run-env.<step>`` environment of each step set up. Stops at the first
+    failed step.
+
+    :param configs: run configurations
+    :param rt: runtime of the run
+    :param program: steps selected to run
+    :param printed: ``True``, if anything was already printed on stderr, so
+        the first config needs a separating empty line
+    :returns: ``1``, if any step failed, ``0`` otherwise
+    """
     config_count = len(configs.usable)
     steps_ran = 0
     for config_index in range(config_count):
@@ -160,6 +198,15 @@ def run_steps(
 
 @contextmanager
 def prep_environment(rt: api.env.Runtime, key: str):
+    """
+    Set the environment variables listed under ``key`` in the flow config
+    and, on exit, restore their original values. Variables with ``null``
+    value are removed from the environment.
+
+    :param rt: runtime with the flow config
+    :param key: name of the config item with the variables, e.g. ``run-env``
+        or ``run-env.<step>``
+    """
     original_env = dict[str, str | None]()
 
     for name, value in cast(dict, rt.items.get(key, {})).items():

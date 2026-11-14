@@ -2,7 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.ext.cplusplus.cmake.version** provides project suite plugin.
+The **proj_flow.ext.cplusplus.cmake.project** provides the project suite
+plugin, which reads the project name and version from ``CMakeLists.txt``.
 """
 
 from typing import NamedTuple, Optional

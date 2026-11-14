@@ -1,6 +1,12 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.test_runner.cli** implements the ``tests runner`` command: it locates the
+binaries for given CMake preset, prepares the test environment, then runs and
+reports the selected test cases.
+"""
+
 import os
 import platform
 import shutil

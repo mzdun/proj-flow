@@ -2,7 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.log.rich_text** allows to operate on CHANGELOG.md.
+The **proj_flow.log.rich_text** allows to operate on Markdown and
+reStructuredText changelogs.
 """
 
 from . import api, markdown, re_structured_text

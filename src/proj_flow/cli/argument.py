@@ -8,7 +8,6 @@ supporting the functions decorated with :func:`@arg.command()
 """
 
 import argparse
-import dis
 import shutil
 import sys
 import textwrap
@@ -23,20 +22,51 @@ from proj_flow.flow import configs
 
 
 class Completer(typing.Protocol):
+    """
+    Shell completion function attached to an argparse action, as expected by
+    ``argcomplete``.
+    """
+
     def __call__(self, **kwarg) -> typing.Any: ...
 
 
 class Action(typing.Protocol):
+    """
+    Argparse action with a shell completer attached.
+    """
+
+    #: Completion function for the values of the action.
     completer: Completer
 
 
 class Subparsers(typing.Protocol):
+    """
+    Result of :meth:`Parser.add_command_subparsers`: argparse subparsers
+    creating :class:`Parser` instances, which know their parent parser.
+    """
+
+    #: Parser owning these subparsers.
     parent: "Parser"
 
-    def add_parser(*args, **kwargs) -> "Parser": ...
+    def add_parser(*args, **kwargs) -> "Parser":
+        """
+        Create the parser of one command.
+
+        :param args: arguments passed to the argparse ``add_parser``
+        :param kwargs: keyword arguments passed to the argparse ``add_parser``
+        :returns: the parser of the command
+        """
+        ...
 
 
 class Parser(argparse.ArgumentParser):
+    """
+    Argument parser of *Project Flow*, which also finds and runs the selected
+    command or alias.
+
+    :param kwargs: arguments passed to :class:`argparse.ArgumentParser`
+    """
+
     flow: env.FlowConfig
     menu: typing.List["Command"]
     shortcuts: typing.Dict[str, typing.List[str]]
@@ -55,6 +85,16 @@ class Parser(argparse.ArgumentParser):
         return typing.cast(Subparsers, self.add_subparsers(**kwargs))
 
     def find_and_run_command(self, args: argparse.Namespace):
+        """
+        Run the command selected on the command line. An alias from the
+        ``entry`` section of the flow config runs the ``run`` command with
+        the steps of the alias. With ``--verbose``, all the registered commands,
+        steps and plugins are listed first. If no known command is selected,
+        exit with the list of known commands and aliases.
+
+        :param args: parsed command line
+        :returns: exit code of the command
+        """
         commands = {entry.name for entry in self.menu}
         aliases = self.flow.aliases
 
@@ -86,6 +126,14 @@ class Parser(argparse.ArgumentParser):
 
 
 def build_argparser(flow_cfg: env.FlowConfig):
+    """
+    Build the parser for the whole command line: the global options, all the
+    commands registered with :func:`@arg.command() <proj_flow.api.arg.command>`
+    and the ``run`` aliases from the flow config.
+
+    :param flow_cfg: configuration of current project
+    :returns: the parser
+    """
     parser = Parser(
         prog="proj-flow",
         description="C++ project maintenance, automated",
@@ -116,6 +164,14 @@ def build_argparser(flow_cfg: env.FlowConfig):
 
 
 def expand_shortcuts(parser: Parser, args: argparse.Namespace):
+    """
+    Replace a shortcut flag from the ``shortcuts`` section of the flow config,
+    e.g. ``--both``, with its ``-D`` values. Only the first shortcut set on
+    the command line is used.
+
+    :param parser: parser knowing the shortcuts
+    :param args: parsed command line; its ``configs`` list is extended
+    """
     args_kwargs = dict(args._get_kwargs())
     shortcuts: typing.Dict[str, typing.List[str]] = parser.shortcuts
     for key in shortcuts:
@@ -130,10 +186,28 @@ def expand_shortcuts(parser: Parser, args: argparse.Namespace):
 
 @dataclass
 class AdditionalArgument:
+    """
+    Parameter of a command function, which is not a command-line argument,
+    but an object created for the call, such as
+    :class:`Runtime <proj_flow.api.env.Runtime>` or :class:`Command`.
+    """
+
+    #: Name of the function parameter.
     name: str
+    #: Type of the parameter; any type other than ``Runtime`` and ``Command``
+    #: is called with the runtime and the parsed command line.
     ctor: callable  # type: ignore
 
     def create(self, rt: env.Runtime, args: argparse.Namespace, menu: "Command"):
+        """
+        Create the value passed to the command function.
+
+        :param rt: runtime of current call
+        :param args: parsed command line
+        :param menu: command being called
+        :returns: depending on the ``ctor``, current runtime, current command
+            or a new ``ctor(rt, args)`` object
+        """
         if self.ctor == env.Runtime:
             return rt
         if self.ctor == Command:
@@ -143,14 +217,28 @@ class AdditionalArgument:
 
 @dataclass
 class AnnotatedArgument:
+    """
+    Parameter of a command function annotated with
+    :class:`arg.Argument <proj_flow.api.arg.Argument>`, i.e. a command-line
+    argument.
+    """
+
+    #: Name of the function parameter.
     name: str
+    #: Description of the command-line argument.
     argument: arg.Argument
 
     @property
     def group(self):
+        """Mutually exclusive group of the argument, if any."""
         return self.argument.group
 
     def argparse_visit(self, parser: argparse._ActionsContainer):
+        """
+        Add the argument to the parser.
+
+        :param parser: parser or argument group to add to
+        """
         return self.argument.visit(parser, self.name)
 
 
@@ -159,12 +247,24 @@ AnyArgument = typing.Union[AdditionalArgument, AnnotatedArgument]
 
 @dataclass
 class Command:
+    """
+    Node of the command tree built from the functions decorated with
+    :func:`@arg.command() <proj_flow.api.arg.command>`.
+    """
+
+    #: Name of this level of the command, e.g. ``matrix`` in ``github matrix``.
     name: str
+    #: Help of the command, the docstring of the function.
     doc: str
+    #: The decorated function.
     entry: callable  # type: ignore
+    #: Command-line arguments of the function.
     annotated: typing.List[AnnotatedArgument]
+    #: Other parameters of the function.
     additional: typing.List[AdditionalArgument]
+    #: Parent command, ``None`` for top-level commands.
     parent: typing.Optional["Command"]
+    #: Subcommands.
     children: typing.List["Command"] = field(default_factory=list)
 
     def argparse_visit(
@@ -174,6 +274,16 @@ class Command:
         doc: typing.Optional[str] = None,
         level=0,
     ):
+        """
+        Add the parser of this command, with its arguments and subcommands.
+
+        :param subparsers: subparsers of the parent command
+        :param alias: name to register the command under, defaults to
+            :attr:`name`
+        :param doc: help to use, defaults to :attr:`doc`
+        :param level: depth of the command; subcommands are stored in
+            ``command_<level>`` of the parsed command line
+        """
         if not doc:
             doc = self.doc
         if not alias:
@@ -229,6 +339,16 @@ class Command:
                 entry.argparse_visit(subparsers, level=level + 1)
 
     def run(self, args: argparse.Namespace, rt: env.Runtime, level=0):
+        """
+        Call the selected subcommand, or the function of this command. A
+        command grouping other commands, whose function has an empty body,
+        reports the missing subcommand instead.
+
+        :param args: parsed command line
+        :param rt: runtime of current call
+        :param level: depth of the command
+        :returns: exit code; ``0``, if the function returned ``None``
+        """
         if level == 0 and rt.only_host:
             rt.only_host = self.name == "run"
 
@@ -248,7 +368,7 @@ class Command:
 
             return subcommand.run(args, rt, level=level + 1)
 
-        if len(self.children) and _has_empty_body(self.entry):
+        if len(self.children) and _inspect.has_empty_body(self.entry):
             return self.needs_subcommand()
 
         kwargs = {}
@@ -264,6 +384,7 @@ class Command:
 
     @property
     def full_name(self) -> str:
+        """Names of all the levels of the command, e.g. ``github matrix``."""
         names: typing.List[str] = []
         current: typing.Optional[Command] = self
         while current is not None:
@@ -297,29 +418,8 @@ class Command:
         return 1
 
 
-def _instructions(function: typing.Callable) -> typing.List[typing.Tuple[str, object]]:
-    # argval instead of raw bytes: an empty function with a docstring keeps
-    # None at a different co_consts index than one without
-    return [(instr.opname, instr.argval) for instr in dis.get_instructions(function)]
-
-
 def _empty_body():
     pass
-
-
-_EMPTY_BODY = _instructions(_empty_body)
-
-
-def _has_empty_body(function: typing.Callable) -> bool:
-    """
-    Tells, if the function body is nothing more than docstring, ``pass`` or
-    ``...``, by comparing its bytecode with a reference function compiled by
-    the same interpreter.
-    """
-    try:
-        return _instructions(function) == _EMPTY_BODY
-    except TypeError:
-        return False
 
 
 T = typing.TypeVar("T")
@@ -545,6 +645,13 @@ def _argparse_config_visit(parser: Parser):
 
 
 def verbose_info(commands: typing.List[Command], prefix=""):
+    """
+    Print every command with the function implementing it; used with
+    ``--verbose``.
+
+    :param commands: commands to print, with their subcommands
+    :param prefix: names of the parent levels
+    """
     for command in commands:
         cli = f"{prefix} {command.name}" if prefix else command.name
         if command.entry is not None:

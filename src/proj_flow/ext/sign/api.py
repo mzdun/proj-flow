@@ -19,7 +19,14 @@ ENV_KEY = "SIGN_TOKEN"
 
 
 class Key(NamedTuple):
+    """
+    Signing key, decoded from the base64 fields of the signature JSON
+    document.
+    """
+
+    #: Decoded ``token`` field.
     token: str
+    #: Decoded ``secret`` field.
     secret: bytes
 
 
@@ -47,6 +54,21 @@ def _get_key_from_contents(key: str, rt: env.Runtime):
 
 
 def get_key(rt: env.Runtime) -> Optional[Key]:
+    """
+    Find the signing key. The first valid JSON document with base64
+    ``token`` and ``secret`` fields is used, looking in the ``$SIGN_TOKEN``
+    environment variable, then in ``./signature.key`` and finally in
+    ``~/signature.key``.
+
+    .. note::
+
+        ``$SIGN_TOKEN`` holds the JSON document itself, not a path to a file
+        with it.
+
+    :param rt: runtime used for messages
+    :returns: the key, or ``None``, if none was found
+    """
+
     rt.message(f"sign: trying ${ENV_KEY}")
     env = os.environ.get(ENV_KEY)
     if env:
@@ -70,14 +92,46 @@ def get_key(rt: env.Runtime) -> Optional[Key]:
 
 
 class SigningTool(ABC):
-    @abstractmethod
-    def is_active(self, config: env.Config, rt: env.Runtime) -> bool: ...
+    """
+    Per-platform code signing tool, registered with :data:`signing_tool` and
+    used by the Sign and SignPackages steps.
+    """
 
     @abstractmethod
-    def sign(self, config: env.Config, rt: env.Runtime, files: List[str]) -> int: ...
+    def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
+        """
+        Check, if this tool can sign anything in current run, e.g. if it runs
+        on the right platform and has a key.
+
+        :param config: config of current run
+        :param rt: runtime used for messages
+        """
+        ...
 
     @abstractmethod
-    def is_signable(self, filename: str, as_package: bool) -> bool: ...
+    def sign(self, config: env.Config, rt: env.Runtime, files: List[str]) -> int:
+        """
+        Sign the files in place.
+
+        :param config: config of current run
+        :param rt: runtime used for messages and running the tools
+        :param files: paths of the files to sign, all accepted by
+            :meth:`is_signable`
+        :returns: exit code, ``0`` on success
+        """
+        ...
+
+    @abstractmethod
+    def is_signable(self, filename: str, as_package: bool) -> bool:
+        """
+        Check, if this tool can sign the file.
+
+        :param filename: path of the file
+        :param as_package: the file is a package or an installer (from the
+            SignPackages step), not a binary (from the Sign step)
+        """
+        ...
 
 
+#: Registry of the code signing tools.
 signing_tool = base.registry.Registry[SigningTool]("SigningTool")

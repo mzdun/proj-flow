@@ -16,6 +16,15 @@ from proj_flow.base.__cmake_version__ import CMAKE_VERSION
 
 
 class CMakeBase(api.step.Step):
+    """
+    Base of the CMake steps, with the name and step order given to the
+    constructor.
+
+    :param name: name of the step
+    :param runs_after: names of the steps this one runs after
+    :param runs_before: names of the steps this one runs before
+    """
+
     _name: str
     _runs_after: List[str] = []
     _runs_before: List[str] = []

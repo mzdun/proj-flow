@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.webidl.cli.depfile** implements the ``webidl depfile`` command, which
+writes the dependency file for CMake generators to use.
+"""
+
 import typing
 from pathlib import Path
 

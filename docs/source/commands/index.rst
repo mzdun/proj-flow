@@ -6,8 +6,8 @@ Synopsis
 
 .. code-block::
 
-   $ cxx-init [-h] [-v] [-C [dir]] command ...
-   $ cxx-init command [-h] [--dry-run] [--silent | --verbose] ...
+   $ proj-flow [-h] [-v] [-C [dir]] command ...
+   $ proj-flow command [-h] [--dry-run] [--silent | --verbose] ...
 
    $ ./flow [-h] [-v] [-C [dir]] command ...
    $ ./flow command [-h] [--dry-run] [--silent | --verbose] ...
@@ -27,7 +27,13 @@ Description
    directory. This directory must exist.
 
 ``command``
-   Name of the command or ``run`` alias to call.
+   Name of the command or ``run`` alias to call. Commands, which group other
+   commands (e.g. ``github``), need the name of the subcommand as well; called
+   without one, they print an error together with the list of their
+   subcommands.
+
+   Some of the commands are only available, if the extension providing them is
+   listed in the :ref:`config-extensions` section of the flow config.
 
 ``--dry-run``
    No persistent operations are performed: no files and directories are deleted,
@@ -60,3 +66,6 @@ See also
    github-publish
    system
    list
+   tests
+   tools
+   webidl

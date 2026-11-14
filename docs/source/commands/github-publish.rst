@@ -23,7 +23,7 @@ in draft, publish it.
 ``--ref release``
    *(optional)* Publish this release draft. In case this is called from within
    GitHub Actions and your release is named exactly like the tag used
-   to trigger this flow, you can use ``${{github.action_ref}}`` variable.
+   to trigger this flow, you can use ``${{ github.ref_name }}`` variable.
    Defaults to current tag.
 
 ``--upload directory``

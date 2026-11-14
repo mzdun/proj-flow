@@ -2,8 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.minimal.ext.bug_report** adds next version to bug_report.yaml
-next to CHANGELOG.rst.
+The **proj_flow.minimal.ext.bug_report** updates the version choices in
+``.github/ISSUE_TEMPLATE/bug_report.yaml`` to match the new release.
 """
 
 import re

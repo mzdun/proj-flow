@@ -3,7 +3,10 @@
 
 """
 The **proj_flow.log.commit** allows analysing the git commits for
-changelog generation.
+changelog generation. It parses the Conventional Commits into
+a :data:`ChangeLog`, wraps the git commands used by the release process in
+:class:`Git` and defines the :class:`Hosting` interface, through which the
+releases are published on hosting services found by :data:`hosting_factories`.
 """
 
 import re
@@ -18,28 +21,59 @@ from typing import NamedTuple, Optional
 from proj_flow.api import env
 from proj_flow.base import registry
 
+#: Line separating commits in the ``git log`` output parsed by
+#: :meth:`Git.get_log`. Randomized, so no commit message can contain it by
+#: accident.
 COMMIT_SEP = "--{}".format(
     "".join(secrets.choice(string.ascii_letters + string.digits) for i in range(20))
 )
 
 
 def set_commit_sep(sep: str):
+    """
+    Replace the :data:`COMMIT_SEP`, e.g. to get repeatable ``git log`` calls
+    in tests.
+
+    :param sep: new commit separator
+    """
     global COMMIT_SEP
     COMMIT_SEP = sep
 
 
 class Section(NamedTuple):
+    """
+    Changelog section for a commit type.
+    """
+
+    #: Commit type, as found in the commit subject, or
+    #: :data:`BREAKING_CHANGE`.
     key: str
+
+    #: Header of the section in the changelog.
     header: str
 
 
 class Level(Enum):
+    """
+    Importance of a change, deciding which part of the semantic version is
+    bumped by the release.
+    """
+
+    #: Change, which does not require a new version.
     BENIGN = 0
+
+    #: Bug fix, bumps the patch version.
     PATCH = 2
+
+    #: New feature, bumps the minor version.
     FEATURE = 3
+
+    #: Breaking change, bumps the major version.
     BREAKING = 4
 
 
+#: Names accepted by ``github release --force`` for overriding the level
+#: calculated from the git log.
 FORCED_LEVEL: dict[str, Level] = {
     "patch": Level.PATCH,
     "fix": Level.PATCH,
@@ -51,14 +85,26 @@ FORCED_LEVEL: dict[str, Level] = {
     "release": Level.BREAKING,
 }
 
+#: Pseudo-type used for breaking changes, which would otherwise be hidden from
+#: the changelog.
 BREAKING_CHANGE = "BREAKING_CHANGE"
+
+#: Main changelog sections, listed before any other section, in this order.
 TYPES = [
     Section(BREAKING_CHANGE, "Breaking"),
     Section("feat", "New Features"),
     Section("fix", "Bug Fixes"),
 ]
+
+#: Commit types, which are always visible in the changelog.
 KNOWN_TYPES = [section.key for section in TYPES]
+
+#: Commit types counted as other types. The original type becomes the scope of
+#: the change, e.g. ``docs: ...`` is listed as a ``fix(docs): ...``.
 TYPE_FIX = {"docs": "fix"}
+
+#: Headers of the remaining changelog sections, visible with ``--all`` or
+#: ``--with``. Types missing here use the type name as the header.
 ALL_TYPES = {
     "assets": "Assets",
     "build": "Build System",
@@ -70,28 +116,65 @@ ALL_TYPES = {
     "style": "Code Style",
     "test": "Tests",
 }
+#: Commit footers recognized as issue references, mapped to the key used in
+#: :attr:`Link.references`.
 ISSUE_LINKS = {"refs": "references", "closes": "closes", "fixes": "fixes"}
 
 
 class Link(NamedTuple):
+    """
+    Single changelog entry, extracted from a commit.
+    """
+
+    #: Scope of the change, from ``type(scope): summary``; may be empty.
     scope: str
+
+    #: Summary of the change, from the commit subject.
     summary: str
+
+    #: Full hash of the commit.
     hash: str
+
+    #: Abbreviated hash of the commit.
     short_hash: str
+
+    #: Change is breaking, either by ``!`` after the type or by
+    #: a ``BREAKING CHANGE`` paragraph.
     is_breaking: bool
+
+    #: Paragraphs of the ``BREAKING CHANGE`` description, if any.
     breaking_message: list[str]
+
+    #: Issue references from the commit footers, keyed by the values of
+    #: :data:`ISSUE_LINKS`.
     references: dict[str, list[str]]
 
 
 class Commit(NamedTuple):
+    """
+    Parsed Conventional Commit.
+    """
+
+    #: Type of the commit, e.g. ``feat`` or ``fix``.
     type: str
+
+    #: Changelog entry for the commit.
     link: Link
 
 
+#: Changelog entries grouped by the commit type (or :data:`BREAKING_CHANGE`).
 ChangeLog = dict[str, list[Link]]
 
 
 def read_tag_date(tag: str, rt: env.Runtime):
+    """
+    Get the date of the commit a tag points to, falling back to today's date,
+    if the tag is not found.
+
+    :param tag: tag (or any other ref) to read the date of
+    :param rt: runtime to run git with
+    :returns: date in ``YYYY-MM-DD`` format
+    """
     proc = rt.capture("git", "log", "-n1", "--format=%aI", tag)
     if proc.returncode != 0:
         return time.strftime("%Y-%m-%d")
@@ -193,15 +276,29 @@ def _sem_ver(tag: str):
 
 @dataclass
 class ReleaseInfo:
+    """
+    Release, as known to the hosting service. Hosting implementations may
+    extend it with their own data.
+    """
+
+    #: Web page of the release.
     url: Optional[str] = None
+
+    #: Release is still a draft.
     is_draft: Optional[bool] = None
+
+    #: Name of the release.
     ref: Optional[str] = None
+
+    #: Tag the release is attached to.
     tag: Optional[str] = None
 
 
 class Hosting(ABC):
     """
-    Generates links to the hosting service.
+    Generates links to the hosting service and manages the releases there.
+
+    :param host_link: project link to hosting service
     """
 
     #: Project link to hosting service.
@@ -217,13 +314,21 @@ class Hosting(ABC):
 
     @abstractmethod
     def single_commit_link(self, link: Link) -> Optional[str]:
-        """Link to a single commit on this hosting platform."""
+        """
+        Link to a single commit on this hosting platform.
+
+        :param link: changelog entry of the commit
+        :returns: URL of the commit, if the platform supports it
+        """
         ...
 
     @abstractmethod
     def commit_listing_link(self, setup: "LogSetup") -> Optional[str]:
         """
         Link to a comparison page between two tags on this hosting platform.
+
+        :param setup: log setup with the tags to compare
+        :returns: URL of the comparison, if the platform supports it
         """
         ...
 
@@ -232,6 +337,9 @@ class Hosting(ABC):
         """
         Link to an issue, based on a reference, provided this hosting platform
         can recognize it.
+
+        :param ref: issue reference, as written in a commit footer
+        :returns: URL of the issue, if the reference is recognized
         """
         ...
 
@@ -244,8 +352,15 @@ class Hosting(ABC):
         draft: bool,
     ) -> ReleaseInfo:
         """
-        Publish a release for current setup, putting the log into release
-        notes.
+        Push the release commit and tag created for current setup, then create
+        a release for the tag, putting the log into release notes.
+
+        :param log: changes to put into the release notes
+        :param setup: log setup, with :attr:`LogSetup.curr_tag` naming the
+            new release
+        :param git: git wrapper to push the release with
+        :param draft: create the release as a draft
+        :returns: information about the created release
         """
         ...
 
@@ -253,6 +368,9 @@ class Hosting(ABC):
     def locate_release(self, release_name: str) -> Optional[ReleaseInfo]:
         """
         Locate a release by its name.
+
+        :param release_name: name of the release, usually the version tag
+        :returns: information about the release, if found
         """
         ...
 
@@ -264,7 +382,12 @@ class Hosting(ABC):
         names: list[str],
     ) -> None:
         """
-        Upload package artifacts to the release.
+        Upload package artifacts to the release, replacing any artifacts with
+        the same names.
+
+        :param release: release to upload to
+        :param directory: directory the artifacts are in
+        :param names: file names of the artifacts, relative to ``directory``
         """
         ...
 
@@ -272,20 +395,27 @@ class Hosting(ABC):
     def publish(self, release: ReleaseInfo) -> ReleaseInfo:
         """
         Publish given release, return updated release info.
+
+        :param release: draft release to publish
+        :returns: information about the published release
         """
         ...
 
     def delete_release(self, release: ReleaseInfo) -> bool:
         """
         Remove given release (draft or not) from hosting. Does not touch the
-        underlying tag.
+        underlying tag. The default implementation removes nothing.
+
+        :param release: release to remove
+        :returns: ``True``, if the release was removed
         """
         return False
 
 
 class NoHosting(Hosting):
     """
-    Generates links to the hosting service.
+    Stands in for a hosting service, when none is found among the git remotes.
+    It is never active, generates no links and creates no releases.
     """
 
     @property
@@ -327,7 +457,7 @@ class NoHosting(Hosting):
 @dataclass
 class LogSetup:
     """
-    Represents setup for log extarction.
+    Represents setup for log extraction.
     """
 
     #: Generate links to the hosting service.
@@ -366,7 +496,11 @@ class LogSetup:
         return f"{self.prev_tag}..{self.curr_tag}"
 
     def single_commit_link(self, link: Link):
-        """Link to a single commit on hosting platform attached to this setup."""
+        """
+        Link to a single commit on hosting platform attached to this setup.
+
+        :param link: changelog entry of the commit
+        """
         return self.hosting.single_commit_link(link)
 
     def commit_listing_link(self):
@@ -380,23 +514,51 @@ class LogSetup:
         """
         Link to an issue, based on a reference, provided hosting platform
         attached to this setup can recognize it.
+
+        :param ref: issue reference, as written in a commit footer
         """
         return self.hosting.reference_link(ref)
 
 
 class Remote(NamedTuple):
+    """
+    Single line of ``git remote -v`` output.
+    """
+
+    #: Name of the remote, e.g. ``origin``.
     name: str
+
+    #: Either ``fetch`` or ``push``.
     usage: str
+
+    #: URL of the remote.
     url: str
 
 
 class Git:
+    """
+    Runs the git commands needed by the changelog and release process.
+    Commands changing the repository are printed and skipped with
+    ``--dry-run``; read-only queries always run.
+
+    :param rt: runtime to run git with
+    """
+
+    #: Runtime to run git with.
     rt: env.Runtime
 
     def __init__(self, rt: env.Runtime):
         self.rt = rt
 
     def get_log(self, setup: LogSetup, silent=False) -> tuple[ChangeLog, Level]:
+        """
+        Read the changes from the commit range of the setup.
+
+        :param setup: log setup with the commit range and filters
+        :param silent: do not print the git commands
+        :returns: changelog of visible changes and the highest level of all
+            changes, visible or not
+        """
         omit = set[str]()
         args = ["git", "log", f"--format=%H"]
         for ref in setup.omit:
@@ -417,6 +579,19 @@ class Git:
     def parse_log(
         self, git_log_output: str, separator: str, setup: LogSetup, omit: set[str]
     ):
+        """
+        Parse the output of ``git log --format=%h %H%n%B%n<separator>``.
+        Release commits and commits with ``(no-log)`` in summary are always
+        skipped, other hidden types only appear with
+        :attr:`LogSetup.take_all`, unless they are breaking.
+
+        :param git_log_output: output of ``git log`` to parse
+        :param separator: line separating the commits
+        :param setup: log setup with visibility filters and scope fixes
+        :param omit: full hashes of commits to leave out
+        :returns: changelog of visible changes and the highest level of all
+            changes, visible or not
+        """
         commitLog: list[Commit] = []
         amassed: list[str] = []
         for line in git_log_output.split("\n"):
@@ -481,6 +656,13 @@ class Git:
         return changes, level
 
     def remotes(self, silent=False):
+        """
+        Enumerate the remotes of the repository.
+
+        :param silent: do not print the git command
+        :returns: generator of :class:`Remote` entries, one for each name and
+            usage
+        """
         remotes = self.rt.capture("git", "remote", "-v", silent=silent).stdout.split(
             "\n"
         )
@@ -505,7 +687,12 @@ class Git:
             yield Remote(remote_name, remote_use, remote_url)
 
     def tag_list(self, silent=False):
-        """Get list of version tags, in increasing order."""
+        """
+        Get list of version tags, in increasing order. Only tags in form of
+        ``v<semver>`` are listed and pre-releases come before their release.
+
+        :param silent: do not print the git command
+        """
         tags: list[str] = self.rt.capture("git", "tag", silent=silent).stdout.split(
             "\n"
         )
@@ -529,22 +716,55 @@ class Git:
         return self.rt.capture("git", "branch", "--show-current").stdout.strip()
 
     def cmd(self, *command: str):
+        """
+        Run a git command, which changes the repository. The command is
+        skipped with ``--dry-run`` and a failure exits the program.
+
+        :param command: git subcommand with its arguments
+        """
         return self.rt.cmd("git", *command)
 
     def add_files(self, *files: str):
+        """
+        Stage the files for the next commit.
+
+        :param files: paths of the files to stage
+        """
         return self.cmd("add", *files)
 
     def commit(self, message: str):
+        """
+        Commit the staged files.
+
+        :param message: full commit message
+        """
         return self.cmd("commit", "-m", message)
 
     def annotated_tag(self, new_tag: str, message: str):
+        """
+        Attach an annotated tag to HEAD.
+
+        :param new_tag: name of the tag
+        :param message: message of the tag
+        """
         return self.cmd("tag", "-am", message, new_tag)
 
     def push_with_refs(self, remote: str, branch: str):
+        """
+        Push the branch with its annotated tags, with lease.
+
+        :param remote: name of the remote to push to
+        :param branch: branch to push
+        """
         return self.cmd("push", remote, branch, "--follow-tags", "--force-with-lease")
 
     def head_commit(self) -> tuple[str, str]:
-        """Get hash and subject line of the HEAD commit"""
+        """
+        Get hash and subject line of the HEAD commit.
+
+        :returns: full hash and subject, or two empty strings, if there is no
+            HEAD commit
+        """
         proc = self.rt.capture("git", "log", "-1", "--format=%H%n%s", silent=True)
         lines = proc.stdout.strip().split("\n", 1)
         if proc.returncode != 0 or len(lines) != 2:
@@ -552,20 +772,51 @@ class Git:
         return lines[0], lines[1]
 
     def tags_at(self, ref: str) -> list[str]:
-        """Get list of tags pointing at given ref"""
+        """
+        Get list of tags pointing at given ref.
+
+        :param ref: commit, branch or any other ref to check
+        """
         proc = self.rt.capture("git", "tag", "--points-at", ref, silent=True)
         return [tag for tag in proc.stdout.split("\n") if tag]
 
     def delete_tag(self, tag: str):
+        """
+        Delete local tag.
+
+        :param tag: name of the tag
+        """
         return self.cmd("tag", "-d", tag)
 
     def delete_remote_tag(self, remote: str, tag: str):
+        """
+        Delete tag from given remote.
+
+        :param remote: name of the remote
+        :param tag: name of the tag
+        """
         return self.cmd("push", remote, "--delete", f"refs/tags/{tag}")
 
     def reset_keep(self, ref: str):
+        """
+        Move current branch to given ref with ``git reset --keep``. Files,
+        which differ between HEAD and the ref are brought back to their state
+        at the ref, while local changes to other files are kept. The reset
+        is aborted, if any of the files to be reverted has local changes.
+
+        :param ref: commit to move the branch to
+        """
         return self.cmd("reset", "--keep", ref)
 
     def push_with_lease(self, remote: str, branch: str, expected: str):
+        """
+        Force-push HEAD to the branch on given remote, but only if the remote
+        branch still points at the ``expected`` commit.
+
+        :param remote: name of the remote
+        :param branch: name of the remote branch to update
+        :param expected: full hash the remote branch must still point at
+        """
         return self.cmd(
             "push",
             remote,
@@ -575,10 +826,24 @@ class Git:
 
 
 class HostingFactory(ABC):
+    """
+    Extension point for hosting services, registered with
+    :data:`hosting_factories`.
+    """
+
     @abstractmethod
-    def from_repo(
-        self, git: Git, remote: Optional[str] = None
-    ) -> Optional[Hosting]: ...
+    def from_repo(self, git: Git, remote: Optional[str] = None) -> Optional[Hosting]:
+        """
+        Create the hosting for the repository, if any of its remotes points to
+        this service.
+
+        :param git: git wrapper to read the remotes with
+        :param remote: name of the remote to prefer
+        :returns: the hosting, or ``None`` if the repository is not hosted
+            there
+        """
+        ...
 
 
+#: Registry of known hosting services.
 hosting_factories = registry.Registry[HostingFactory]("HostingFactory")

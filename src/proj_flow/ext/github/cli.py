@@ -3,9 +3,9 @@
 
 """
 The **proj_flow.ext.github.cli** adds the ``github`` command, replacing the
-old ``ci`` code. Additionally, it provides ``github matrix`` and ``github
-release`` commands. It will soon also have ``github publish``, finishing the
-job started in ``release``.
+old ``ci`` code. Additionally, it provides ``github matrix``, ``github
+release`` and ``github publish`` commands, the last one finishing the job
+started in ``release``.
 """
 
 import argparse
@@ -133,7 +133,7 @@ def release_cmd(
     retract: typing.Annotated[
         bool,
         arg.FlagArgument(
-            help="Instead of releasing, undo the release, whose \"chore\" commit "
+            help='Instead of releasing, undo the release, whose "chore" commit '
             "is at HEAD: remove the GitHub release, delete the tag locally and "
             "remotely, reset the branch to HEAD~ and push it with lease."
         ),
@@ -228,7 +228,7 @@ def publish(
         arg.Argument(
             help="Publish this release draft. In case this is called from within "
             "GitHub Actions and your release is named exactly like the tag used to "
-            "trigger this flow, you can use ${{github.action_ref}} variable. "
+            "trigger this flow, you can use ${{ github.ref_name }} variable. "
             "Defaults to current tag.",
             meta="release",
         ),

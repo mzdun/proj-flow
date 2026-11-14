@@ -2,7 +2,8 @@
 # This code is licensed under MIT license (see LICENSE for details)
 
 """
-The **proj_flow.minimal.ext.versions** update version schema files from version-updates
+The **proj_flow.minimal.ext.versions** updates the version in files listed
+under ``version-updates`` in the project config.
 """
 
 from pathlib import Path

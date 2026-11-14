@@ -8,7 +8,7 @@ Synopsis
 
 .. code-block::
 
-   $ proj-flow init [-y] [--ctx] project [path]
+   $ proj-flow init [-y | --store context-file | --answers context-file] [--ctx] project [path]
 
 Description
 -----------
@@ -35,13 +35,28 @@ out of all files copied into the project directory.
 
 ``path``
     Optional parameter, pointing to some other directory. The directory will be
-    created, if it does not exist yet.
+    created, if it does not exist yet. Defaults to current directory.
 
 ``-y`` / ``--yes``
     The interactive phase is omitted and the initial values are taken from the
     default values for each setting and switch.
 
+``--store context-file``
+    Do not create the project. Instead, ask all the questions and store the
+    answers in the given YAML file. Such a file can be edited and later used as
+    an answer sheet with ``--answers``.
+
+``--answers context-file``
+    The interactive phase is omitted and the answers are taken from the given
+    YAML or JSON file, e.g. one created with ``--store``. Settings missing from
+    the file take their default values.
+
 ``--ctx``
-    The JSON file named ``.context.json`` will be added to project, but also
+    The YAML file named ``.context.yaml`` will be added to project, but also
     ignored by Git. This file will include the full Mustache context calculated
     during the interactive phase.
+
+.. note::
+
+    Only one of ``-y``, ``--store`` and ``--answers`` may be used at the same
+    time.

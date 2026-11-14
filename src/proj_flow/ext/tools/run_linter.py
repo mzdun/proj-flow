@@ -1,6 +1,12 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.tools.run_linter** implements the ``tools run-linter``
+command, which runs dockerized super-linter with the settings taken from local
+GitHub workflows.
+"""
+
 import shlex
 import subprocess
 import urllib.parse
@@ -24,19 +30,37 @@ IMAGES = ["github/super-linter", "super-linter/super-linter"]
 
 @dataclass
 class Image:
+    """Docker image used by a super-linter action."""
+
+    #: Registry hosting the image, e.g. ``ghcr.io``.
     repo: str
+    #: Image path inside the registry, e.g. ``super-linter/super-linter``.
     name: str
+    #: Image tag.
     version: str
 
     @property
     def full_name(self):
+        """Image name with the registry, without the tag."""
         return f"{self.repo}/{self.name}"
 
     @property
     def label(self):
+        """Image name with the registry and the tag."""
         return f"{self.repo}/{self.name}:{self.version}"
 
     def super_linter_args(self, env: dict[str, str], log_level: str):
+        """
+        Build the ``docker run`` command line for this image. The workflow
+        environment is extended with ``RUN_LOCAL``, ``LOG_LEVEL``,
+        ``USE_FIND_ALGORITHM`` and ``VALIDATE_ALL_CODEBASE``, the
+        ``DEFAULT_BRANCH`` is removed and current directory is mounted as
+        ``/tmp/lint``.
+
+        :param env: environment of the workflow step, left unchanged
+        :param log_level: value of ``LOG_LEVEL`` passed to super-linter
+        :returns: arguments of the ``docker`` command
+        """
         _env = env.copy()
         _env["RUN_LOCAL"] = "true"
         _env["LOG_LEVEL"] = log_level
@@ -63,14 +87,24 @@ class Image:
 
 @dataclass
 class Step:
+    """Workflow step running super-linter."""
+
+    #: Name of the step, or its ``uses`` value, if the step has no name.
     name: str
+    #: Docker image of the action.
     image: Image
+    #: Environment of the step, without values using ``${{ }}``
+    #: expressions.
     env: dict[str, str]
 
 
 @dataclass
 class Job:
+    """Workflow job with at least one super-linter step."""
+
+    #: Name of the job, prefixed with the workflow name, if they differ.
     name: str
+    #: Super-linter steps of the job.
     steps: list[Step]
 
 

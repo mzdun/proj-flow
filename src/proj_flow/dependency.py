@@ -19,7 +19,14 @@ Version = Tuple[int, int, int]
 
 
 class DepKind(Enum):
+    """
+    Kind of external dependency of a step.
+    """
+
+    #: Command-line tool, found on ``$PATH`` and verified with ``--version``.
     APP = "app"
+    #: Python package, written as ``python -m <package>`` and verified with
+    #: :func:`importlib <importlib.metadata.version>`.
     PYTHON_PKG = "python_pkg"
 
 
@@ -32,7 +39,13 @@ def _ver(ver: str) -> Version:
 
 @dataclass
 class Comp:
+    """
+    Version comparison operator.
+    """
+
+    #: The operator, e.g. ``>=``.
     op: str
+    #: Compares the found version with the expected one.
     check: Callable[[Version, Version], bool]
 
 
@@ -53,8 +66,17 @@ _comparisons: List[Comp] = [
 
 @dataclass
 class Dependency:
+    """
+    External dependency of a step, parsed from its
+    :meth:`platform_dependencies() <proj_flow.api.step.Step.platform_dependencies>`,
+    e.g. ``cmake>=4.0`` or ``python -m build``.
+    """
+
+    #: Name of the tool or the Python package.
     name: str
+    #: Comma-separated version requirements, e.g. ``>=4,<5``; may be empty.
     version_expression: str
+    #: Kind of the dependency.
     kind: DepKind = DepKind.APP
 
     def __lt__(self, rhs: object):
@@ -76,6 +98,15 @@ class Dependency:
         )
 
     def match_version(self, version: str):
+        """
+        Check the version against all the requirements. Supported operators
+        are ``==``, ``!=``, ``<``, ``<=``, ``>``, ``>=`` and ``~=`` (same major
+        version, at least the minor version); versions are compared as
+        ``major.minor.patch``, with missing parts being ``0``.
+
+        :param version: version found
+        :returns: message for the first requirement not met, or ``None``
+        """
         for expression in (expr.strip() for expr in self.version_expression.split(",")):
             if not self._match_version(version, expression):
                 return f"{self.name}: version `{version}` does not match `{expression}`"
@@ -94,6 +125,12 @@ class Dependency:
 
 
 def gather(steps: list):
+    """
+    Collect the dependencies of the steps, without duplicates.
+
+    :param steps: steps to collect the dependencies of
+    :returns: the dependencies
+    """
     deps: Set[str] = set()
     for step in steps:
         deps.update(step.platform_dependencies())
@@ -116,6 +153,14 @@ def gather(steps: list):
 
 
 def verify(deps: List[Dependency]):
+    """
+    Check, that the Python packages are installed and the tools are on
+    ``$PATH``, in the required versions. Tool versions are read from the
+    first ``x.y.z`` in the output of ``<tool> --version``.
+
+    :param deps: dependencies to check
+    :returns: sorted error messages; empty, if all dependencies are met
+    """
     uniq: List[Dependency] = []
     errors: Set[str] = set()
     for dep in sorted(deps):

@@ -1,6 +1,11 @@
 # Copyright (c) 2026 Marcin Zdun
 # This code is licensed under MIT license (see LICENSE for details)
 
+"""
+The **proj_flow.ext.test_runner.utils.archives** unpacks the tar and zip archives used by the
+``unpack`` test command.
+"""
+
 import os
 import tarfile
 import zipfile
@@ -49,6 +54,17 @@ ARCHIVES: dict[str, UnpackInfo] = {
 
 
 def locate_unpack(archive: str) -> UnpackInfo:
+    """
+    Selects the unpacker for given archive, based on its extension. Any
+    archive with ``.tar`` as the next-to-last extension (e.g.
+    ``.tar.gz``, ``.tar.xz``) or with ``.tgz`` extension is treated as
+    a tarball.
+
+    :param archive: path to the archive
+    :returns: the Python unpacker function, taking source and destination
+        paths, together with matching command line
+    :raises ValueError: if the extension is not supported
+    """
     reminder, ext = os.path.splitext(archive)
     _, mid = os.path.splitext(reminder)
     if mid == ".tar":

@@ -10,6 +10,12 @@ from typing import List
 
 
 def name_list(names: List[str]) -> str:
+    """
+    Join the names for a sentence, e.g. ``a, b and c``.
+
+    :param names: names to join
+    :returns: the joined names, or an empty string
+    """
     if len(names) == 0:
         return ""
 

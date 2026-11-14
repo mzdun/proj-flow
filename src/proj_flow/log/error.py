@@ -8,23 +8,45 @@ raised during the changelog operations.
 
 
 class ReleaseError(Exception):
+    """
+    Base of the errors stopping a release.
+
+    :param message: description of the error
+    """
+
     def __init__(self, message: str):
         super().__init__()
         self.message = message
 
 
 class NoProjectError(ReleaseError):
+    """
+    No project suite recognizes the project, so there is no version to bump.
+    """
+
     def __init__(self):
         super().__init__("No project definition found.")
 
 
 class TagExistsError(ReleaseError):
+    """
+    The version tag of the new release already exists.
+
+    :param tag: the existing tag
+    """
+
     def __init__(self, tag: str):
         super().__init__(f"Tag {tag}] already exists.")
         self.tag = tag
 
 
 class VersionNotAdvancing(Exception):
+    """
+    Changes since the previous release do not bump the version.
+
+    :param version: current version of the project
+    """
+
     def __init__(self, version: str):
         super().__init__()
         self.message = f"[{version}] Version did not change, not doing anything."

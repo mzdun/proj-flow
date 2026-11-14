@@ -36,11 +36,20 @@ _flow_config_default_compiler: Optional[Dict[str, str]] = None
 
 
 class CMakeBinaryDirsCache:
+    """
+    Build directories of the presets in ``CMakePresets.json`` of current
+    directory, read on first use.
+    """
+
     _dirs: dict[str, Path] | None = None
     _loaded: bool = False
 
     @property
     def dirs(self):
+        """
+        Build directories, keyed by preset name, or ``None``, if there are no
+        presets.
+        """
         if not self._loaded:
             self._loaded = True
             self._dirs = get_binary_dirs()
@@ -48,13 +57,27 @@ class CMakeBinaryDirsCache:
         return self._dirs
 
     def binary_dir(self, key: str):
+        """
+        Build directory of a preset.
+
+        :param key: name of the preset
+        :returns: the directory, or ``None``, if the preset is unknown
+        """
         return (self.dirs or {}).get(key)
 
 
+#: Shared cache of CMake build directories, used by :attr:`Config.build_dir`.
 CMAKE_BINARY_DIRS = CMakeBinaryDirsCache()
 
 
 def default_compiler():
+    """
+    Name of the compiler to use on current platform: the ``DEV_CXX``
+    environment variable, or the ``compiler.os-default`` entry of the project
+    config. Prints a warning and returns ``"?"``, if neither is available.
+
+    :returns: compiler name, e.g. ``gcc``
+    """
     try:
         return os.environ["DEV_CXX"]
     except KeyError:
@@ -76,14 +99,35 @@ def default_compiler():
 
 
 class Printer:
+    """
+    Prints command lines to stderr, masking secrets and, optionally,
+    coloring the arguments.
+    """
+
     @staticmethod
     def hide(arg: str, secrets: List[str]):
+        """
+        Mask the secrets in an argument with question marks.
+
+        :param arg: argument to mask
+        :param secrets: values to mask
+        :returns: the masked argument
+        """
         for secret in secrets:
             arg = arg.replace(secret, "?" * max(15, len(secret)))
         return arg
 
     @staticmethod
     def print_arg(arg: str, secrets: List[str], raw: bool):
+        """
+        Format one argument for a colored command line: options are dimmed,
+        quoted arguments are blue.
+
+        :param arg: argument to format
+        :param secrets: values to mask
+        :param raw: print the argument as is, without shell quoting
+        :returns: the formatted argument
+        """
         color = ""
         arg = Printer.hide(arg, secrets)
         if arg[:1] == "-":
@@ -98,6 +142,14 @@ class Printer:
 
     @staticmethod
     def print_cmd(*args: str, use_color: bool = True, secrets: List[str], raw: bool):
+        """
+        Print a command line to stderr.
+
+        :param args: program and its arguments
+        :param use_color: color the program and the arguments
+        :param secrets: values to mask
+        :param raw: print the arguments as they are, without shell quoting
+        """
         cmd = args[0] if raw else shlex.join([args[0]])
         if not use_color:
             if raw:
@@ -120,12 +172,31 @@ class Printer:
 
 @dataclass
 class RunAlias:
+    """
+    Command running a fixed list of steps, declared in the ``entry`` section
+    of the project config.
+    """
+
+    #: Name of the command, e.g. ``build``.
     name: str
+
+    #: Help of the command.
     doc: str
+
+    #: Names of the steps to run.
     steps: List[str]
 
     @staticmethod
     def from_json(name: str, alias: Union[dict, list]):
+        """
+        Read an alias from the project config.
+
+        :param name: name of the command
+        :param alias: list of step names, or an object with ``steps`` and,
+            optionally, ``doc``
+        :returns: the alias; its help defaults to
+            ``Shortcut for "run -s <steps>"``
+        """
         if isinstance(alias, dict):
             doc: str = alias.get("doc", "")
             steps: List[str] = alias.get("steps", [])
@@ -192,6 +263,13 @@ def _merge(cfg: dict, defaults: ctx.SettingsType, path: Path):
 
 
 def load_extensions(extensions: List[str]):
+    """
+    Import extension modules, so they can register their commands, steps and
+    plugins. Errors are printed and do not stop the other extensions from
+    loading.
+
+    :param extensions: names of the modules to import
+    """
     for extension in extensions:
         try:
             importlib.import_module(extension)
@@ -213,6 +291,16 @@ def load_extensions(extensions: List[str]):
 
 
 class FlowConfig:
+    """
+    Project configuration, merged from the user config in
+    ``~/.config/proj-flow.*`` and the project config in ``.flow/config.*``.
+    Loading the configuration also loads the extensions it lists.
+
+    :param cfg: configuration to copy; when given, ``root`` is ignored and
+        nothing is loaded
+    :param root: root directory of the project
+    """
+
     _cfg: dict
     steps: list = []
     aliases: List[RunAlias] = []
@@ -258,42 +346,79 @@ class FlowConfig:
 
     @property
     def items(self):
+        """
+        Whole merged configuration, for reading sections owned by extensions.
+        """
         return self._cfg
 
     @property
     def entry(self) -> Dict[str, dict]:
+        """
+        The ``entry`` section: run aliases, each one a list of step names or
+        an object with ``steps`` and ``doc``.
+        """
         return self._cfg.get("entry", {})
 
     @property
     def compiler(self) -> Dict[str, dict]:
+        """The ``compiler`` section."""
         return self._cfg.get("compiler", {})
 
     @property
     def compiler_names(self) -> Dict[str, List[str]]:
+        """
+        The ``compiler.names`` section: compiler executables for each
+        compiler name, e.g. ``gcc: [gcc, g++]``.
+        """
         return self.compiler.get("names", {})
 
     @property
     def compiler_os_default(self) -> Dict[str, str]:
+        """
+        The ``compiler.os-default`` section: default compiler name for each
+        platform, e.g. ``ubuntu: gcc``.
+        """
         return self.compiler.get("os-default", {})
 
     @property
     def lts_list(self) -> Dict[str, List[str]]:
+        """
+        The ``lts`` section: supported system versions for each platform.
+        ``lts.ubuntu`` is deprecated, Ubuntu versions are calculated from
+        current date.
+        """
         return self._cfg.get("lts", {})
 
     @property
     def postproc(self) -> dict:
+        """
+        The ``postproc`` section, adjusting the run configurations after the
+        matrix is built.
+        """
         return self._cfg.get("postproc", {})
 
     @property
     def postproc_exclude(self) -> List[dict]:
+        """
+        The ``postproc.exclude`` section: configurations matching any of these
+        partial configurations are removed.
+        """
         return self.postproc.get("exclude", [])
 
     @property
     def postproc_include(self) -> List[dict]:
+        """
+        The ``postproc.include`` section: configurations matching any of
+        these partial configurations get the values they are missing.
+        """
         return self.postproc.get("include", [])
 
     @property
     def shortcuts(self) -> Dict[str, dict]:
+        """
+        The ``shortcuts`` section: named sets of ``-D`` values, available as
+        ``--<name>`` switches, e.g. ``dbg: {build_type: Debug}``.
+        """
         return self._cfg.get("shortcuts", {})
 
     @property
@@ -356,6 +481,16 @@ MSG_GUARD: Dict[Msg, Callable[["Runtime"], bool]] = {
 
 
 class Runtime(FlowConfig):
+    """
+    Project configuration, together with the state of current run: the
+    ``--dry-run``, ``--silent``, ``--verbose`` and ``--official`` switches,
+    coloring and the platform.
+
+    :param argsOrRuntime: parsed command line to read the switches from, or
+        another runtime to copy them from
+    :param cfg: project configuration
+    """
+
     dry_run: bool
     silent: bool
     verbose: bool
@@ -401,22 +536,50 @@ class Runtime(FlowConfig):
             self.secrets = [*rt.secrets]
 
     def message(self, *args: str, level=Msg.DEBUG, **kwargs):
+        """
+        Print a ``--``-prefixed message to stderr, if the level allows it.
+
+        :param args: values to print, as with :py:func:`print`
+        :param level: importance of the message; by default, printed only
+            with ``--verbose``
+        :param kwargs: other arguments of :py:func:`print`
+        """
         if not MSG_GUARD[level](self):
             return
 
         print("--", *args, **kwargs, file=sys.stderr)
 
     def fatal(self, *args: str, **kwargs):
+        """
+        Print an error to stderr and exit with code 1.
+
+        :param args: values to print, as with :py:func:`print`
+        :param kwargs: other arguments of :py:func:`print`
+        """
         print("-- FATAL:", *args, **kwargs, file=sys.stderr)
         sys.exit(1)
 
     def print(self, *args: str, raw=False):
+        """
+        Print a command line to stderr, unless ``--silent``, masking the
+        :attr:`secrets`.
+
+        :param args: program and its arguments
+        :param raw: print the arguments as they are, without shell quoting
+        """
         if not self.silent:
             Printer.print_cmd(
                 *args, use_color=self.use_color, secrets=self.secrets, raw=raw
             )
 
     def cmd(self, *args: str) -> int:
+        """
+        Print and run a command, which changes something. With ``--dry-run``,
+        the command is only printed. A failing command exits the program.
+
+        :param args: program and its arguments
+        :returns: ``0``
+        """
         self.print(*args)
         if self.dry_run:
             return 0
@@ -431,11 +594,25 @@ class Runtime(FlowConfig):
         return 0
 
     def capture(self, *args: str, silent=False):
+        """
+        Run a command and capture its output. The command runs even with
+        ``--dry-run``, so use it only for commands, which change nothing.
+
+        :param args: program and its arguments
+        :param silent: do not print the command
+        :returns: the finished process, with text ``stdout`` and ``stderr``
+        """
         if not silent:
             self.print(*args)
         return subprocess.run(args, shell=False, encoding="UTF-8", capture_output=True)
 
     def mkdirs(self, dirname: str) -> int:
+        """
+        Create a directory with its parents, unless ``--dry-run``.
+
+        :param dirname: directory to create
+        :returns: ``0``
+        """
         self.print("mkdir", "-p", dirname)
 
         if self.dry_run:
@@ -445,6 +622,15 @@ class Runtime(FlowConfig):
         return 0
 
     def cp(self, src: str, dst: str, regex: Optional[str] = None):
+        """
+        Copy a file or a directory, unless ``--dry-run``.
+
+        :param src: file or directory to copy
+        :param dst: destination path
+        :param regex: copy only the files directly in ``src``, whose names
+            match this expression
+        :returns: ``0`` on success, ``1``, if a file was missing
+        """
         args = ["cp"]
         if os.path.isdir(src):
             args.append("-r")
@@ -467,10 +653,27 @@ class Runtime(FlowConfig):
 
 @dataclass
 class Config:
+    """
+    Single run configuration, one entry of the matrix from ``.flow``, as
+    filtered by ``-D`` switches.
+    """
+
+    #: Values of the configuration, e.g. ``os``, ``build_type`` or
+    #: ``compiler``.
     items: dict
+
+    #: Keys of the matrix.
     keys: List[str]
 
     def get_path(self, key: str, val: Any = None):
+        """
+        Read a nested value.
+
+        :param key: dotted path to the value, e.g. ``coverage`` for
+            a top-level matrix value
+        :param val: value to return, if the path is missing
+        :returns: the value, or ``val``
+        """
         path = key.split(".")
         ctx = self.items
         for step in path:
@@ -484,22 +687,31 @@ class Config:
 
     @property
     def os(self) -> str:
+        """Operating system of the configuration, e.g. ``ubuntu``."""
         return self.items.get("os", "")
 
     @property
     def compiler(self) -> List[str]:
+        """Compiler executables, e.g. ``["gcc", "g++"]``."""
         return self.items.get("compiler", [])
 
     @property
     def build_type(self) -> str:
+        """Build type, e.g. ``Debug`` or ``Release``."""
         return self.items.get("build_type", "")
 
     @property
     def build_name(self) -> str:
+        """Human-readable name of the configuration, shown during the run."""
         return self.items.get("build_name", "")
 
     @property
     def build_dir(self) -> Path:
+        """
+        Build directory: the one of the CMake preset named
+        ``<preset>-<build_generator>``, if there is one, otherwise
+        ``build/<preset>``.
+        """
         cmake_binary_dir = CMAKE_BINARY_DIRS.binary_dir(
             f"{self.preset}-{self.build_generator}"
         )
@@ -509,8 +721,10 @@ class Config:
 
     @property
     def preset(self) -> str:
+        """Name of the CMake preset."""
         return self.items.get("preset", "")
 
     @property
     def build_generator(self) -> str:
+        """Name of the build generator, part of the CMake preset name."""
         return self.items.get("build_generator", "")
