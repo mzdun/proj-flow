@@ -114,13 +114,14 @@ class ProjectNotFound(Exception):
     """
     No project type with given id is registered.
 
-    :param name: id of the missing project type
+    :param id: id of the missing project type
     """
 
-    name: str
+    id: str
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, id: str):
+        super().__init__(f"No project type with id {id!r}")
+        self.id = id
 
 
 def get_project_type(id: str):
@@ -131,7 +132,7 @@ def get_project_type(id: str):
     :returns: the project type
     :raises ProjectNotFound: no project type has this id
     """
-    result, _ = project_type.find(lambda proj: proj.id == id)
+    result, _ = project_type.find(lambda proj: True if proj.id == id else None)
     if result is None:
         raise ProjectNotFound(id)
     return result
