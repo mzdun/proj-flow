@@ -37,9 +37,9 @@ class StorePackages(step.Step):
     def runs_after(self):
         return ["Pack"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         if not rt.dry_run:
-            os.makedirs("build/artifacts", exist_ok=True)
+            rt.mkdirs("build/artifacts", silent=True)
 
         packages_dir = f"build/{config.preset}/packages"
 
@@ -52,6 +52,7 @@ class StorePackages(step.Step):
             src = _package_name(config, _project_pkg, main_group)
             dst = _package_name(config, _project_pkg, "")
             rt.print("mv", *(f"{package}.*" for package in (src, dst)), raw=True)
+            extensions = []
             for _, dirnames, filenames in os.walk(packages_dir):
                 dirnames[:] = []
                 extensions = [
@@ -73,7 +74,7 @@ class StorePackages(step.Step):
                 generators = ",".join(config.items.get("cpack_generator", []))
                 print(f"CPACK_GENERATORS={generators}", file=github_output)
 
-        return rt.cp(
+        rt.cp(
             packages_dir,
             "build/artifacts/packages",
             f"^{_project_pkg}-.*$",
@@ -92,10 +93,8 @@ class StoreTests(step.Step):
     def runs_after(self):
         return ["Test"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
-        return rt.cp(
-            f"build/{config.preset}/test-results", "build/artifacts/test-results"
-        )
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
+        rt.cp(f"build/{config.preset}/test-results", "build/artifacts/test-results")
 
 
 @step.register

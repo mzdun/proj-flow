@@ -109,7 +109,7 @@ class SigningTool(ABC):
         ...
 
     @abstractmethod
-    def sign(self, config: env.Config, rt: env.Runtime, files: List[str]) -> int:
+    def sign(self, config: env.Config, rt: env.Runtime, files: List[str]) -> None:
         """
         Sign the files in place.
 
@@ -117,7 +117,7 @@ class SigningTool(ABC):
         :param rt: runtime used for messages and running the tools
         :param files: paths of the files to sign, all accepted by
             :meth:`is_signable`
-        :returns: exit code, ``0`` on success
+        :raises StepFailed: the files could not be signed
         """
         ...
 

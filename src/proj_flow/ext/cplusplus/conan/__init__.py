@@ -38,12 +38,12 @@ class ConanConfig:
     def directories_to_remove(self, _: env.Config) -> List[Path]:
         return [CONAN_DIR]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         api = conan_api()
 
         profile_gen = f"{CONAN_DIR.as_posix()}/{CONAN_PROFILE_GEN}-{config.preset}"
+        rt.mkdirs(str(CONAN_DIR), silent=True)
         if not rt.dry_run:
-            os.makedirs(CONAN_DIR, exist_ok=True)
             with open(profile_gen, "w", encoding="UTF-8") as profile:
                 print(
                     textwrap.dedent(f"""\
@@ -60,8 +60,6 @@ class ConanConfig:
                     print(setting, file=profile)
 
         conan_dir = CONAN_DIR.as_posix()
-        if api.config(rt, conan_dir, f"./{conan_dir}/{CONAN_PROFILE}", profile_gen):
-            return 1
+        api.config(rt, conan_dir, f"./{conan_dir}/{CONAN_PROFILE}", profile_gen)
         if not rt.dry_run and os.path.exists("CMakeUserPresets.json"):
             os.remove("CMakeUserPresets.json")
-        return 0

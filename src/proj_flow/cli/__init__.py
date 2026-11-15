@@ -24,6 +24,10 @@ def main():
         __main()
     except KeyboardInterrupt:
         sys.exit(1)
+    except env.StepFailed as error:
+        if error.__cause__:
+            print(error.__cause__, file=sys.stderr)
+        sys.exit(1)
 
 
 def _change_dir():

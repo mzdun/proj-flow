@@ -63,7 +63,7 @@ class conan(ABC):
         conan_output_dir: str,
         compiler_profile_name: str,
         build_type_profile_name: str,
-    ) -> int:
+    ) -> None:
         """
         Detect the compiler profile and install the dependencies from the
         current directory, building missing packages.
@@ -74,7 +74,7 @@ class conan(ABC):
             detected compiler
         :param build_type_profile_name: name of the profile used for both
             build and host contexts
-        :returns: exit code, ``0`` on success
+        :raises StepFailed: a Conan command has failed
         """
         ...
 
@@ -102,7 +102,7 @@ class conan_1(conan):
         conan_output_dir: str,
         compiler_profile_name: str,
         build_type_profile_name: str,
-    ) -> int:
+    ) -> None:
         """
         Run ``conan profile new --detect`` and ``conan install`` with both
         ``-if`` and ``-of`` set to the output directory.
@@ -113,19 +113,18 @@ class conan_1(conan):
             detected compiler
         :param build_type_profile_name: name of the profile used for both
             build and host contexts
-        :returns: exit code, ``0`` on success
+        :raises StepFailed: a Conan command has failed
         """
-        if rt.cmd(
+        rt.cmd(
             "conan",
             "profile",
             "new",
             "--detect",
             "--force",
             compiler_profile_name,
-        ):
-            return 1
+        )
 
-        return rt.cmd(
+        rt.cmd(
             "conan",
             "install",
             "-if",
@@ -154,7 +153,7 @@ class conan_2(conan):
         conan_output_dir: str,
         compiler_profile_name: str,
         build_type_profile_name: str,
-    ) -> int:
+    ) -> None:
         """
         Run ``conan profile detect`` and ``conan install`` with ``-of`` set
         to the output directory.
@@ -165,19 +164,18 @@ class conan_2(conan):
             detected compiler
         :param build_type_profile_name: name of the profile used for both
             build and host contexts
-        :returns: exit code, ``0`` on success
+        :raises StepFailed: a Conan command has failed
         """
-        if rt.cmd(
+        rt.cmd(
             "conan",
             "profile",
             "detect",
             "--force",
             "--name",
             compiler_profile_name,
-        ):
-            return 1
+        )
 
-        return rt.cmd(
+        rt.cmd(
             "conan",
             "install",
             "-of",

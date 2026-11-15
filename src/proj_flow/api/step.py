@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, cast
 
-from proj_flow.api.env import Config, Runtime
+from proj_flow.api.env import Config, Runtime, StepFailed
 from proj_flow.base import inspect as _inspect
 from proj_flow.base import matrix
 from proj_flow.base.name_list import name_list
@@ -84,17 +84,19 @@ class Step(ABC):
         return []
 
     @abstractmethod
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: Config, rt: Runtime) -> None:
         """
-        Perform the step for given configuration. A non-zero result stops the
-        whole run.
+        Perform the step for given configuration. Raise
+        :class:`StepFailed <proj_flow.api.env.StepFailed>` to stop the whole
+        run.
 
         :param config: current run configuration
         :param rt: runtime of the run; respect its ``dry_run`` flag, e.g. by
             calling tools through :meth:`Runtime.cmd()
             <proj_flow.api.env.Runtime.cmd>`
-        :returns: exit code, ``0`` on success
+        :raises StepFailed: the step failed to run
         """
+
         ...
 
 
@@ -128,12 +130,9 @@ class SerialStep(Step):
             [child.directories_to_remove(config) for child in self.children]
         )
 
-    def run(self, config: Config, rt: Runtime) -> int:
+    def run(self, config: Config, rt: Runtime) -> None:
         for child in self.children:
-            result = child.run(config, rt)
-            if result:
-                return result
-        return 0
+            child.run(config, rt)
 
 
 __steps: List[Step] = []

@@ -76,7 +76,7 @@ class CMakeConfig(CMakeBase):
     def directories_to_remove(self, config: env.Config) -> List[Path]:
         return [config.build_dir]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         cmake_vars = cast(Dict[str, str], rt._cfg.get("cmake", {}).get("vars", {}))
         defines: List[str] = []
         for var in cmake_vars:
@@ -98,7 +98,7 @@ class CMakeConfig(CMakeBase):
 
             defines.append(f"-D{var}={value}")
 
-        return rt.cmd(
+        rt.cmd(
             "cmake",
             "--preset",
             f"{config.preset}-{config.build_generator}",
@@ -113,8 +113,8 @@ class CMakeBuild(CMakeBase):
     def __init__(self):
         super().__init__(name="Build", runs_after=["CMake"])
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
-        return rt.cmd("cmake", "--build", "--preset", config.preset, "--parallel")
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
+        rt.cmd("cmake", "--build", "--preset", config.preset, "--parallel")
 
 
 @step.register
@@ -127,8 +127,8 @@ class CMakeTest(CMakeBase):
     def platform_dependencies(self):
         return self.dep_with_tool("ctest")
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
-        return rt.cmd("ctest", "--preset", config.preset)
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
+        rt.cmd("ctest", "--preset", config.preset)
 
 
 @step.register
@@ -150,6 +150,6 @@ class PackStep(CMakeBase):
             and len(config.items.get("cpack_generator", [])) > 0
         )
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         generators = ";".join(config.items.get("cpack_generator", []))
-        return rt.cmd("cpack", "--preset", config.preset, "-G", generators)
+        rt.cmd("cpack", "--preset", config.preset, "-G", generators)
