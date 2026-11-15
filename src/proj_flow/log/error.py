@@ -28,18 +28,6 @@ class NoProjectError(ReleaseError):
         super().__init__("No project definition found.")
 
 
-class TagExistsError(ReleaseError):
-    """
-    The version tag of the new release already exists.
-
-    :param tag: the existing tag
-    """
-
-    def __init__(self, tag: str):
-        super().__init__(f"Tag {tag}] already exists.")
-        self.tag = tag
-
-
 class VersionNotAdvancing(Exception):
     """
     Changes since the previous release do not bump the version.
