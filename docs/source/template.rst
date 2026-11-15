@@ -215,6 +215,9 @@ and ``0`` for false value.
 +------------------------------+---------------------------------------------+
 | ``with.conventional-commits``| Use Conventional Commits (adds COMMITS.md)  |
 +------------------------------+---------------------------------------------+
+| ``with.llms``                | Add AGENTS.md describing the project to     |
+|                              | coding agents                               |
++------------------------------+---------------------------------------------+
 
 .. _non-interactive-settings:
 
