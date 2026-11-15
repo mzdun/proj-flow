@@ -50,7 +50,7 @@ def _token_stream(text: str) -> Iterator[Token]:
     while mo is not None:
         token_type = mo.lastgroup
         if not token_type:
-            continue
+            break
         if token_type not in ["COMMENT", "WS"]:
             value = mo.group(token_type)
             yield Token(type=token_type, value=value, offset=offset)
@@ -60,7 +60,8 @@ def _token_stream(text: str) -> Iterator[Token]:
 
 def _command(cmd: Token, stream: Iterator[Token]):
     result = Command(name=cmd.value, args=[], offset=cmd.offset)
-    if next(stream)[0] != "OPEN":
+    tok = next(stream, None)
+    if tok is None or tok.type != "OPEN":
         return result
     for tok in stream:
         if tok.type == "CLOSE":
@@ -103,7 +104,39 @@ def _patch(directory: str, arg: Arg, value: str):
         input.write(patched)
 
 
+_SINGLE_VALUE_KEYWORDS = ["VERSION", "DESCRIPTION", "HOMEPAGE_URL"]
+
+
+def _project_keywords(args: List[Arg]):
+    # Only the single-value keywords take the next argument as their value;
+    # anything else, e.g. LANGUAGES with its list of languages, is skipped
+    # one argument at a time.
+    result: dict[str, Arg] = {}
+    index = 0
+    while index < len(args):
+        name = args[index].value
+        if name in _SINGLE_VALUE_KEYWORDS and index + 1 < len(args):
+            result[name] = args[index + 1]
+            index += 2
+            continue
+        index += 1
+    return result
+
+
 def get_project(dirname: Path) -> Optional[CMakeProject]:
+    """
+    Read the project information from ``CMakeLists.txt`` in given directory.
+    The name, ``VERSION`` and ``DESCRIPTION`` are taken from the
+    first ``project()`` command and the stability from the
+    ``set(PROJECT_VERSION_STABILITY ...)`` command. A missing version
+    defaults to ``0.1.0`` and missing stability and description default to
+    :data:`proj_flow.api.release.NO_ARG`.
+
+    :param dirname: directory containing the ``CMakeLists.txt``
+    :returns: the project information with offsets of each value in the
+        file, or ``None``, if there is no ``CMakeLists.txt`` or it has no
+        ``project()`` command
+    """
     try:
         commands = _cmake(dirname / "CMakeLists.txt")
     except FileNotFoundError:
@@ -115,17 +148,14 @@ def get_project(dirname: Path) -> Optional[CMakeProject]:
     description = NO_ARG
 
     for cmd in commands:
-        if cmd.name == "project":
+        if cmd.name == "project" and project_name is None and cmd.args:
             project_name = cmd.args[0]
-            args = cmd.args[1:]
-            project_dict = {
-                name.value: value for name, value in zip(args[::2], args[1::2])
-            }
+            project_dict = _project_keywords(cmd.args[1:])
             version = project_dict.get("VERSION", version)
             description = project_dict.get("DESCRIPTION", description)
             if version_stability is not None:
                 break
-        elif cmd.name == "set":
+        elif cmd.name == "set" and len(cmd.args) > 1:
             var_name = cmd.args[0]
             if var_name.value == "PROJECT_VERSION_STABILITY":
                 version_stability = cmd.args[1]
