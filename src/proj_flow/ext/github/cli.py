@@ -175,7 +175,7 @@ def release_cmd(
                 force=force_retract,
             )
         except log.error.ReleaseError as err:
-            rt.fatal(err.message)
+            rt.fatal(str(err))
         rt.message(f"Retracted {tag}", level=env.Msg.ALWAYS)
         return
 
@@ -207,10 +207,10 @@ def release_cmd(
         )
         released = not not next_tag
     except log.release.VersionNotAdvancing as err:
-        rt.message(err.message, level=env.Msg.STATUS)
+        rt.message(str(err), level=env.Msg.STATUS)
         return
     except log.error.ReleaseError as err:
-        rt.fatal(err.message)
+        rt.fatal(str(err))
     finally:
         if "GITHUB_ACTIONS" in os.environ:
             GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")

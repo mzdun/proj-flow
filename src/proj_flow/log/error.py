@@ -9,14 +9,11 @@ raised during the changelog operations.
 
 class ReleaseError(Exception):
     """
-    Base of the errors stopping a release.
+    Base of the errors stopping a release. The description is available as
+    ``str(error)``.
 
     :param message: description of the error
     """
-
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
 
 
 class NoProjectError(ReleaseError):
@@ -30,12 +27,15 @@ class NoProjectError(ReleaseError):
 
 class VersionNotAdvancing(Exception):
     """
-    Changes since the previous release do not bump the version.
+    Changes since the previous release do not bump the version. The
+    description is available as ``str(error)``.
 
     :param version: current version of the project
     """
 
+    #: Current version of the project.
+    version: str
+
     def __init__(self, version: str):
-        super().__init__()
-        self.message = f"[{version}] Version did not change, not doing anything."
+        super().__init__(f"[{version}] Version did not change, not doing anything.")
         self.version = version
