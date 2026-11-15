@@ -4,6 +4,21 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.37.0 <https://github.com/mzdun/proj-flow/compare/v0.36.0...v0.37.0>`_ (2026-11-15)
+=====================================================================================
+
+New Features
+------------
+
+- add AGENTS.md to C++ templates (`ba97464 <https://github.com/mzdun/proj-flow/commit/ba97464a7f5781d97bbdcbff14065a6d19ed45fe>`_)
+- add COMMITS.md to C++ templates (`4ff15b7 <https://github.com/mzdun/proj-flow/commit/4ff15b76f49cb4efc3d9753b7b711babc1a40631>`_)
+
+Bug Fixes
+---------
+
+- generate source groups per directory (`515ebeb <https://github.com/mzdun/proj-flow/commit/515ebeb74c867a89ebc6f71927a051c913a65585>`_)
+- use proj-flow actions in build YAMLs (`dfd63bf <https://github.com/mzdun/proj-flow/commit/dfd63bfdede59b6dd564b148d0cea7cc4d8c0999>`_)
+
 `0.36.0 <https://github.com/mzdun/proj-flow/compare/v0.35.0...v0.36.0>`_ (2026-11-15)
 =====================================================================================
 
