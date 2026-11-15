@@ -153,10 +153,8 @@ class GitHub(commit.Hosting):
         return self._run(*call, url, *args)
 
     def _run(self, *args: str):
-        self.rt.print(*args)
-        if self.rt.dry_run:
-            return None
-        return cmd.run(*args)
+        self.rt.cmd(*args)
+        return None
 
     def json_from(
         self,
@@ -181,8 +179,12 @@ class GitHub(commit.Hosting):
         if proc is None:
             return default
 
+        if proc.returncode != 0:
+            self.rt.message(proc.stderr.strip(), level=env.Msg.ALWAYS)
+            self.rt.fatal(f"gh api {res} ended in failure")
+
         if self.rt.verbose:
-            self.rt.message(f"[DEBUG] stderr={proc.returncode}")
+            self.rt.message(f"[DEBUG] returncode={proc.returncode}")
             self.rt.message("[DEBUG] stderr=")
             try:
                 self.rt.message(pformat(json.loads(proc.stderr)))
