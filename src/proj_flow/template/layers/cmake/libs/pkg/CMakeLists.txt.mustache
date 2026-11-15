@@ -6,14 +6,20 @@ configure_file({{SRCDIR}}/version{{EXT.hxx}}.in {{INCLUDEDIR}}/version{{EXT.hxx}
 set(SRCS
   {{INCLUDEDIR}}/helper{{EXT.hxx}}
   {{SRCDIR}}/helper{{EXT.cxx}}
+)
+
+set(GEN_SRCS
   "${CMAKE_CURRENT_BINARY_DIR}/{{INCLUDEDIR}}/version{{EXT.hxx}}"
 )
 
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRCS})
+source_group(TREE ${CMAKE_CURRENT_BINARY_DIR} PREFIX gen FILES ${GEN_SRCS})
+
 {{#cmake.application}}
-add_library({{LIB_NAME}} STATIC ${SRCS})
+add_library({{LIB_NAME}} STATIC ${SRCS} ${GEN_SRCS})
 {{/cmake.application}}
 {{#cmake.library}}
-{{cmake.cmd}}({{LIB_NAME}}{{cmake.type}} ${SRCS})
+{{cmake.cmd}}({{LIB_NAME}}{{cmake.type}} ${SRCS} ${GEN_SRCS})
 {{/cmake.library}}
 
 target_compile_options({{LIB_NAME}} PRIVATE {{${}}{{NAME_PREFIX}}_ADDITIONAL_COMPILE_FLAGS})
@@ -55,15 +61,12 @@ endif()
 ##################################################################
 
 if ({{NAME_PREFIX}}_TESTING)
-  file(GLOB EXCLUDES_TEST_SRCS_CC tests/*.cc)
-  file(GLOB EXCLUDES_TEST_SRCS_CPP tests/*.cpp)
-  file(GLOB EXCLUDES_TEST_SRCS_CXX tests/*.cxx)
-  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/tests FILES
-    ${EXCLUDES_TEST_SRCS_CC}
-    ${EXCLUDES_TEST_SRCS_CPP}
-    ${EXCLUDES_TEST_SRCS_CXX})
+  set(TEST_SRCS
+    tests/test{{EXT.cxx}}
+  )
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/tests FILES ${TEST_SRCS})
 
-  add_project_test({{LIB_NAME}} ${EXCLUDES_TEST_SRCS_CC} ${EXCLUDES_TEST_SRCS_CPP} ${EXCLUDES_TEST_SRCS_CXX})
+  add_project_test({{LIB_NAME}} ${TEST_SRCS})
   target_link_libraries({{LIB_NAME}}-test PUBLIC GTest::gmock_main{{^cmake.plugin}} {{LIB_NAME}}{{/cmake.plugin}})
 
   add_test(NAME {{LIB_NAME}} COMMAND {{LIB_NAME}}-test "--gtest_output=xml:${TEST_REPORT_DIR}/{{LIB_NAME}}/${TEST_REPORT_FILE}")
