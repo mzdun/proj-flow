@@ -34,10 +34,10 @@ class Summary:
         self.update_start_stop(test)
 
         self.tests += 1
-        for status in ["passed", "failed", "skipped", "pending", "other"]:
-            if test.status == status:
-                setattr(self, status, getattr(self, status) + 1)
-                break
+        status = test.status
+        if status not in ["passed", "failed", "skipped", "pending"]:
+            status = "other"
+        setattr(self, status, getattr(self, status) + 1)
 
     def asdict(self):
         values = asdict(self)
@@ -98,8 +98,8 @@ class Test:
     def __lt__(self, other):
         if not isinstance(other, Test):
             return False
-        if self.filePath == self.filePath:
-            return _less(self.line, self.line)
+        if self.filePath == other.filePath:
+            return _less(self.line, other.line)
         return _less(self.filePath, other.filePath)
 
     def asdict(self):
@@ -126,7 +126,8 @@ class Test:
                 message += "\n\n"
             message += f"stderr: {'\n'.join(self.stderr)}"
             self.stderr = None
-        self.message = message
+        # keep a missing message missing, instead of reporting an empty one
+        self.message = message or self.message
 
     @staticmethod
     def from_dict(**kwargs):
