@@ -11,6 +11,8 @@ import subprocess
 from abc import ABC, abstractmethod
 from typing import Callable, List, cast
 
+from typing_extensions import deprecated
+
 from proj_flow.api.env import Config, Runtime
 from proj_flow.base import cmd
 from proj_flow.dependency import VER_REGEX
@@ -19,7 +21,7 @@ from proj_flow.dependency import VER_REGEX
 class conan(ABC):
     version: int
 
-    def __init__(self, version: int = 1):
+    def __init__(self, version: int = 2):
         self.version = version
 
     def settings(self, cfg: Config):
@@ -42,6 +44,9 @@ class conan(ABC):
     ) -> int: ...
 
 
+@deprecated(
+    "Conan v1 has reached its end of support; use Conan v2 and conan_2"
+)
 class conan_1(conan):
     def __init__(self):
         super().__init__(1)
@@ -116,24 +121,28 @@ class conan_2(conan):
         )
 
 
+#: Major version assumed, when the version of Conan cannot be read.
+DEFAULT_VERSION = 2
+
+
 def _conan_version():
     found = shutil.which("conan")
     if found is None:
-        return 1
+        return DEFAULT_VERSION
 
     proc = cast(
         subprocess.CompletedProcess[str],
         cmd.run(found, "--version", capture_output=True),
     )
-    if proc.returncode != 0:
-        return 1
+    if proc is None or proc.returncode != 0:
+        return DEFAULT_VERSION
     m = VER_REGEX.search(proc.stdout)
     version = m.group(0) if m is not None else None
     if version is None:
-        return 1
+        return DEFAULT_VERSION
     chunks = [int(v.strip()) for v in version.split(".")]
     if len(chunks) < 1:
-        return 1
+        return DEFAULT_VERSION
     return chunks[0]
 
 
