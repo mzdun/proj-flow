@@ -752,12 +752,16 @@ class Git:
 
     def push_with_refs(self, remote: str, branch: str):
         """
-        Push the branch with its annotated tags, with lease.
+        Push the branch with its annotated tags, with lease. The push is
+        atomic, so a rejected branch (e.g. by branch protection) does not
+        leave the new tag on the remote.
 
         :param remote: name of the remote to push to
         :param branch: branch to push
         """
-        self.cmd("push", remote, branch, "--follow-tags", "--force-with-lease")
+        self.cmd(
+            "push", "--atomic", remote, branch, "--follow-tags", "--force-with-lease"
+        )
 
     def head_commit(self) -> tuple[str, str]:
         """
