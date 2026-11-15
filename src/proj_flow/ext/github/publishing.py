@@ -16,15 +16,9 @@ import zipfile
 from proj_flow.api import env, release
 
 
-def _safe_regex(value: str) -> str:
-    for esc in "\\.+*?()[]":
-        value = value.replace(esc, f"\\{esc}")
-    return value
-
-
 def build_regex(project: release.Project):
-    regexPre = _safe_regex(project.package_prefix)
-    regexPost = _safe_regex(project.package_suffix)
+    regexPre = re.escape(project.package_prefix)
+    regexPost = re.escape(project.package_suffix)
     regex = f"^{regexPre}(.*){regexPost}$"
     return re.compile(regex)
 
