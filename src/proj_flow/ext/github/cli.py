@@ -77,9 +77,18 @@ def _check_default_branch(rt: env.Runtime, git: commit.Git):
         )
 
     expected = rt.default_branch
-    if branch != expected:
-        current = f"`{branch}`" if branch else "a detached HEAD"
-        rt.fatal(f"Releases are made from `{expected}`, currently on {current}.")
+    if branch == expected:
+        return
+
+    current = f"`{branch}`" if branch else "a detached HEAD"
+    message = f"Releases are made from `{expected}`, currently on {current}."
+    if rt.dry_run:
+        # nothing gets committed, tagged or pushed, so previewing a release
+        # from a feature branch is harmless
+        rt.message(message, "Continuing with --dry-run.", level=env.Msg.ALWAYS)
+        return
+
+    rt.fatal(message)
 
 
 @arg.command("github", "release")
