@@ -94,24 +94,24 @@ COMPILER_ENV = ["CC", "CXX"]
 
 @contextmanager
 def compilers_env_setup(compiler: List[str], rt: api.env.Runtime):
-    orig_env = {}
+    # only the variables set here are restored on exit; on Windows, nothing
+    # is set, so the environment is left alone
+    orig_env: dict[str, Optional[str]] = {}
     if sys.platform != "win32":
         for var, value in zip(COMPILER_ENV, compiler):
-            if var in os.environ:
-                orig_env[var] = os.environ[var]
+            orig_env[var] = os.environ.get(var)
             os.environ[var] = value
             rt.message(f"set {var}={value}")
     try:
         yield
     finally:
-        for var in COMPILER_ENV:
-            if var in os.environ:
-                del os.environ[var]
-            if var not in orig_env:
-                rt.message(f"unset {var}")
         for var, value in orig_env.items():
-            os.environ[var] = value
-            rt.message(f"set {var}={value}")
+            if value is None:
+                os.environ.pop(var, None)
+                rt.message(f"unset {var}")
+            else:
+                os.environ[var] = value
+                rt.message(f"set {var}={value}")
 
 
 def run_steps(
@@ -153,7 +153,7 @@ def run_steps(
                         return 1
 
     if steps_ran == 0:
-        print("Nothing to do.")
+        print("Nothing to do.", file=sys.stderr)
 
     return 0
 
@@ -162,25 +162,25 @@ def run_steps(
 def prep_environment(rt: api.env.Runtime, key: str):
     original_env = dict[str, str | None]()
 
-    for key, value in cast(dict, rt.items.get(key, {})).items():
-        original_value = os.environ.get(key)
+    for name, value in cast(dict, rt.items.get(key, {})).items():
+        original_value = os.environ.get(name)
         if value is None:
             if original_value is not None:
-                del os.environ[key]
-                original_env[key] = original_value
-                rt.print("export", f"{key.upper()}=")
+                del os.environ[name]
+                original_env[name] = original_value
+                rt.print("export", f"{name}=")
         else:
-            os.environ[key] = str(value)
-            original_env[key] = original_value
-            rt.print("export", f"{key.upper()}={value}")
+            os.environ[name] = str(value)
+            original_env[name] = original_value
+            rt.print("export", f"{name}={value}")
 
     try:
         yield
     finally:
-        for key, value in original_env.items():
+        for name, value in original_env.items():
             if value is None:
-                del os.environ[key]
-                rt.print("export", f"{key.upper()}=")
+                os.environ.pop(name, None)
+                rt.print("export", f"{name}=")
             else:
-                os.environ[key] = value
-                rt.print("export", f"{key.upper()}={value}")
+                os.environ[name] = value
+                rt.print("export", f"{name}={value}")
