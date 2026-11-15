@@ -1,4 +1,4 @@
-{{=<% %>=}}
+# {{=<% %>=}}
 name: Build
 
 on:
@@ -58,83 +58,24 @@ jobs:
       #     ##       ##  ####  ##   ##   ##  ##   ##   ##     ## ##  #### ##     ## ##       ##  ####    ##
       #     ##       ##   ###   ## ##    ##  ##    ##  ##     ## ##   ### ##     ## ##       ##   ###    ##
       #     ######## ##    ##    ###    #### ##     ##  #######  ##    ## ##     ## ######## ##    ##    ##
-      - name: Python <%PYTHON_VERSION%>
-        uses: actions/setup-python@v5
+      - name: Bootstrap Flow
+        uses: proj-flow-actions/bootstrap@v1
         with:
           python-version: "<%PYTHON_VERSION%>"
+          cache-prefix: flow-${{ runner.os }}-${{ runner.arch }}-<%PYTHON_VERSION%>
 
-      - name: Bootstrap Flow
-        run: |
-          python ./.flow/flow.py bootstrap
-
-      - name: Add msbuild to PATH
+      - name: Setup Windows
         if: ${{ matrix.windows }}
-        uses: microsoft/setup-msbuild@v1.1
+        uses: proj-flow-actions/setup-windows@v1
+        with:
+          install-occ: false
 
-      - name: Install WiX 4
-        if: ${{ matrix.windows }}
-        shell: cmd
-        run: |
-          dotnet tool install --global wix --version 4.0.4
-          wix extension add -g WixToolset.UI.wixext/4.0.4
-
-      - name: Install Ninja
+      - name: Setup Ubuntu
         if: ${{ matrix.ubuntu }}
-        run: |
-          sudo apt-get install ninja-build -y
-
-      - name: Install GCC 13
-        if: ${{ matrix.ubuntu && matrix.needs_gcc_ppa }}
-        run: |
-          sudo apt install software-properties-common -y
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt install gcc-13 g++-13 -y
-
-      - name: Set up GCC 13
-        if: ${{ matrix.ubuntu }}
-        run: |
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 130
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 130
-          sudo update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-13 130
-
-          sudo update-alternatives --set g++ /usr/bin/g++-13
-          sudo update-alternatives --set gcc /usr/bin/gcc-13
-          sudo update-alternatives --set gcov /usr/bin/gcov-13
-
-      - name: Set up GCC 13 as c++/cc
-        if: ${{ matrix.ubuntu && matrix.gcc }}
-        run: |
-          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-13 130
-          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-13 130
-
-          sudo update-alternatives --set c++ /usr/bin/g++-13
-          sudo update-alternatives --set cc /usr/bin/gcc-13
-
-      - name: Install Clang 18
-        if: ${{ matrix.ubuntu && matrix.clang }}
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 18
-
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 180
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 180
-
-          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 180
-          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-18 180
-
-          sudo update-alternatives --set clang++ /usr/bin/clang++-18
-          sudo update-alternatives --set clang /usr/bin/clang-18
-
-          sudo update-alternatives --set c++ /usr/bin/clang++-18
-          sudo update-alternatives --set cc /usr/bin/clang-18
-
-      - name: Check C++ binary
-        if: ${{ matrix.ubuntu }}
-        run: |
-          realpath `which c++`
-          c++ --version
-          sudo locale-gen pl_PL.UTF-8 en_US.UTF-8 en_GB.UTF-8
+        uses: proj-flow-actions/setup-ubuntu@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          gcc-ppa: ${{ matrix.needs_gcc_ppa || false }}
 
       - name: Setup Conan
         uses: proj-flow-actions/setup-conan@v1
