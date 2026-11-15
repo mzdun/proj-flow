@@ -32,3 +32,6 @@ class CPlusPlus(api.ProjectType):
 
 
 cxx = api.get_project_type("cxx")
+cxx.register_switch(
+    "with.llms", "Add AGENTS.md describing the project to coding agents", True
+)
