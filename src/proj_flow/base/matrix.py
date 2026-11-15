@@ -230,9 +230,11 @@ def load_matrix(*matrix_paths: str) -> Tuple[List[dict], List[str]]:
 
     setup = setups[0]
     for additional in setups[1:]:
-        src_matrix = setup.get("matrix", {})
-        src_exclude = setup.get("exclude", [])
-        src_include = setup.get("include", [])
+        # store the containers back, so merging into a first file without
+        # (or with empty) matrix, exclude or include is not lost
+        src_matrix = setup["matrix"] = setup.get("matrix") or {}
+        src_exclude = setup["exclude"] = setup.get("exclude") or []
+        src_include = setup["include"] = setup.get("include") or []
 
         for key, value in additional.get("matrix", {}).items():
             old = src_matrix.get(key)

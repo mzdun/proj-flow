@@ -151,13 +151,9 @@ def test_load_matrix_merges_additional_files(tmp_path):
     assert sorted(configs, key=repr) == sorted(expected, key=repr)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="load_matrix drops exclude/include from additional files, "
-    "when the first file has no such key",
-)
-def test_load_matrix_merges_exclude_into_file_without_one(tmp_path):
-    main = _write(tmp_path / "matrix.yml", "matrix:\n  os: [ubuntu]\n")
+@pytest.mark.parametrize("first_extra", ["", "exclude:\n", "exclude: []\n"])
+def test_load_matrix_merges_exclude_into_file_without_one(tmp_path, first_extra):
+    main = _write(tmp_path / "matrix.yml", f"matrix:\n  os: [ubuntu]\n{first_extra}")
     extra = _write(
         tmp_path / "extra.yml",
         "matrix:\n  os: [macos]\nexclude:\n  - os: macos\n",
@@ -166,3 +162,27 @@ def test_load_matrix_merges_exclude_into_file_without_one(tmp_path):
     configs, _ = matrix.load_matrix(main, extra)
 
     assert configs == [{"os": "ubuntu"}]
+
+
+@pytest.mark.parametrize("first_extra", ["", "include:\n"])
+def test_load_matrix_merges_include_into_file_without_one(tmp_path, first_extra):
+    main = _write(tmp_path / "matrix.yml", f"matrix:\n  os: [ubuntu]\n{first_extra}")
+    extra = _write(
+        tmp_path / "extra.yml",
+        "include:\n  - os: ubuntu\n    compiler: gcc\n",
+    )
+
+    configs, _ = matrix.load_matrix(main, extra)
+
+    assert configs == [{"os": "ubuntu", "compiler": "gcc"}]
+
+
+@pytest.mark.parametrize("first", ["exclude: []\n", "matrix:\nexclude: []\n"])
+def test_load_matrix_merges_matrix_into_file_without_one(tmp_path, first):
+    main = _write(tmp_path / "matrix.yml", first)
+    extra = _write(tmp_path / "extra.yml", "matrix:\n  os: [ubuntu, macos]\n")
+
+    configs, keys = matrix.load_matrix(main, extra)
+
+    assert keys == ["os"]
+    assert sorted(configs, key=repr) == [{"os": "macos"}, {"os": "ubuntu"}]
