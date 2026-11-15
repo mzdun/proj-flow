@@ -1,26 +1,56 @@
+{{=<% %>=}}
 name: Build
 
 on:
   push:
     branches: ["main"]
-    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 env:
-  RELEASE: ${{ github.event_name == 'push' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v') }}
+  RELEASE: ${{ github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main' }}
 
 jobs:
   M:
     name: Prepare builds
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
-      release: ${{fromJson(env.RELEASE)}}
+      release: ${{fromJson(env.RELEASE) && fromJson(steps.finalize.outputs.released)}}
+      reference: ${{toJson(steps.finalize.outputs.tag)}}
       matrix: ${{steps.flow.outputs.matrix}}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Bootstrap proj-flow
+        if: ${{ fromJson(env.RELEASE) }}
+        run: |
+          python ./.flow/flow.py bootstrap
+
+      - name: Draft a release
+        id: release
+        if: ${{ fromJson(env.RELEASE) }}
+        run: |
+          git config --global user.name "GitHub Actions (${{ github.actor }})"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          python ./.flow/flow.py github release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Follow up
+        id: finalize
+        env:
+          RELEASED: ${{steps.release.outputs.released}}
+          TAG: ${{steps.release.outputs.tag}}
+        run: |
+          echo "released=${RELEASED:=false}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Find builds
         id: flow
@@ -38,16 +68,19 @@ jobs:
       ARTIFACT_SUFFIX: ${{ matrix.github_os }}-${{ matrix.build_type }}-${{ matrix.compiler }}${{ matrix.sanitizer && '-sanitize' || '' }}
       CONAN_CACHE: ${{ matrix.github_os }}-${{ matrix.build_type }}-${{ matrix.compiler }}
       RELEASE: ${{needs.M.outputs.release}}
+      REFERENCE: ${{needs.M.outputs.reference}}
 
     runs-on: ${{ matrix.github_os }}
     name: ${{ matrix.build_name }}
     outputs:
       release: ${{fromJson(env.RELEASE)}}
+      reference: ${{env.REFERENCE}}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{fromJson(env.REFERENCE)}}
           submodules: true
 
       #     ######## ##    ## ##     ## #### ########   #######  ##    ## ##     ## ######## ##    ## ########
@@ -57,10 +90,10 @@ jobs:
       #     ##       ##  ####  ##   ##   ##  ##   ##   ##     ## ##  #### ##     ## ##       ##  ####    ##
       #     ##       ##   ###   ## ##    ##  ##    ##  ##     ## ##   ### ##     ## ##       ##   ###    ##
       #     ######## ##    ##    ###    #### ##     ##  #######  ##    ## ##     ## ######## ##    ##    ##
-      - name: Python 3.10
+      - name: Python <%PYTHON_VERSION%>
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "<%PYTHON_VERSION%>"
 
       - name: Bootstrap Flow
         run: |
@@ -193,8 +226,10 @@ jobs:
     needs: build
     env:
       RELEASE: ${{needs.build.outputs.release}}
+      REFERENCE: ${{needs.build.outputs.reference}}
     outputs:
       release: ${{fromJson(env.RELEASE)}}
+      reference: ${{env.REFERENCE}}
 
     steps:
       - name: Merge packages
@@ -223,10 +258,13 @@ jobs:
 
     env:
       RELEASE: ${{needs.merge.outputs.release}}
+      REFERENCE: ${{needs.merge.outputs.reference}}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{fromJson(env.REFERENCE)}}
 
       - name: Get packages
         uses: actions/download-artifact@v4

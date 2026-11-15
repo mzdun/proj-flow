@@ -11,6 +11,7 @@ from typing import List
 
 from proj_flow import __version__, api
 from proj_flow.flow import layer
+from proj_flow.minimal import workflow_python
 
 
 class GitInit(api.init.InitStep):
@@ -47,6 +48,7 @@ api.init.register_init_step(GitInit())
 api.ctx.register_init_setting(
     api.ctx.Setting("__flow_version__", value=__version__),
     api.ctx.Setting("${", value="${"),
+    api.ctx.Setting("PYTHON_VERSION", value=workflow_python.workflow_python_version),
     project=None,
     is_hidden=True,
 )

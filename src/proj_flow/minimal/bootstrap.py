@@ -12,6 +12,7 @@ import sys
 from typing import Annotated, cast
 
 from proj_flow.api import arg, env
+from proj_flow.minimal import workflow_python
 
 
 @arg.command("bootstrap")
@@ -34,6 +35,8 @@ def main(
             print(f"PATH={PATH}", file=github_env)
 
     rt.message("Flow is now ready", level=env.Msg.ALWAYS)
+
+    workflow_python.warn_about_workflows(rt)
 
     packages = set[str]()
     for name in cast(list[str], rt.items.get("extensions", [])):
