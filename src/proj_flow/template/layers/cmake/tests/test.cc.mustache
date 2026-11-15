@@ -3,12 +3,34 @@
 
 {{#with.conan}}
 #include <gtest/gtest.h>
+{{^with.libs}}
+{{#cmake.library}}
+{{^cmake.plugin}}
+#include <{{INCLUDE_PREFIX}}/fibonacci{{EXT.hxx}}>
+{{/cmake.plugin}}
+{{/cmake.library}}
+{{/with.libs}}
 {{/with.conan}}
 
 namespace {{NAMESPACE}}::testing {
 
 {{#with.conan}}
 	TEST({{NAMESPACE}}, test) { ASSERT_EQ(1, 1); }
+{{^with.libs}}
+{{#cmake.library}}
+{{^cmake.plugin}}
+
+	TEST({{NAMESPACE}}, fibonacci) {
+		ASSERT_EQ(0u, fibonacci(0));
+		ASSERT_EQ(1u, fibonacci(1));
+		ASSERT_EQ(1u, fibonacci(2));
+		ASSERT_EQ(2u, fibonacci(3));
+		ASSERT_EQ(55u, fibonacci(10));
+		ASSERT_EQ(12200160415121876738u, fibonacci(93));
+	}
+{{/cmake.plugin}}
+{{/cmake.library}}
+{{/with.libs}}
 {{/with.conan}}
 
 }  // namespace {{NAMESPACE}}::testing

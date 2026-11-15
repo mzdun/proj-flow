@@ -8,6 +8,14 @@
         "tests/test.cc.mustache": {
             "path": "{{#with.libs}}libs/{{LIB_NAME}}/{{/with.libs}}tests/test{{EXT.cxx}}"
         },
+        "include/fibonacci.hpp.mustache": {
+            "path": "{{INCLUDEDIR}}/fibonacci{{EXT.hxx}}",
+            "when": ["^with.libs", "cmake.library", "^cmake.plugin"]
+        },
+        "src/fibonacci.cc.mustache": {
+            "path": "{{SRCDIR}}/fibonacci{{EXT.cxx}}",
+            "when": ["^with.libs", "cmake.library", "^cmake.plugin"]
+        },
         "src/version.hpp.in.mustache": {
             "path": "{{#with.libs}}libs/{{LIB_NAME}}/{{/with.libs}}{{SRCDIR}}/version{{EXT.hxx}}.in"
         },

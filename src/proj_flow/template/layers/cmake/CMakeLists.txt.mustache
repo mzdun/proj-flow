@@ -79,10 +79,22 @@ set(SRCS
 {{#cmake.application}}
   {{SRCDIR}}/main{{EXT.cxx}}
 {{/cmake.application}}
+{{#cmake.library}}
+{{^cmake.plugin}}
+  {{INCLUDEDIR}}/fibonacci{{EXT.hxx}}
+  {{SRCDIR}}/fibonacci{{EXT.cxx}}
+{{/cmake.plugin}}
+{{/cmake.library}}
+)
+
+set(GEN_SRCS
   "${CMAKE_CURRENT_BINARY_DIR}/{{INCLUDEDIR}}/version{{EXT.hxx}}"
 )
 
-{{cmake.cmd}}(${PROJECT_NAME}{{cmake.type}} ${SRCS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRCS})
+source_group(TREE ${CMAKE_CURRENT_BINARY_DIR} PREFIX gen FILES ${GEN_SRCS})
+
+{{cmake.cmd}}(${PROJECT_NAME}{{cmake.type}} ${SRCS} ${GEN_SRCS})
 
 {{#cmake.application}}
 add_win32_icon(${PROJECT_NAME} "appicon.ico")
@@ -106,9 +118,13 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}{{#with.conan}} mbits::args{{/with.conan}})
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-{{#cmake.dynamic-library}}
+{{#cmake.shared}}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-{{/cmake.dynamic-library}}
+  WINDOWS_EXPORT_ALL_SYMBOLS ON
+{{/cmake.shared}}
+{{#cmake.plugin}}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+{{/cmake.plugin}}
 )
 
 ##################################################################
@@ -124,16 +140,13 @@ endif()
 ##################################################################
 
 if ({{NAME_PREFIX}}_TESTING)
-  file(GLOB EXCLUDES_TEST_SRCS_CC tests/*.cc)
-  file(GLOB EXCLUDES_TEST_SRCS_CPP tests/*.cpp)
-  file(GLOB EXCLUDES_TEST_SRCS_CXX tests/*.cxx)
-  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/tests FILES
-    ${EXCLUDES_TEST_SRCS_CC}
-    ${EXCLUDES_TEST_SRCS_CPP}
-    ${EXCLUDES_TEST_SRCS_CXX})
+  set(TEST_SRCS
+    tests/test{{EXT.cxx}}
+  )
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/tests FILES ${TEST_SRCS})
 
-  add_project_test(${PROJECT_NAME} ${EXCLUDES_TEST_SRCS_CC} ${EXCLUDES_TEST_SRCS_CPP} ${EXCLUDES_TEST_SRCS_CXX})
-  target_link_libraries(${PROJECT_NAME}-test PUBLIC GTest::gmock_main)
+  add_project_test(${PROJECT_NAME} ${TEST_SRCS})
+  target_link_libraries(${PROJECT_NAME}-test PUBLIC GTest::gmock_main{{#cmake.library}}{{^cmake.plugin}} ${PROJECT_NAME}{{/cmake.plugin}}{{/cmake.library}})
 
   add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME}-test "--gtest_output=xml:${TEST_REPORT_DIR}/${PROJECT_NAME}/${TEST_REPORT_FILE}")
 endif()

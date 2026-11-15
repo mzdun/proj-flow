@@ -1,0 +1,12 @@
+// Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+// This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+#pragma once
+
+#include <cstdint>
+
+namespace {{NAMESPACE}} {
+	// Returns the n-th element of the Fibonacci sequence, where
+	// fibonacci(0) == 0 and fibonacci(1) == 1. Overflows silently past n == 93.
+	std::uint64_t fibonacci(unsigned n);
+}  // namespace {{NAMESPACE}}

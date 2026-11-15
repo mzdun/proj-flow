@@ -1,0 +1,19 @@
+// Copyright (c) {{COPY.YEAR}} {{COPY.HOLDER}}
+// This code is licensed under {{COPY.LICENSE}} license (see LICENSE for details)
+
+#include <{{INCLUDE_PREFIX}}/fibonacci{{EXT.hxx}}>
+
+namespace {{NAMESPACE}} {
+	std::uint64_t fibonacci(unsigned n) {
+		std::uint64_t prev{0};
+		std::uint64_t curr{1};
+
+		for (unsigned index = 0; index < n; ++index) {
+			auto const next = prev + curr;
+			prev = curr;
+			curr = next;
+		}
+
+		return prev;
+	}
+}  // namespace {{NAMESPACE}}
