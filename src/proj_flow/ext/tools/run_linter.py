@@ -55,7 +55,8 @@ class Image:
             "run",
             "--rm",
             *args,
-            "-v" f"{Path().absolute().as_posix()}:/tmp/lint",
+            "-v",
+            f"{Path().absolute().as_posix()}:/tmp/lint",
             self.label,
         ]
 
@@ -92,7 +93,7 @@ def run_linter(
     if not WORKFLOWS.is_dir():
         if not rt.silent:
             print("This project has no GitHub workflows")
-            return 0
+        return 0
 
     db_path = Path("build")
     db_path.mkdir(parents=True, exist_ok=True)
@@ -114,6 +115,7 @@ def run_linter(
                     yml_name = path.stem
                 JOBS.extend(_get_linter_actions(data, yml_name, session, rt.verbose))
 
+    result = 0
     for job in JOBS:
         job_name, steps = job.name, job.steps
         print(f"job:  \033[1;49;95m{job_name}\033[m")
@@ -123,8 +125,11 @@ def run_linter(
             )
             args = step.image.super_linter_args(step.env, log_level=log_level)
             print("\033[0;49;30m{}\033[m".format(shlex.join(args)))
-            subprocess.run(args, shell=False)
+            if subprocess.run(args, shell=False).returncode:
+                result = 1
             print()
+
+    return result
 
 
 def _download_docker_image_id(
@@ -164,7 +169,11 @@ def _download_docker_image_id(
     if not image:
         return None
 
+    # only prebuilt images can be run locally; an action building its image
+    # from a Dockerfile is skipped
     url = urllib.parse.urlparse(image)
+    if url.scheme != "docker" or ":" not in url.path:
+        return None
     name, version = url.path[1:].split(":", 1)
     return Image(url.netloc, name, version)
 
