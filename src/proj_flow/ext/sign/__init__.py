@@ -142,6 +142,12 @@ class SignMsi(SignBase):
 
 class SignInit(init.InitStep):
     def postprocess(self, rt: env.Runtime, context: dict) -> None:
+        try:
+            with open(".gitignore", encoding="UTF-8") as ignoref:
+                if "/signature.key" in ignoref.read().splitlines():
+                    return
+        except FileNotFoundError:
+            pass
         with open(".gitignore", "ab") as ignoref:
             ignoref.write("\n/signature.key\n".encode("UTF-8"))
 
