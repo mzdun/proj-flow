@@ -4,6 +4,43 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.35.0 <https://github.com/mzdun/proj-flow/compare/v0.34.0...v0.35.0>`_ (2026-11-15)
+=====================================================================================
+
+New Features
+------------
+
+- empty parent commands now require a child (`74e5a34 <https://github.com/mzdun/proj-flow/commit/74e5a3428cce2b538477cc624eb73377e07925dc>`_)
+- allow initializing Pitchfork libs/ projects (`b0090a5 <https://github.com/mzdun/proj-flow/commit/b0090a589981af2a58367cd1a732791e0285b350>`_)
+- expand template's "when" to a list of fences (`8b0ba57 <https://github.com/mzdun/proj-flow/commit/8b0ba57b4bff4458edc54480a4410e1e3743acb0>`_)
+
+Bug Fixes
+---------
+
+- print unmodified $VAR names (crucial on *nixes) (`942aa07 <https://github.com/mzdun/proj-flow/commit/942aa073a17803eb46c3470027ed0a9620ced809>`_)
+- cleanup version tags handling (`9697399 <https://github.com/mzdun/proj-flow/commit/96973999eadb7c38f59733b31005426246d30981>`_)
+- properly sort CTRF tests (`0db9836 <https://github.com/mzdun/proj-flow/commit/0db9836ed06f1121d18273fb739f126e690f2a5c>`_)
+- deprecate conan 1.x (`3002035 <https://github.com/mzdun/proj-flow/commit/3002035a59566800eb3b4a1567a2717c8e7138af>`_)
+- check, if project uses compatible Python version (`191e80c <https://github.com/mzdun/proj-flow/commit/191e80c5e1da35dc48aba96852122370d7e07240>`_)
+- do not crash test runner if output is invalid UTF-8 (`a8aa7d8 <https://github.com/mzdun/proj-flow/commit/a8aa7d84241d0f5636d2e8f633660a37617b36a5>`_)
+- pass volume arguments to docker properly (`2ed04d1 <https://github.com/mzdun/proj-flow/commit/2ed04d1520bcebe71915924346d909b3a3b26d5a>`_)
+- only ignore signature.key, if it is not yet ignored (`a1ccbbf <https://github.com/mzdun/proj-flow/commit/a1ccbbff2cefb906ca81d7faf5804bd00738fe1b>`_)
+- use safer regex escaping in github extension (`12638eb <https://github.com/mzdun/proj-flow/commit/12638eb53c99b5ca9882a723303d717d09101e2e>`_)
+- parse CMakeLists.txt without crashing (`94ce1de <https://github.com/mzdun/proj-flow/commit/94ce1de8b398dcf862bd5e80cc8dec60e2be8d7c>`_)
+- remove small issues in templating (`1a16f49 <https://github.com/mzdun/proj-flow/commit/1a16f49f3303bb8b13fa5e9fad068b23d79f71f4>`_)
+- strengthen the .venv jail (`0bf37b5 <https://github.com/mzdun/proj-flow/commit/0bf37b54b12fc6bf3c291befdb1a49a64c3d198e>`_)
+- avoid crash, when running ``./flow list`` through redirection (`e07f749 <https://github.com/mzdun/proj-flow/commit/e07f749437ee8bc5bfde22cbed8ee8502081e61b>`_)
+- allow rst logger to properly find sections (`613d70a <https://github.com/mzdun/proj-flow/commit/613d70a259ea7ad6865616db93513e0562a66fa3>`_)
+- use issue links in github logging (`37f4f4e <https://github.com/mzdun/proj-flow/commit/37f4f4e6c9d619acc041696dee4e2ce3d7613c75>`_)
+- start the generated project with v0.0.0 (`938c6b7 <https://github.com/mzdun/proj-flow/commit/938c6b738e574ff6d976f8e9860b5e70b9a1e871>`_)
+- cleanup API return types (`9bf3960 <https://github.com/mzdun/proj-flow/commit/9bf39609730111ec7e12a25d25cce6e3b1c0a1ba>`_)
+- move default cmake to 4.0 (`42c652e <https://github.com/mzdun/proj-flow/commit/42c652ea05b1502526f99215d1888baf199d1883>`_)
+- use YAML issue templates in C++ (`dba083c <https://github.com/mzdun/proj-flow/commit/dba083c70d1dd15e792a938c57be81c90d8a9a48>`_)
+- cache proper Conan directory (`7916b2a <https://github.com/mzdun/proj-flow/commit/7916b2ad599d19837e1e9939d7cdf56a7fd25f4f>`_)
+- de-duplicate GTest finding, drop fmt (`0edfa7c <https://github.com/mzdun/proj-flow/commit/0edfa7c6fec25ccce3aaadd1f516fc255f5af953>`_)
+- get rid of indirect mention of an older project (`18a7855 <https://github.com/mzdun/proj-flow/commit/18a785523df1ef6956a48170763707e52e89b240>`_)
+- **docs**: overhaul missing documentation (`38850f1 <https://github.com/mzdun/proj-flow/commit/38850f1ed5fb80bb4f2214527d468cb9da333c7c>`_)
+
 `0.34.0 <https://github.com/mzdun/proj-flow/compare/v0.33.0...v0.34.0>`_ (2026-11-14)
 =====================================================================================
 
