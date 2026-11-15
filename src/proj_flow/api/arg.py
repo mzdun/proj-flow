@@ -132,7 +132,10 @@ class Argument:
         )
 
         if self.pos:
-            kwargs["nargs"] = "?" if self_opt else 1
+            # a required positional without nargs takes a single value, not
+            # a one-element list
+            if self_nargs is None and self_opt:
+                kwargs["nargs"] = "?"
         else:
             kwargs["dest"] = name
             kwargs["required"] = not self_opt

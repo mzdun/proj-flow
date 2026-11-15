@@ -213,6 +213,8 @@ and ``0`` for false value.
 | ``with.github.social``       | Use Github ISSUE_TEMPLATE, CONTRIBUTING.md, |
 |                              | etc.                                        |
 +------------------------------+---------------------------------------------+
+| ``with.conventional-commits``| Use Conventional Commits (adds COMMITS.md)  |
++------------------------------+---------------------------------------------+
 
 .. _non-interactive-settings:
 
