@@ -10,6 +10,7 @@ import sys
 from typing import List
 
 from proj_flow import __version__, api
+from proj_flow.base import path_get
 from proj_flow.flow import layer
 from proj_flow.minimal import workflow_python
 
@@ -40,11 +41,18 @@ class GitInit(api.init.InitStep):
         if len(executables):
             git("update-index", "--chmod=+x", *executables)
 
-        git("commit", "-m", "chore: initial commit")
-        git("tag", "v0.0.0")
+        if path_get(context, "with.conventional-commits"):
+            message = "chore: initial commit"
+        else:
+            message = "Initial commit"
+
+        git("commit", "-m", message)
 
 
 api.init.register_init_step(GitInit())
+api.ctx.register_common_switch(
+    "with.conventional-commits", "Use Conventional Commits (adds COMMITS.md)", True
+)
 api.ctx.register_init_setting(
     api.ctx.Setting("__flow_version__", value=__version__),
     api.ctx.Setting("${", value="${"),
