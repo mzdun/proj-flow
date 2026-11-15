@@ -61,28 +61,29 @@ def get_versions() -> dict[str, str]:
 
     output = pip_run.stdout.decode("utf-8").replace("\r\n", "\n").rstrip()
     versioned = [line.split("==", 1) for line in output.split("\n") if "==" in line]
-    try:
-        return {key.strip(): value.strip() for key, value in versioned}
-    except ValueError:
-        return {}
+    return {key.strip(): value.strip() for key, value in versioned}
 
 
 def get_version(name: str, versions: dict[str, str]):
+    label = name
     ver = versions.get(name)
     if not ver:
         name_dash = name.replace("_", "-")
         ver = versions.get(name_dash)
         if ver:
-            return (name_dash, ver)
+            label = name_dash
     if not ver:
-        named_module = importlib.import_module(name).__dict__
+        try:
+            named_module = importlib.import_module(name).__dict__
+        except ImportError:
+            named_module = {}
         ver = named_module.get("__version__") or named_module.get("VERSION")
         if not isinstance(ver, str):
             ver = None
     if ver and ver.startswith("v"):
         ver = ver[1:]
 
-    return (name, ver or "")
+    return (label, ver or "")
 
 
 def print_versions(rt: env.Runtime, packages: set[str]):
@@ -93,8 +94,6 @@ def print_versions(rt: env.Runtime, packages: set[str]):
         label, ver = get_version(name, versions)
         if length < len(label):
             length = len(label)
-        if ver and ver.startswith("v"):
-            ver = ver[1:]
         lines.append((label, f"v{ver}" if ver else "-"))
 
     rt.message("Dependencies:", level=env.Msg.STATUS)
