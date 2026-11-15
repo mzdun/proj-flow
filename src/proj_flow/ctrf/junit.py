@@ -33,16 +33,19 @@ def read_junit_testcase(
 
     timestamp: int | None = None
     if timestamp_str:
-        local_dt_posing_as_utc = datetime.fromisoformat(timestamp_str)
-        local_dt_posing_as_utc.replace(tzinfo=tz.tzlocal())
-        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        timestamp = int(
-            (local_dt_posing_as_utc.astimezone(tz.tzutc()) - epoch).total_seconds()
-            * 1000
-            + 0.5
-        )
+        try:
+            test_start = datetime.fromisoformat(timestamp_str)
+            if test_start.tzinfo is None:
+                # Google Test writes the local time, without the time zone
+                test_start = test_start.replace(tzinfo=tz.tzlocal())
+            epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+            timestamp = int((test_start - epoch).total_seconds() * 1000 + 0.5)
+        except (ValueError, OverflowError, OSError):
+            # malformed, or too close to the epoch for the local time zone
+            # on some platforms
+            timestamp = None
 
-        if timestamp < (24 * 60 * 60 * 1000):
+        if timestamp is not None and timestamp < (24 * 60 * 60 * 1000):
             timestamp = None
 
     if value_param:
@@ -69,6 +72,10 @@ def read_junit_testcase(
         test.duration = int(float(time_str) * 1000 + 0.5) if time_str is not None else 0
     except ValueError:
         test.duration = 0
+
+    if timestamp is not None:
+        test.start = timestamp
+        test.stop = timestamp + test.duration
 
     failures: list[str] = []
     skips: list[str] = []
