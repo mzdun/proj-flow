@@ -17,7 +17,7 @@ New Features
 Bug Fixes
 ---------
 
-- print unmodified $VAR names (crucial on *nixes) (`942aa07 <https://github.com/mzdun/proj-flow/commit/942aa073a17803eb46c3470027ed0a9620ced809>`_)
+- print unmodified $VAR names (crucial on \*nixes) (`942aa07 <https://github.com/mzdun/proj-flow/commit/942aa073a17803eb46c3470027ed0a9620ced809>`_)
 - cleanup version tags handling (`9697399 <https://github.com/mzdun/proj-flow/commit/96973999eadb7c38f59733b31005426246d30981>`_)
 - properly sort CTRF tests (`0db9836 <https://github.com/mzdun/proj-flow/commit/0db9836ed06f1121d18273fb739f126e690f2a5c>`_)
 - deprecate conan 1.x (`3002035 <https://github.com/mzdun/proj-flow/commit/3002035a59566800eb3b4a1567a2717c8e7138af>`_)

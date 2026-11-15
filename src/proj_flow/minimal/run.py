@@ -55,7 +55,8 @@ def main(
             return 1
 
         printed = refresh_directories(configs, rt, program)
-        return run_steps(configs, rt, program, printed)
+        run_steps(configs, rt, program, printed)
+        return 0
 
 
 def gather_dependencies_for_all_configs(
@@ -142,7 +143,7 @@ def compilers_env_setup(compiler: List[str], rt: api.env.Runtime):
 
 def run_steps(
     configs: Configs, rt: api.env.Runtime, program: List[api.step.Step], printed: bool
-) -> int:
+) -> None:
     """
     Run the active steps for each usable config, with the compilers and the
     ``run-env.<step>`` environment of each step set up. Stops at the first
@@ -153,7 +154,7 @@ def run_steps(
     :param program: steps selected to run
     :param printed: ``True``, if anything was already printed on stderr, so
         the first config needs a separating empty line
-    :returns: ``1``, if any step failed, ``0`` otherwise
+    :raises StepFailed: a step has failed
     """
     config_count = len(configs.usable)
     steps_ran = 0
@@ -183,17 +184,16 @@ def run_steps(
         with compilers_env_setup(compilers, rt):
             for index in range(step_count):
                 step = steps[index]
-                print(f"-- step {index + 1}/{step_count}: {step.name}", file=sys.stderr)
+                print(
+                    f"-- step {index + 1}/{step_count}: {step.name}",
+                    file=sys.stderr,
+                )
                 steps_ran += 1
                 with prep_environment(rt, f"run-env.{step.name}"):
-                    ret = step.run(config, rt)
-                    if ret:
-                        return 1
+                    step.run(config, rt)
 
     if steps_ran == 0:
         print("Nothing to do.", file=sys.stderr)
-
-    return 0
 
 
 @contextmanager

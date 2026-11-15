@@ -28,7 +28,7 @@ class JUnitToCtrf(step.Step):
         """:meta private:"""
         return ["Test"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         source_dir = rt.root
         build_dir = config.build_dir
 
@@ -57,7 +57,7 @@ class JUnitToCtrf(step.Step):
             rt.message("Found", str(path))
 
         if rt.dry_run or not paths:
-            return 0
+            return
 
         ctrf_dir.mkdir(parents=True, exist_ok=True)
         for filename in sorted(paths):
@@ -66,8 +66,6 @@ class JUnitToCtrf(step.Step):
 
             results.tool.name = "gtest-to-ctrf"
             results.store_root_element(ctrf_dir / f"{filename.stem}.json")
-
-        return 0
 
 
 @step.register
@@ -84,7 +82,7 @@ class MergeCtrfFiles(step.Step):
         """:meta private:"""
         return ["Test", "JUnitToCtrf"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         build_dir = config.build_dir
 
         test_cg = cast(dict, rt.items.get("test", {}))
@@ -102,7 +100,7 @@ class MergeCtrfFiles(step.Step):
             rt.message("Found", str(path))
 
         if rt.dry_run or not paths:
-            return 0
+            return
 
         results = ctrf.Results()
         for path in sorted(paths):
@@ -156,5 +154,3 @@ class MergeCtrfFiles(step.Step):
             rt.message(
                 f"  {color}{lab:<{width}} {value:>{offset}}\033[m", level=env.Msg.STATUS
             )
-
-        return 0

@@ -35,6 +35,20 @@ platform = uname.uname()[0]
 _flow_config_default_compiler: Optional[Dict[str, str]] = None
 
 
+class StepFailed(Exception):
+    """
+    A run step, or a command it called, failed. Raise it to stop the run,
+    instead of returning a non-zero exit code; ``proj-flow`` then exits with
+    code ``1``.
+
+    Print the reason before raising, as the exception carries no message.
+    When raised ``from`` another exception, the ``proj-flow`` entry point
+    prints that cause; raise ``from None``, if the cause could reveal secrets,
+    e.g. a :class:`subprocess.CalledProcessError` listing a password among the
+    arguments.
+    """
+
+
 class CMakeBinaryDirsCache:
     """
     Build directories of the presets in ``CMakePresets.json`` of current
@@ -428,7 +442,10 @@ class FlowConfig:
 
 
 def _mkdir(dirname: str):
-    os.makedirs(dirname, exist_ok=True)
+    try:
+        os.makedirs(dirname, exist_ok=True)
+    except Exception as error:
+        raise StepFailed() from error
 
 
 def _ls(dirname: str, shallow=True):
@@ -444,7 +461,7 @@ def _ls(dirname: str, shallow=True):
     return result
 
 
-def _cp(src: str, dst: str) -> int:
+def _cp(src: str, dst: str) -> None:
     try:
         dst = os.path.abspath(dst)
         if os.path.isdir(src):
@@ -454,10 +471,9 @@ def _cp(src: str, dst: str) -> int:
             if not os.path.isdir(dst):
                 _mkdir(os.path.dirname(dst))
             shutil.copy(src, dst, follow_symlinks=False)
-        return 0
     except FileNotFoundError as err:
         print(err, file=sys.stderr)
-        return 1
+        raise StepFailed() from err
 
 
 class Msg(Enum):
@@ -572,17 +588,18 @@ class Runtime(FlowConfig):
                 *args, use_color=self.use_color, secrets=self.secrets, raw=raw
             )
 
-    def cmd(self, *args: str) -> int:
+    def cmd(self, *args: str) -> None:
         """
         Print and run a command, which changes something. With ``--dry-run``,
-        the command is only printed. A failing command exits the program.
+        the command is only printed.
 
         :param args: program and its arguments
-        :returns: ``0``
+        :raises StepFailed: the command has finished with an error
         """
+
         self.print(*args)
         if self.dry_run:
-            return 0
+            return
 
         result = subprocess.run(args)
         if result.returncode != 0:
@@ -590,8 +607,7 @@ class Runtime(FlowConfig):
                 f"proj-flow: error: {args[0]} ended in failure, exiting",
                 file=sys.stderr,
             )
-            raise SystemExit(1)
-        return 0
+            raise StepFailed() from None
 
     def capture(self, *args: str, silent=False):
         """
@@ -606,22 +622,24 @@ class Runtime(FlowConfig):
             self.print(*args)
         return subprocess.run(args, shell=False, encoding="UTF-8", capture_output=True)
 
-    def mkdirs(self, dirname: str) -> int:
+    def mkdirs(self, dirname: str, silent=False) -> None:
         """
         Create a directory with its parents, unless ``--dry-run``.
 
         :param dirname: directory to create
-        :returns: ``0``
+        :param silent: do not print the ``mkdir`` command
+        :raises StepFailed: the directory could not be created
         """
-        self.print("mkdir", "-p", dirname)
+
+        if not silent:
+            self.print("mkdir", "-p", dirname)
 
         if self.dry_run:
-            return 0
+            return
 
-        os.makedirs(dirname, exist_ok=True)
-        return 0
+        _mkdir(dirname)
 
-    def cp(self, src: str, dst: str, regex: Optional[str] = None):
+    def cp(self, src: str, dst: str, regex: Optional[str] = None) -> None:
         """
         Copy a file or a directory, unless ``--dry-run``.
 
@@ -629,7 +647,8 @@ class Runtime(FlowConfig):
         :param dst: destination path
         :param regex: copy only the files directly in ``src``, whose names
             match this expression
-        :returns: ``0`` on success, ``1``, if a file was missing
+        :raises StepFailed: a file was missing, or a directory could not be
+            created
         """
         args = ["cp"]
         if os.path.isdir(src):
@@ -637,18 +656,16 @@ class Runtime(FlowConfig):
         self.print(*args, src, dst)
 
         if self.dry_run:
-            return 0
+            return
 
         if regex is None:
-            return _cp(src, dst)
+            _cp(src, dst)
+            return
 
         files = _ls(src)
         files = (name for name in files if re.match(regex, name))
         for name in files:
-            result = _cp(os.path.join(src, name), os.path.join(dst, name))
-            if result:
-                return result
-        return 0
+            _cp(os.path.join(src, name), os.path.join(dst, name))
 
 
 @dataclass

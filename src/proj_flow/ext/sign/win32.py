@@ -15,7 +15,7 @@ import subprocess
 import sys
 from typing import Iterable, List, Optional, Tuple
 
-from proj_flow.api.env import Config, Msg, Runtime
+from proj_flow.api.env import Config, Msg, Runtime, StepFailed
 
 from .api import ENV_KEY, SigningTool, get_key, signing_tool
 
@@ -27,9 +27,9 @@ if sys.platform == "win32":
         def is_active(self, config: Config, rt: Runtime) -> bool:
             return _is_active(config.os, rt)
 
-        def sign(self, config: Config, rt: Runtime, files: List[str]) -> int:
+        def sign(self, config: Config, rt: Runtime, files: List[str]) -> None:
             rt.print("signtool", *(os.path.basename(file) for file in files))
-            return _sign(files, rt)
+            _sign(files, rt)
 
         def is_signable(self, filename: str, as_package: bool) -> bool:
             if as_package:
@@ -115,7 +115,7 @@ if sys.platform == "win32":
             signature = struct.unpack(_IMAGE_NT_HEADERS_Signature, pe_header)[0]
             return signature == _PE
 
-    def _sign(files: Iterable[str], rt: Runtime):
+    def _sign(files: Iterable[str], rt: Runtime) -> None:
         key = get_key(rt)
 
         if key is None or key.token is None or key.secret is None:
@@ -124,7 +124,7 @@ if sys.platform == "win32":
         sign_tool = _find_sign_tool(rt)
         if sign_tool is None:
             rt.message("proj-flow: sign: signtool.exe not found", level=Msg.ALWAYS)
-            return 0
+            return
 
         with open("temp.pfx", "wb") as pfx:
             pfx.write(key.secret)
@@ -145,10 +145,9 @@ if sys.platform == "win32":
             *files,
         ]
 
-        result = 1
         try:
-            result = subprocess.run(args, shell=False).returncode
+            subprocess.run(args, shell=False, check=True)
+        except subprocess.CalledProcessError:
+            raise StepFailed() from None
         finally:
             os.remove("temp.pfx")
-
-        return result

@@ -50,5 +50,5 @@ class IconsStep:
     def platform_dependencies(self):
         return [f"{magick.tool}>=6"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
-        return makefile.run(rt)
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
+        makefile.run(rt)

@@ -32,7 +32,7 @@ class RTDocs:
     def is_active(self, config: env.Config, rt: env.Runtime) -> bool:
         return (rt.root / ".readthedocs.yaml").is_file()
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         import venv
 
         import yaml
@@ -71,7 +71,7 @@ class RTDocs:
         os.environ["READTHEDOCS_OUTPUT"] = READTHEDOCS_OUTPUT
         os.environ["READTHEDOCS"] = "True"
 
-        jobs: Dict[str, Callable[[], int]] = {
+        jobs: Dict[str, Callable[[], None]] = {
             "create_environment": lambda: _activate_virtual_env(
                 venv, os.path.dirname(READTHEDOCS_OUTPUT)
             ),
@@ -104,10 +104,7 @@ class RTDocs:
             except KeyError:
                 continue
             print(f"-- {job}")
-            result = impl()
-            if result:
-                return 1
-        return 0
+            impl()
 
 
 class Builder(ABC):
@@ -123,17 +120,17 @@ class Builder(ABC):
         ...
 
     @abstractmethod
-    def build(self, target: str) -> int:
+    def build(self, target: str) -> None:
         """
         Build the documentation in one format.
 
         :param target: name of the format, as in ``formats`` of the config,
             e.g. ``html`` or ``pdf``
-        :returns: exit code of the build tool
+        :raises StepFailed: the build tool has failed
         """
         ...
 
-    def wrap(self, target: str) -> Callable[[], int]:
+    def wrap(self, target: str) -> Callable[[], None]:
         """
         Bind the format for later call, as a job of the step.
 
@@ -159,26 +156,34 @@ class Sphinx(Builder):
         self.source = os.path.dirname(config)
         self.output = os.path.join(os.path.dirname(self.source), "build")
 
-    def build(self, target: str) -> int:
+    def build(self, target: str) -> None:
         """Uses ``spinx-build`` to create the documentation.
 
         :param target: name of the docs format from YAML config
-        :returns: exit code forwarded from the build tool
+        :raises StepFailed: ``sphinx-build`` has failed
         """
         builder = "latex" if target == "pdf" else target
 
-        return subprocess.run(
-            [
-                PYTHON_EXECUTABLE,
-                "-m",
-                "sphinx.cmd.build",
-                "-M",
-                builder,
-                self.source,
-                self.READTHEDOCS_OUTPUT,
-            ],
-            shell=False,
-        ).returncode
+        try:
+            subprocess.run(
+                [
+                    PYTHON_EXECUTABLE,
+                    "-m",
+                    "sphinx.cmd.build",
+                    "-M",
+                    builder,
+                    self.source,
+                    self.READTHEDOCS_OUTPUT,
+                ],
+                shell=False,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            print(
+                f"proj-flow: error: sphinx-build ({target}) ended in failure",
+                file=sys.stderr,
+            )
+            raise env.StepFailed() from None
 
 
 PYTHON_EXECUTABLE = sys.executable
@@ -188,16 +193,28 @@ def _python(
     *args: str,
     module: Optional[str] = None,
     capture_output: bool = True,
-) -> subprocess.CompletedProcess:
-    if module is not None:
-        return subprocess.run(
-            [PYTHON_EXECUTABLE, "-m", module, *args],
+) -> None:
+    try:
+        if module is not None:
+            subprocess.run(
+                [PYTHON_EXECUTABLE, "-m", module, *args],
+                shell=False,
+                check=True,
+                capture_output=capture_output,
+            )
+            return
+        subprocess.run(
+            [PYTHON_EXECUTABLE, *args],
             shell=False,
+            check=True,
             capture_output=capture_output,
         )
-    return subprocess.run(
-        [PYTHON_EXECUTABLE, *args], shell=False, capture_output=capture_output
-    )
+    except subprocess.CalledProcessError as error:
+        if error.stderr:
+            sys.stderr.write(error.stderr.decode("UTF-8", errors="replace"))
+        name = module or (args[0] if args else "python")
+        print(f"proj-flow: error: {name} ended in failure", file=sys.stderr)
+        raise env.StepFailed() from None
 
 
 def _pip(*args: str, capture_output: bool = False):
@@ -240,7 +257,7 @@ def _get_venv_path(root: str):
     return None
 
 
-def _activate_virtual_env(venv, root: str) -> int:
+def _activate_virtual_env(venv, root: str) -> None:
     global PYTHON_EXECUTABLE
 
     with cmd.cd(root):
@@ -259,25 +276,21 @@ def _activate_virtual_env(venv, root: str) -> int:
             PATH = f"{os.path.abspath(bindir)}{os.pathsep}{os.environ['PATH']}"
             os.environ["PATH"] = PATH
         PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
-    return 0
 
 
-def _install(deps: List[Dict[str, Any]]):
+def _install(deps: List[Dict[str, Any]]) -> None:
     for dep in deps:
         try:
             requirements = dep["requirements"]
         except KeyError:
             continue
 
-        result = _pip("install", "-q", "-r", requirements).returncode
-        if result:
-            return result
-    return 0
+        _pip("install", "-q", "-r", requirements)
 
 
 def _script(calls: List[str]):
     for call in calls:
         result = subprocess.run(call, shell=True).returncode
         if result:
-            return result
-    return 0
+            print(f"proj-flow: error: `{call}` ended in failure", file=sys.stderr)
+            raise env.StepFailed() from None

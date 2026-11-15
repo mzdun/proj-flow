@@ -715,14 +715,15 @@ class Git:
         """Get currently checked-out branch"""
         return self.rt.capture("git", "branch", "--show-current").stdout.strip()
 
-    def cmd(self, *command: str):
+    def cmd(self, *command: str) -> None:
         """
         Run a git command, which changes the repository. The command is
-        skipped with ``--dry-run`` and a failure exits the program.
+        skipped with ``--dry-run``.
 
         :param command: git subcommand with its arguments
+        :raises StepFailed: the command has failed
         """
-        return self.rt.cmd("git", *command)
+        self.rt.cmd("git", *command)
 
     def add_files(self, *files: str):
         """
@@ -730,7 +731,7 @@ class Git:
 
         :param files: paths of the files to stage
         """
-        return self.cmd("add", *files)
+        self.cmd("add", *files)
 
     def commit(self, message: str):
         """
@@ -738,7 +739,7 @@ class Git:
 
         :param message: full commit message
         """
-        return self.cmd("commit", "-m", message)
+        self.cmd("commit", "-m", message)
 
     def annotated_tag(self, new_tag: str, message: str):
         """
@@ -747,7 +748,7 @@ class Git:
         :param new_tag: name of the tag
         :param message: message of the tag
         """
-        return self.cmd("tag", "-am", message, new_tag)
+        self.cmd("tag", "-am", message, new_tag)
 
     def push_with_refs(self, remote: str, branch: str):
         """
@@ -756,7 +757,7 @@ class Git:
         :param remote: name of the remote to push to
         :param branch: branch to push
         """
-        return self.cmd("push", remote, branch, "--follow-tags", "--force-with-lease")
+        self.cmd("push", remote, branch, "--follow-tags", "--force-with-lease")
 
     def head_commit(self) -> tuple[str, str]:
         """
@@ -786,7 +787,7 @@ class Git:
 
         :param tag: name of the tag
         """
-        return self.cmd("tag", "-d", tag)
+        self.cmd("tag", "-d", tag)
 
     def delete_remote_tag(self, remote: str, tag: str):
         """
@@ -795,7 +796,7 @@ class Git:
         :param remote: name of the remote
         :param tag: name of the tag
         """
-        return self.cmd("push", remote, "--delete", f"refs/tags/{tag}")
+        self.cmd("push", remote, "--delete", f"refs/tags/{tag}")
 
     def reset_keep(self, ref: str):
         """
@@ -806,7 +807,7 @@ class Git:
 
         :param ref: commit to move the branch to
         """
-        return self.cmd("reset", "--keep", ref)
+        self.cmd("reset", "--keep", ref)
 
     def push_with_lease(self, remote: str, branch: str, expected: str):
         """
@@ -817,7 +818,7 @@ class Git:
         :param branch: name of the remote branch to update
         :param expected: full hash the remote branch must still point at
         """
-        return self.cmd(
+        self.cmd(
             "push",
             remote,
             f"HEAD:refs/heads/{branch}",

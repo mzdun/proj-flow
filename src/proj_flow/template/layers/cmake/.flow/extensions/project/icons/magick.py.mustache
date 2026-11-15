@@ -17,10 +17,7 @@ class MkDirs(Rule):
 
     def run(self, st: Statement, rt: Runtime):
         for output in st.outputs:
-            result = rt.mkdirs(output)
-            if result:
-                return result
-        return 0
+            rt.mkdirs(output)
 
 
 class Copy(Rule):
@@ -28,7 +25,7 @@ class Copy(Rule):
         return []
 
     def run(self, st: Statement, rt: Runtime):
-        return rt.cp(st.inputs[0], st.outputs[0])
+        rt.cp(st.inputs[0], st.outputs[0])
 
 
 class Magick:

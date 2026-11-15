@@ -21,8 +21,8 @@ class Install:
     def platform_dependencies(self):
         return ["python -m pip"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
-        return rt.cmd("python", "-m", "pip", "install", rt.root.as_posix())
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
+        rt.cmd("python", "-m", "pip", "install", rt.root.as_posix())
 
 
 @step.register
@@ -32,10 +32,9 @@ class Build:
     def platform_dependencies(self):
         return ["python -m build"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         build_main = importlib.import_module("build.__main__")
         build_main.main([], "proj-flow build")
-        return 0
 
 
 @step.register
@@ -47,7 +46,7 @@ class CheckTwine:
     def platform_dependencies(self):
         return ["twine"]
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         filenames: list[str] = []
         root = rt.root / "dist"
         for root, dirnames, filenames in root.walk():
@@ -65,8 +64,8 @@ class CheckTwine:
             ]
 
         if len(filenames) == 0:
-            return 0
+            return
 
-        return rt.cmd(
+        rt.cmd(
             "twine", "check", *((root / filename).as_posix() for filename in filenames)
         )

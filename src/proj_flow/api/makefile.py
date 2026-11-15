@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List
 
-from proj_flow.api.env import Runtime
+from proj_flow.api.env import Runtime, StepFailed
 
 
 @dataclass
@@ -34,7 +34,7 @@ class Statement:
     #: Other files, which make the outputs out of date, when changed.
     implicit_deps: List[str] = field(default_factory=list)
 
-    def run(self, rt: Runtime):
+    def run(self, rt: Runtime) -> bool:
         """
         Run the statement, if any output is missing or older than the inputs
         and implicit dependencies. A rule with a :meth:`Rule.command` has the
@@ -43,8 +43,9 @@ class Statement:
         up to date.
 
         :param rt: runtime of the run
-        :returns: ``False``, if the outputs were up to date; otherwise the
-            exit code, ``0`` on success
+        :returns: ``False``, if the outputs were up to date, ``True``, if the
+            statement ran (or would, with ``--dry-run``)
+        :raises StepFailed: the command or the rule has failed
         """
         command = self.rule.command(self)
         if len(command) == 0:
@@ -52,23 +53,26 @@ class Statement:
 
         if rt.dry_run:
             rt.print(*command)
-            return 0
+            return True
 
         if not self._needed():
             return False
 
-        return rt.cmd(*command)
+        rt.cmd(*command)
+        return True
 
-    def _run_directly(self, rt: Runtime):
+    def _run_directly(self, rt: Runtime) -> bool:
         if rt.dry_run:
             copy = Runtime(rt, rt)
             copy.dry_run = True
-            return self.rule.run(self, copy)
+            self.rule.run(self, copy)
+            return True
 
         if not self._needed():
             return False
 
-        return self.rule.run(self, rt)
+        self.rule.run(self, rt)
+        return True
 
     def _needed(self):
         out_mtime = None
@@ -110,18 +114,19 @@ class Rule(ABC):
         """
         ...
 
-    def run(self, statement: Statement, rt: Runtime) -> int:
+    def run(self, statement: Statement, rt: Runtime) -> None:
         """
         Produce the outputs of the statement directly, without running a
         command. Called only, if :meth:`command` returns an empty list; with
         ``--dry-run``, ``rt`` has ``dry_run`` set and the method is expected
-        to only report, what it would do. The default implementation fails.
+        to only report, what it would do. The default implementation raises
+        :py:exc:`NotImplementedError`.
 
         :param statement: statement to build
         :param rt: runtime of the run
-        :returns: exit code, ``0`` on success
+        :raises StepFailed: the outputs could not be produced
         """
-        return 1
+        raise NotImplementedError()
 
     @classmethod
     def statement(
@@ -179,9 +184,7 @@ class Makefile:
             Makefile.Sorted(
                 outputs=[*st.outputs],
                 deps=[
-                    dep
-                    for dep in [*st.inputs, *st.implicit_deps]
-                    if dep in produced
+                    dep for dep in [*st.inputs, *st.implicit_deps] if dep in produced
                 ],
                 ref=st,
             )
@@ -205,22 +208,17 @@ class Makefile:
 
         self.statements = ordered
 
-    def run(self, rt: Runtime):
+    def run(self, rt: Runtime) -> None:
         """
         Run the statements in order, stopping at the first failure. Prints
         "Nothing to do", if all outputs were up to date.
 
         :param rt: runtime of the run
-        :returns: exit code of the first failing statement, or ``0``
+        :raises StepFailed: a statement has failed
         """
         counter = 0
         for statement in self.statements:
-            result = statement.run(rt)
-            if isinstance(result, bool):
-                if not result:
-                    counter += 1
-            if result:
-                return result
+            if not statement.run(rt):
+                counter += 1
         if counter == len(self.statements):
             print("-- Nothing to do", file=sys.stderr)
-        return 0

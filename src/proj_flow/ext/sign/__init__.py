@@ -94,7 +94,7 @@ class SignBase(step.Step):
         """
         ...
 
-    def run(self, config: env.Config, rt: env.Runtime) -> int:
+    def run(self, config: env.Config, rt: env.Runtime) -> None:
         for tool in self._active_tools:
             files = [
                 file.replace(os.sep, "/") for file in self.get_files(tool, config, rt)
@@ -103,11 +103,7 @@ class SignBase(step.Step):
             if len(files) == 0:
                 continue
 
-            result = tool.sign(config, rt, files)
-            if result:
-                return result
-
-        return 0
+            tool.sign(config, rt, files)
 
 
 @step.register
