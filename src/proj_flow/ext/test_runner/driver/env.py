@@ -84,7 +84,8 @@ class Env:
         input = _alt_sep(input, cwd, "$CWD")
         input = _alt_sep(input, self.tempdir, "$TMP")
         input = _alt_sep(input, self.data_dir, "$DATA")
-        input = input.replace(self.version, "$VERSION")
+        if self.version:
+            input = input.replace(self.version, "$VERSION")
 
         if self.tempdir_alt is not None:
             input = _alt_sep(input, self.tempdir_alt, "$TMP")
@@ -115,7 +116,7 @@ class Env:
         cmake_cache = build_dir / "CMakeCache.txt"
         try:
             lines = cmake_cache.read_text().split("\n")
-            prefix = f"${key}:INTERNAL="
+            prefix = f"{key}:INTERNAL="
             for line in lines:
                 if not line.startswith(prefix):
                     continue

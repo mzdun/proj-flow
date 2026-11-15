@@ -4,7 +4,6 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 from proj_flow.ext.test_runner.driver.env import Env
 
@@ -75,11 +74,14 @@ class FileWrite:
         )
 
     def copy_file(self):
-        if not self.generated.content:
+        content = self.generated.content
+        if content is None:
             return False
 
         self.template.path.parent.mkdir(parents=True, exist_ok=True)
-        self.template.path.write_bytes(cast(str, self.generated.content).encode())
+        if isinstance(content, str):
+            content = content.encode()
+        self.template.path.write_bytes(content)
         return True
 
     @staticmethod

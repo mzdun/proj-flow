@@ -14,7 +14,12 @@ def _untar(src, dst):
             abs_directory = os.path.abspath(directory)
             abs_target = os.path.abspath(target)
 
-            prefix = os.path.commonprefix([abs_directory, abs_target])
+            # commonpath compares whole path components, so "/out2" is not
+            # treated as being inside "/out"
+            try:
+                prefix = os.path.commonpath([abs_directory, abs_target])
+            except ValueError:  # e.g. different drives on Windows
+                return False
 
             return prefix == abs_directory
 
@@ -38,7 +43,7 @@ UnpackInfo = tuple[Unpacker, list[str]]
 
 ARCHIVES: dict[str, UnpackInfo] = {
     ".tar": _tar,
-    ".tar.gz": _tar,
+    ".tgz": _tar,
     ".zip": (_unzip, ["unzip"]),
 }
 
@@ -48,7 +53,13 @@ def locate_unpack(archive: str) -> UnpackInfo:
     _, mid = os.path.splitext(reminder)
     if mid == ".tar":
         ext = ".tar"
-    return ARCHIVES[ext]
+    try:
+        return ARCHIVES[ext]
+    except KeyError:
+        known = ", ".join(sorted(ARCHIVES))
+        raise ValueError(
+            f"{archive}: unsupported archive type; known types: {known}"
+        ) from None
 
 
 del _tar
