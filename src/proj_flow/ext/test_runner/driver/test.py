@@ -228,15 +228,19 @@ class Test:
                     op = op[1:]
                     if len(op) < min_args:
                         return None
-                    cb(self, [env.expand(o, tempdir, cwd=self.cwd) for o in op])
+                    cb(
+                        self,
+                        [
+                            env.expand(o, tempdir, self.cwd, self.additional_env)
+                            for o in op
+                        ],
+                    )
                 except Exception as ex:
-                    if op[0] != "safe-rm":
-                        print("Problem while handling", shlex.join(orig))
-                        print(ex)
-                        raise
                     if is_safe:
                         continue
-                    return None
+                    print("Problem while handling", shlex.join(orig))
+                    print(ex)
+                    raise
         finally:
             self.current_env = saved
         return True
@@ -277,7 +281,6 @@ class Test:
             elif key in _env:
                 del _env[key]
 
-        cwd = None if self.linear else self.cwd
         io = ProcessIO()
         kwargs = {}
         if self.input is not None:
@@ -298,7 +301,7 @@ class Test:
                 [environment.target, *sub_expanded],
                 capture_output=True,
                 env=_env,
-                cwd=cwd,
+                cwd=self.cwd,
             )
             io.append(proc)
 
@@ -343,7 +346,8 @@ class Test:
                     if len(streams[ndx]) > ex_len:
                         streams[ndx] = streams[ndx][:ex_len]
                 elif check == "end":
-                    streams[ndx] = streams[ndx][-ex_len:]
+                    # [-0:] would keep the whole stream
+                    streams[ndx] = streams[ndx][-ex_len:] if ex_len else ""
                 else:
                     return check
         return ProcessIO(returncode=returncode, stdout=streams[0], stderr=streams[1])
@@ -405,14 +409,14 @@ Diff:
             f"{file.generated.filename} [{'BIN' if file.generated.binary else 'TXT'}]"
         )
 
-        if not file.generated.content:
+        if file.generated.empty:
             header += "\n  New file was not present to be read"
-        if not file.template.content:
+        if file.template.empty:
             header += (
                 f"\n  Test file {file.template.filename} was not present to be read"
             )
 
-        if not file.generated.content or not file.template.content:
+        if file.generated.empty or file.template.empty:
             return header
 
         if file.binary:

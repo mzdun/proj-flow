@@ -102,7 +102,6 @@ class Counters:
 
         msg = f"{info.test_id} {color.failed}FAILED{color.reset}"
         print(msg)
-        result.status = "failed"
         self.echo.append(msg)
         self.results.update(result.with_status("failed", message=info.message))
         self.error_counter += 1

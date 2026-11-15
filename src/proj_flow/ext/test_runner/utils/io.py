@@ -24,5 +24,7 @@ class ProcessIO:
             self.stdout += "\n"
         if len(self.stderr) and len(proc.stderr):
             self.stderr += "\n"
-        self.stdout += proc.stdout.decode()
-        self.stderr += proc.stderr.decode()
+        # invalid UTF-8 shows up as U+FFFD in the comparison, instead of
+        # crashing the whole run
+        self.stdout += proc.stdout.decode(errors="replace")
+        self.stderr += proc.stderr.decode(errors="replace")
