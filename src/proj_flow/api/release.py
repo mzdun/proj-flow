@@ -5,7 +5,6 @@
 The **proj_flow.api.release** provides :class:`ProjectSuite` extension point.
 """
 
-import os
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -177,9 +176,12 @@ class ProjectSuite(ABC):
         :param pos: current value and its position in the version file
         :param newValue: text to put in place of the current value
         """
-        path = self.get_version_file_path(rt)
+        version_file = self.get_version_file_path(rt)
+        if not version_file:
+            return
 
-        if not path or not os.path.isfile(path):
+        path = rt.root / version_file
+        if not path.is_file():
             return
 
         with open(path, "r", encoding="UTF-8") as input:
