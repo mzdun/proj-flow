@@ -4,6 +4,18 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.37.1 <https://github.com/mzdun/proj-flow/compare/v0.37.0...v0.37.1>`_ (2026-11-15)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- enable releasing from Actions to protected branch (`feaa7d6 <https://github.com/mzdun/proj-flow/commit/feaa7d6476ae0f4e3e38e571cb2e71e17f2edf29>`_)
+- allow ``github release --dry-run`` on feature branches (`054715f <https://github.com/mzdun/proj-flow/commit/054715f2183a4d74ac3c00964407003c5185e1c1>`_)
+- patch project version in proper directory (`da2ea3c <https://github.com/mzdun/proj-flow/commit/da2ea3caa783bbe74c3ebf0caab074d2d312307c>`_)
+- bump versions more carefully (`73e2696 <https://github.com/mzdun/proj-flow/commit/73e269691f75e55a229d2b149ce7bcfe0b1647de>`_)
+- data lost when combining matrix files (`f95b577 <https://github.com/mzdun/proj-flow/commit/f95b577e59e6be269360aed6f70a7325747441b1>`_)
+
 `0.37.0 <https://github.com/mzdun/proj-flow/compare/v0.36.0...v0.37.0>`_ (2026-11-15)
 =====================================================================================
 
