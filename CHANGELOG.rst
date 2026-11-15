@@ -4,6 +4,21 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.36.0 <https://github.com/mzdun/proj-flow/compare/v0.35.0...v0.36.0>`_ (2026-11-15)
+=====================================================================================
+
+New Features
+------------
+
+- make exceptional handling a bit more pythonic (`1320c58 <https://github.com/mzdun/proj-flow/commit/1320c5821aa960101e225fd4e8f994ade13774d0>`_)
+
+Bug Fixes
+---------
+
+- react to a failed upload with an error (`4bc8766 <https://github.com/mzdun/proj-flow/commit/4bc87662208038df466f124cd468f793b3898b8d>`_)
+- break cyclic dependencies with an error (`99449f0 <https://github.com/mzdun/proj-flow/commit/99449f026770583a5b28a2a7315023fff6377719>`_)
+- remove unused error type (`df93bdd <https://github.com/mzdun/proj-flow/commit/df93bddcf45c9ec9d184535647cc660e66e87ad3>`_)
+
 `0.35.0 <https://github.com/mzdun/proj-flow/compare/v0.34.0...v0.35.0>`_ (2026-11-15)
 =====================================================================================
 
