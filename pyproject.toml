@@ -67,7 +67,13 @@ Homepage = "https://pypi.org/project/proj-flow/"
 proj-flow = "proj_flow.cli:main"
 
 [project.optional-dependencies]
+test = [
+  "pytest~=9.0",
+  "pytest-cov~=7.0",
+  "interrogate~=1.7",
+]
 dev = [
+  "proj-flow[test]",
   "build~=1.4",
   "twine<=7.0",
   "sphinx~=9.2",
@@ -83,3 +89,35 @@ target-version = ["py312", "py313", "py314", "py315"]
 
 [tool.isort]
 profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "-ra"]
+pythonpath = ["tests"]
+
+[tool.coverage.run]
+source = ["proj_flow"]
+branch = true
+# measure `python -m proj_flow` started by the CLI tests
+patch = ["subprocess"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+# ratchet: raise together with new tests, never lower
+fail_under = 24
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  '@(abc\.)?abstractmethod',
+]
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-private = true
+ignore-nested-functions = true
+fail-under = 70
+exclude = ["src/proj_flow/template"]
+verbose = 1
