@@ -1,11 +1,11 @@
 {
     "when": "with.github.actions",
     "filelist": {
-        ".github/workflows/build.yml.basic": {
+        ".github/workflows/build.yml.basic.mustache": {
             "path": ".github/workflows/build.yml",
             "when": "with.github.no-auto-release"
         },
-        ".github/workflows/build.yml.auto-release": {
+        ".github/workflows/build.yml.auto-release.mustache": {
             "path": ".github/workflows/build.yml",
             "when": "with.github.auto-release"
         }
