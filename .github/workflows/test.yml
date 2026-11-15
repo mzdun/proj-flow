@@ -88,6 +88,13 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docstrings
+          path: interrogate.txt
+
   package:
     name: Package sanity
     runs-on: ubuntu-latest
@@ -104,16 +111,19 @@ jobs:
         run: python -m pip install . build twine
 
       - name: Build and check with proj-flow
+        id: verify
         # the same "Build" and "Check Twine" steps used locally
         run: python -m proj_flow verify
 
       - name: Strict twine check
+        id: twine
         # "Check Twine" passes when it finds no packages; make sure there are some
         run: |
           ls dist/*.whl dist/*.tar.gz
           python -m twine check --strict dist/*
 
       - name: Install wheel in a clean environment
+        id: install
         run: |
           python -m venv /tmp/wheel-env
           /tmp/wheel-env/bin/python -m pip install dist/*.whl
@@ -124,8 +134,92 @@ jobs:
           test "$actual" = "$expected"
           /tmp/wheel-env/bin/proj-flow --help > /dev/null
 
+      - name: Record step outcomes
+        if: ${{ !cancelled() }}
+        env:
+          VERIFY: ${{ steps.verify.outcome }}
+          TWINE: ${{ steps.twine.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+        run: |
+          mkdir -p package-report
+          jq -n \
+            --arg verify "$VERIFY" --arg twine "$TWINE" --arg install "$INSTALL" \
+            '{"proj-flow verify (Build, Check Twine)": $verify,
+              "twine check --strict": $twine,
+              "wheel installs and runs": $install}' \
+            > package-report/package.json
+
+      - name: Upload step outcomes
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: package-report/package.json
+
       - name: Upload distributions
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: dists
           path: dist/
+          if-no-files-found: ignore
+
+  report:
+    name: PR summary
+    needs: [tests, docstrings, package]
+    # report failures too, but only for pull requests from this repository;
+    # the token of a pull request from a fork cannot comment
+    if: >-
+      ${{ !cancelled()
+        && github.event_name == 'pull_request'
+        && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts
+            pyproject.toml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download results
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Build the summary
+        env:
+          TESTS_RESULT: ${{ needs.tests.result }}
+          DOCSTRINGS_RESULT: ${{ needs.docstrings.result }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python .github/scripts/pr_report.py artifacts pyproject.toml > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create or update the PR comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          marker='<!-- proj-flow-checks -->'
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\")
+                      | select(.body | startswith(\"$marker\")) | .id" | head -n1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" \
+              -F body=@comment.md > /dev/null
+            echo "Updated comment $id"
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+              -F body=@comment.md > /dev/null
+            echo "Created a comment"
+          fi
