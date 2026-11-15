@@ -109,13 +109,13 @@ class FileInfo:
 class LayerInfo:
     root: str
     files: List[FileInfo]
-    when: Optional[str] = None
+    when: When = None
 
     @classmethod
     def from_fs(cls, layer_dir: str, context: ctx.SettingsType):
         with open(f"{layer_dir}.json", encoding="UTF-8") as f:
             layer_info: dict = json.load(f)
-        when = cast(Optional[str], layer_info.get("when"))
+        when = cast(When, layer_info.get("when"))
         filelist = cast(dict, layer_info.get("filelist", {}))
 
         sources: List[str] = []
@@ -125,7 +125,7 @@ class LayerInfo:
             files[:] = [
                 filename
                 for filename in files
-                if os.path.splitext(filename) not in [".pyc", ".pyo", ".pyd"]
+                if os.path.splitext(filename)[1] not in [".pyc", ".pyo", ".pyd"]
             ]
 
             for filename in files:
@@ -154,10 +154,9 @@ class LayerInfo:
 
     @property
     def pkg(self):
+        # <package>/template/layers/<layer>
         return os.path.basename(
-            os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.dirname(self.root)))
-            )
+            os.path.dirname(os.path.dirname(os.path.dirname(self.root)))
         )
 
     def template(self):

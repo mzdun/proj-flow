@@ -27,10 +27,9 @@ def path_get(
 
         if isinstance(ctx, (list, tuple)):
             try:
-                index = int(name)
-            except ValueError:
-                return default
-            except IndexError:
+                ctx = ctx[int(name)]
+                continue
+            except (ValueError, IndexError):
                 return default
 
         return default
