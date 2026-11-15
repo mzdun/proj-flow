@@ -195,6 +195,10 @@ exception set to ``false`` being ``with.github.auto-release``. The interactive
 prompts accept ``yes``, ``on`` and ``1`` for true value, and ``no``, ``off``
 and ``0`` for false value.
 
+With ``with.github.auto-release``, the generated workflow pushes each release
+commit to the default branch; if that branch is protected by a ruleset, see
+:ref:`github-release-protected-branch`.
+
 +------------------------------+---------------------------------------------+
 | Context switch               | Interactive label                           |
 +==============================+=============================================+
