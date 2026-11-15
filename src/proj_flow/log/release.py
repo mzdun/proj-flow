@@ -7,6 +7,7 @@ retracts the latest one. It also defines the :data:`version_updaters`
 extension point for files, which need to follow the project version.
 """
 
+import re
 import typing
 from typing import Iterable, Optional, Union
 
@@ -59,26 +60,63 @@ class VersionUpdater:
 version_updaters = registry.Registry[VersionUpdater]("VersionUpdater")
 
 
-def _bump_version(ver: str, level: commit.Level):
-    split = ver.split("-", 1)
-    if len(split) == 2:
-        stability = f"-{split[1]}"
-    else:
-        stability = ""
+_VERSION_RE = re.compile(r"^(\d+(?:\.\d+)*)(.*)$", re.DOTALL)
+_POST_RELEASE_RE = re.compile(r"^[-._]?post", re.IGNORECASE)
 
-    semver = [int(s) for s in split[0].split(".")]
+
+def _bump_version(ver: str, level: commit.Level):
+    """
+    Calculate the next version, following the precedence rules of SemVer:
+
+    - a benign level leaves the version as-is,
+    - build metadata (``+...``) is dropped,
+    - a pre-release (``1.2.0-rc.1``, or PEP 440 ``1.2.0rc1``, ``1.2.0.dev0``)
+      precedes its release, so if the release already carries the requested
+      bump, the pre-release part is dropped (``2.0.0-rc.1`` with a fix becomes
+      ``2.0.0``); otherwise the release part is bumped as usual
+      (``1.2.3-rc.1`` with a feature becomes ``1.3.0``),
+    - a PEP 440 post-release (``1.2.3.post1``) follows its release and is
+      bumped as usual.
+
+    :param ver: current version, ``major.minor.patch`` with optional suffix
+    :param level: level of the changes since the current version
+    :returns: next version, without any suffix, or ``ver`` for benign level
+    :raises ValueError: version does not start with a number
+    """
+    if level.value <= commit.Level.BENIGN.value:
+        return ver
+
+    match = _VERSION_RE.match(ver)
+    if not match:
+        raise ValueError(f"Cannot bump {ver!r}: not a version")
+    numbers, suffix = match.groups()
+    prerelease = suffix.split("+", 1)[0]
+    is_prerelease = prerelease != "" and not _POST_RELEASE_RE.match(prerelease)
+
+    semver = [int(s) for s in numbers.split(".")]
     while len(semver) < 3:
         semver.append(0)
     semver = semver[:3]
 
-    if level.value > commit.Level.BENIGN.value:
-        # This turns [1, 2, 3] through 4 - x into [3, 2, 1]
-        lvl = commit.Level.BREAKING.value - level.value
-        semver[lvl] += 1
-        for index in range(lvl + 1, len(semver)):
-            semver[index] = 0
+    if is_prerelease:
+        # the level of the release, this pre-release is building up to
+        _, minor, patch = semver
+        if patch != 0:
+            implied = commit.Level.PATCH
+        elif minor != 0:
+            implied = commit.Level.FEATURE
+        else:
+            implied = commit.Level.BREAKING
+        if level.value <= implied.value:
+            return ".".join(str(v) for v in semver)
 
-    return ".".join(str(v) for v in semver) + stability
+    # This turns [1, 2, 3] through 4 - x into [3, 2, 1]
+    lvl = commit.Level.BREAKING.value - level.value
+    semver[lvl] += 1
+    for index in range(lvl + 1, len(semver)):
+        semver[index] = 0
+
+    return ".".join(str(v) for v in semver)
 
 
 def _get_project(rt: env.Runtime):
@@ -260,9 +298,7 @@ def retract_release(
 
     if info is None:
         if hosting.is_active:
-            rt.message(
-                f"No release named {tag} found, skipping", level=env.Msg.STATUS
-            )
+            rt.message(f"No release named {tag} found, skipping", level=env.Msg.STATUS)
     else:
         kind = "draft" if info.is_draft else "published release"
         rt.message(f"Removing {kind} {tag}", level=env.Msg.STATUS)
