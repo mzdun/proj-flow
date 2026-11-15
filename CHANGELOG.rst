@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.37.2 <https://github.com/mzdun/proj-flow/compare/v0.37.1...v0.37.2>`_ (2026-11-15)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- use proper API names for statement args (`b2c398a <https://github.com/mzdun/proj-flow/commit/b2c398a88a71afc962e533405fb8648c2cabfa5d>`_)
+
 `0.37.1 <https://github.com/mzdun/proj-flow/compare/v0.37.0...v0.37.1>`_ (2026-11-15)
 =====================================================================================
 
