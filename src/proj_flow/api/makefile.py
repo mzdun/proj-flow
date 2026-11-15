@@ -140,6 +140,19 @@ class Rule(ABC):
         return Statement(cls(), outputs, inputs, implicit_deps)
 
 
+class CyclicDependencyError(Exception):
+    """
+    Statements of a :class:`Makefile` depend on each other's outputs, so they
+    cannot be ordered.
+
+    :param outputs: outputs of the statements, which could not be ordered
+    """
+
+    def __init__(self, outputs: List[str]):
+        super().__init__(f"Cyclic dependency between: {', '.join(outputs)}")
+        self.outputs = outputs
+
+
 @dataclass(init=False)
 class Makefile:
     """
@@ -148,6 +161,8 @@ class Makefile:
     already exist.
 
     :param statements: statements to sort
+    :raises CyclicDependencyError: some statements depend on each other's
+        outputs
     """
 
     statements: List[Statement]
@@ -159,37 +174,36 @@ class Makefile:
         ref: Statement
 
     def __init__(self, statements: List[Statement]):
-        unsorted = [
+        produced = {output for st in statements for output in st.outputs}
+        pending = [
             Makefile.Sorted(
-                outputs=[*st.outputs], deps=[*st.inputs, *st.implicit_deps], ref=st
+                outputs=[*st.outputs],
+                deps=[
+                    dep
+                    for dep in [*st.inputs, *st.implicit_deps]
+                    if dep in produced
+                ],
+                ref=st,
             )
             for st in statements
         ]
-        sorted: List[Statement] = []
+        ordered: List[Statement] = []
 
-        for st in unsorted:
-            copy = [*st.deps]
-            for dep in copy:
-                found = False
-                for node in unsorted:
-                    if dep in node.outputs:
-                        found = True
-                        break
-                if not found:
-                    st.deps.remove(dep)
+        while pending:
+            ready = [st for st in pending if not st.deps]
+            if not ready:
+                raise CyclicDependencyError(
+                    sorted({output for st in pending for output in st.outputs})
+                )
 
-        while len(unsorted):
-            next = [st for st in unsorted if len(st.deps) == 0]
-            unsorted = [st for st in unsorted if len(st.deps) > 0]
+            pending = [st for st in pending if st.deps]
+            ordered.extend(st.ref for st in ready)
 
-            sorted.extend(st.ref for st in next)
-            for st in next:
-                for output in st.outputs:
-                    for left in unsorted:
-                        if output in left.deps:
-                            left.deps.remove(output)
+            done = {output for st in ready for output in st.outputs}
+            for st in pending:
+                st.deps = [dep for dep in st.deps if dep not in done]
 
-        self.statements = sorted
+        self.statements = ordered
 
     def run(self, rt: Runtime):
         """
