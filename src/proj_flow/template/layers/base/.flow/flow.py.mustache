@@ -190,6 +190,22 @@ def get_venv_path():
     return None
 
 
+def export_venv(venv_root: Path | str):
+    """Make child processes (proj-flow -> cmake -> ctest) see the venv.
+
+    Besides what `activate` does, repoint FindPython's root hints:
+    actions/setup-python exports them to the base interpreter and
+    FindPython searches those HINTS before VIRTUAL_ENV, so otherwise
+    CMake's Python3_EXECUTABLE (and ctest's `python -m pytest`) would
+    escape the venv.
+    """
+    venv_root = str(venv_root)
+    os.environ["VIRTUAL_ENV"] = venv_root
+    os.environ.pop("PYTHONHOME", None)
+    for prefix in ("Python", "Python3"):
+        os.environ[f"{prefix}_ROOT_DIR"] = venv_root
+
+
 def activate_virtual_env():
     global PYTHON_EXECUTABLE
 
@@ -204,6 +220,7 @@ def activate_virtual_env():
             bindir = get_venv_path()
 
         if bindir is not None:
+            export_venv(bindir.parent.absolute())
             os.environ["PATH"] = f"{bindir.absolute()}{os.pathsep}{os.environ['PATH']}"
             PYTHON_EXECUTABLE = shutil.which("python") or sys.executable
             clean_version_cache()
@@ -211,6 +228,10 @@ def activate_virtual_env():
 
 def bootstrap_proj_flow(requirements: list[Package], with_venv: bool):
     global PACKAGE_VERSION
+
+    if sys.prefix != sys.base_prefix:
+        # already running from a venv (e.g. .venv/bin on PATH)
+        export_venv(sys.prefix)
 
     missing = Package.missing_requirements(requirements)
     if not missing:
