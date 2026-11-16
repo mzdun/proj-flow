@@ -202,8 +202,19 @@ def export_venv(venv_root: Path | str):
     venv_root = str(venv_root)
     os.environ["VIRTUAL_ENV"] = venv_root
     os.environ.pop("PYTHONHOME", None)
+    export_python_root(venv_root)
+
+
+def export_python_root(root: Path | str):
+    """Point FindPython (and so CMake's Python3_EXECUTABLE) at `root`.
+
+    Without a hint, FindPython on Windows searches the registry before
+    PATH, so it picks a python.org install over the interpreter running
+    this script, e.g. one selected by pyenv-win, whose versions are not
+    registered, and whose shims (.bat) FindPython cannot use anyway.
+    """
     for prefix in ("Python", "Python3"):
-        os.environ[f"{prefix}_ROOT_DIR"] = venv_root
+        os.environ[f"{prefix}_ROOT_DIR"] = str(root)
 
 
 def activate_virtual_env():
@@ -232,6 +243,9 @@ def bootstrap_proj_flow(requirements: list[Package], with_venv: bool):
     if sys.prefix != sys.base_prefix:
         # already running from a venv (e.g. .venv/bin on PATH)
         export_venv(sys.prefix)
+    else:
+        # e.g. a pyenv shim; activate_virtual_env() repoints it, if needed
+        export_python_root(sys.prefix)
 
     missing = Package.missing_requirements(requirements)
     if not missing:
