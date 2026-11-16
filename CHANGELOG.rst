@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.37.3 <https://github.com/mzdun/proj-flow/compare/v0.37.2...v0.37.3>`_ (2026-11-16)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- work around Python_EXECUTABLE on Windows (`cb0847f <https://github.com/mzdun/proj-flow/commit/cb0847f8a1238f9e2bb7d6ee2f6c5d164a3993ae>`_)
+
 `0.37.2 <https://github.com/mzdun/proj-flow/compare/v0.37.1...v0.37.2>`_ (2026-11-15)
 =====================================================================================
 
