@@ -74,6 +74,12 @@ Similarly, to build Debug binaries, the ``./flow run`` incantation would be
     ``sanitizer``, the true value is one of "true", "on", "yes", "1" and
     "with-<key>", i.e. "with-sanitizer" for sanitizer.
 
+    The ``sanitizer`` may also name the sanitizers, e.g.
+    ``sanitizer: [address, thread, off]`` in the matrix and
+    ``-D sanitizer=thread`` on the command line; the boolean words still mean
+    ``true`` and ``false``, so ``-D sanitizer=off`` selects the builds without
+    any sanitizer.
+
     If given key is never used, all values from ``.flow/matrix.yaml`` for that
     key are used. Otherwise, only values from command line are used.
 

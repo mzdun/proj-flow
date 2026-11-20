@@ -603,7 +603,8 @@ def _argparse_config_visit(parser: Parser):
         "and the value is one of the possible values for that key. In "
         "case of boolean flags, such as sanitizer, the true value is "
         'one of "true", "on", "yes", "1" and "with-<key>", '
-        'i.e. "with-sanitizer" for sanitizer.'
+        'i.e. "with-sanitizer" for sanitizer; the sanitizer may also be '
+        'given by name, e.g. "sanitizer=thread".'
         " "
         "If given key is never used, all values from .flow/matrix.yaml "
         "for that key are used. Otherwise, only values from command "

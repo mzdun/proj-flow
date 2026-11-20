@@ -13,6 +13,7 @@ from typing import Dict, List, cast
 from proj_flow import api
 from proj_flow.api import env, step
 from proj_flow.base.__cmake_version__ import CMAKE_VERSION
+from proj_flow.flow.cmake_vars import cmake_value
 
 
 class CMakeBase(api.step.Step):
@@ -78,25 +79,10 @@ class CMakeConfig(CMakeBase):
 
     def run(self, config: env.Config, rt: env.Runtime) -> None:
         cmake_vars = cast(Dict[str, str], rt._cfg.get("cmake", {}).get("vars", {}))
-        defines: List[str] = []
-        for var in cmake_vars:
-            value = cmake_vars[var]
-
-            is_flag = value.startswith("?")
-            if is_flag:
-                value = value[1:]
-
-            if value.startswith("config:"):
-                value = value[len("config:") :]
-                value = config.get_path(value)
-            elif value.startswith("runtime:"):
-                value = value[len("runtime:") :]
-                value = getattr(rt, value, None)
-
-            if is_flag:
-                value = "ON" if value else "OFF"
-
-            defines.append(f"-D{var}={value}")
+        defines: List[str] = [
+            f"-D{var}={cmake_value(reference, config, rt)}"
+            for var, reference in cmake_vars.items()
+        ]
 
         rt.cmd(
             "cmake",
