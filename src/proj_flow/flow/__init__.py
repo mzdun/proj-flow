@@ -6,6 +6,6 @@ The **proj_flow.flow** contains the inner workings of various *Project Flow*
 components.
 """
 
-from . import configs, layer, steps
+from . import cmake_vars, configs, layer, steps
 
-__all__ = ["configs", "layer", "steps"]
+__all__ = ["cmake_vars", "configs", "layer", "steps"]

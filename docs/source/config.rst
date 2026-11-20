@@ -28,6 +28,22 @@ of the reference starts with ``config:``, the config for current run will be
 used to retrieve the value. Finally, if that start was ``runtime:``, the
 :class:`Runtime<proj_flow.api.env.Runtime>` object is queried for the value.
 
+An ``"ON"`` / ``"OFF"`` reference may end with ``=<value>``; it is then
+``"ON"`` only, if the value it references is equal to that one. This way one
+matrix key with named values drives a separate switch for each of them:
+
+.. code-block:: yaml
+
+    # .flow/matrix.yml
+    matrix:
+      sanitizer: [address, thread, off]
+
+    # .flow/config.yml
+    cmake:
+      vars:
+        {{NAME_PREFIX}}_SANITIZE: "?config:sanitizer=address"
+        {{NAME_PREFIX}}_SANITIZE_THREAD: "?config:sanitizer=thread"
+
 Currently the default value is passed through Mustache engine:
 
 .. code-block:: yaml

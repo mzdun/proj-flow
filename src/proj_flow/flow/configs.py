@@ -50,7 +50,22 @@ def _boolean(with_name: str):
 
 _TRUE = {"true", "on", "yes", "1"}
 _FALSE = {"false", "off", "no", "0"}
-_boolean_sanitizer = _boolean("with-sanitizer")
+
+
+def _sanitizer(value: str):
+    """
+    Converts a ``-D sanitizer=`` value. A project with one sanitizer setup
+    keeps ``sanitizer: [true, false]`` in its matrix; one with more of them
+    names them, e.g. ``sanitizer: [address, thread, off]`` (YAML reads the
+    ``off`` as false). So the boolean words, ``with-sanitizer`` and
+    ``without-sanitizer`` give a boolean, and any other value is a name.
+    """
+    v = value.lower()
+    if v in _TRUE or v == "with-sanitizer":
+        return True
+    if v in _FALSE or v == "without-sanitizer":
+        return False
+    return v
 
 
 def _types(
@@ -58,7 +73,7 @@ def _types(
 ):
     return {
         "compiler": _compiler(used_compilers, config_names),
-        "sanitizer": _boolean_sanitizer,
+        "sanitizer": _sanitizer,
     }
 
 
@@ -130,8 +145,11 @@ def _extras(extra: List[str]):
 def _expand_one(config: dict, github_os: str, os_in_name: str):
     os_ver = github_os.split("-")[1]
     build_name = f"{config['build_type']} with {config['compiler']} on {os_in_name}"
-    if config["sanitizer"]:
+    sanitizer = config["sanitizer"]
+    if sanitizer is True:
         build_name += " (and sanitizer)"
+    elif sanitizer:
+        build_name += f" (and {sanitizer} sanitizer)"
     config["github_os"] = github_os
     config["build_name"] = build_name
     config["needs_gcc_ppa"] = os_ver != "latest" and config["os"] == "ubuntu"
