@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.38.0 <https://github.com/mzdun/proj-flow/compare/v0.37.3...v0.38.0>`_ (2026-11-20)
+=====================================================================================
+
+New Features
+------------
+
+- allow naming sanitizers in the matrix (`530e5dc <https://github.com/mzdun/proj-flow/commit/530e5dc868446503bfb476131be2309d01e3ccd3>`_)
+
 `0.37.3 <https://github.com/mzdun/proj-flow/compare/v0.37.2...v0.37.3>`_ (2026-11-16)
 =====================================================================================
 
