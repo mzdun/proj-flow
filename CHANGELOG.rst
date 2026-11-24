@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.38.1 <https://github.com/mzdun/proj-flow/compare/v0.38.0...v0.38.1>`_ (2026-11-24)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- **tools**: keep GitHub-only super-linter settings out of local runs (`6918685 <https://github.com/mzdun/proj-flow/commit/6918685a23adb426f243d2cd253b27e6292cad7a>`_)
+
 `0.38.0 <https://github.com/mzdun/proj-flow/compare/v0.37.3...v0.38.0>`_ (2026-11-20)
 =====================================================================================
 
