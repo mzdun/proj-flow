@@ -27,6 +27,22 @@ except ImportError:
 
 IMAGES = ["github/super-linter", "super-linter/super-linter"]
 
+#: Super-linter settings, which only make sense inside GitHub Actions: they
+#: report to the GitHub API, write to the job summary or point to a GitHub
+#: instance. A local run has neither the token nor the runner files, so these
+#: are dropped from the workflow environment.
+GITHUB_ONLY_SETTINGS = [
+    "DEFAULT_BRANCH",
+    "ENABLE_GITHUB_ACTIONS_GROUP_TITLE",
+    "ENABLE_GITHUB_ACTIONS_STEP_SUMMARY",
+    "ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT",
+    "GITHUB_CUSTOM_API_URL",
+    "GITHUB_CUSTOM_SERVER_URL",
+    "GITHUB_DOMAIN",
+    "GITHUB_TOKEN",
+    "MULTI_STATUS",
+]
+
 
 @dataclass
 class Image:
@@ -54,20 +70,22 @@ class Image:
         Build the ``docker run`` command line for this image. The workflow
         environment is extended with ``RUN_LOCAL``, ``LOG_LEVEL``,
         ``USE_FIND_ALGORITHM`` and ``VALIDATE_ALL_CODEBASE``, the
-        ``DEFAULT_BRANCH`` is removed and current directory is mounted as
-        ``/tmp/lint``.
+        :data:`GITHUB_ONLY_SETTINGS` are removed, ``MULTI_STATUS`` is turned
+        off and current directory is mounted as ``/tmp/lint``.
 
         :param env: environment of the workflow step, left unchanged
         :param log_level: value of ``LOG_LEVEL`` passed to super-linter
         :returns: arguments of the ``docker`` command
         """
-        _env = env.copy()
+        _env = {
+            key: value for key, value in env.items() if key not in GITHUB_ONLY_SETTINGS
+        }
         _env["RUN_LOCAL"] = "true"
         _env["LOG_LEVEL"] = log_level
         _env["USE_FIND_ALGORITHM"] = "true"
         _env["VALIDATE_ALL_CODEBASE"] = "true"
-        if "DEFAULT_BRANCH" in _env:
-            del _env["DEFAULT_BRANCH"]
+        # on by default; reporting the statuses needs GITHUB_TOKEN
+        _env["MULTI_STATUS"] = "false"
 
         args = [
             arg
