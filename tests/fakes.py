@@ -4,15 +4,17 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+from proj_flow.api.env import Runtime
 from proj_flow.log import commit
 
 
-class FakeRuntime:
+class FakeRuntime(Runtime):
     """
     Stands in for :class:`proj_flow.api.env.Runtime`. Records every command
     and answers :meth:`capture` with canned output, matched by the longest
     command prefix in ``responses``. Unmatched commands succeed with no
-    output.
+    output. :meth:`Runtime.__init__` is not called, as it would load the
+    configuration; the fields it sets are set here instead.
     """
 
     def __init__(
@@ -24,6 +26,18 @@ class FakeRuntime:
         self.root = root or Path()
         self.responses: dict[tuple[str, ...], tuple[int, str]] = responses or {}
         self.dry_run = dry_run
+        # the rest of what Runtime(rt, rt) copies
+        self.silent = False
+        self.verbose = False
+        self.official = False
+        self.no_coverage = False
+        self.use_color = False
+        self.only_host = False
+        self.platform = "linux"
+        self.secrets: list[str] = []
+        self._cfg: dict = {}
+        self.steps: list = []
+        self.aliases: list = []
         self.calls: list[tuple[str, ...]] = []
         self.captured: list[tuple[str, ...]] = []
         self.messages: list[str] = []

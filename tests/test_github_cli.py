@@ -15,7 +15,7 @@ def no_github_actions(monkeypatch):
 
 def branch_rt(branch: str, dry_run: bool = False):
     rt = FakeRuntime(dry_run=dry_run)
-    rt.default_branch = "main"
+    rt._cfg["default-branch"] = "main"
     rt.respond("git", "branch", "--show-current", stdout=f"{branch}\n")
     return rt
 
