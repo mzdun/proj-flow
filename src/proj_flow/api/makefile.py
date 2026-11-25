@@ -10,7 +10,7 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Set
 
 from proj_flow.api.env import Runtime, StepFailed
 
@@ -34,66 +34,61 @@ class Statement:
     #: Other files, which make the outputs out of date, when changed.
     implicit_deps: List[str] = field(default_factory=list)
 
-    def run(self, rt: Runtime) -> bool:
+    def run(self, rt: Runtime, rebuilt: Optional[Set[str]] = None) -> bool:
         """
-        Run the statement, if any output is missing or older than the inputs
-        and implicit dependencies. A rule with a :meth:`Rule.command` has the
-        command run; otherwise :meth:`Rule.run` is called. With
-        ``--dry-run``, the statement is reported without checking, if it is
-        up to date.
+        Run the statement, if any output is missing or older than any of the
+        inputs and implicit dependencies. A rule with a :meth:`Rule.command`
+        has the command run; otherwise :meth:`Rule.run` is called. With
+        ``--dry-run``, the statement is only reported.
 
         :param rt: runtime of the run
+        :param rebuilt: files, which are (or, with ``--dry-run``, would be)
+            rebuilt earlier in this run; a statement depending on any of them
+            is out of date regardless of the timestamps
         :returns: ``False``, if the outputs were up to date, ``True``, if the
             statement ran (or would, with ``--dry-run``)
         :raises StepFailed: the command or the rule has failed
         """
+        if not self._needed(rebuilt or set()):
+            return False
+
         command = self.rule.command(self)
         if len(command) == 0:
-            return self._run_directly(rt)
+            if rt.dry_run:
+                copy = Runtime(rt, rt)
+                copy.dry_run = True
+                self.rule.run(self, copy)
+            else:
+                self.rule.run(self, rt)
+            return True
 
         if rt.dry_run:
             rt.print(*command)
-            return True
-
-        if not self._needed():
-            return False
-
-        rt.cmd(*command)
+        else:
+            rt.cmd(*command)
         return True
 
-    def _run_directly(self, rt: Runtime) -> bool:
-        if rt.dry_run:
-            copy = Runtime(rt, rt)
-            copy.dry_run = True
-            self.rule.run(self, copy)
+    def _needed(self, rebuilt: Set[str]) -> bool:
+        if any(dep in rebuilt for dep in [*self.inputs, *self.implicit_deps]):
             return True
 
-        if not self._needed():
-            return False
-
-        self.rule.run(self, rt)
-        return True
-
-    def _needed(self):
-        out_mtime = None
+        out_mtime: Optional[float] = None
         for out in self.outputs:
             try:
                 mtime = os.path.getmtime(out)
-                out_mtime = mtime if out_mtime is None else min(mtime, out_mtime)
             except FileNotFoundError:
-                pass
+                return True
+            out_mtime = mtime if out_mtime is None else min(mtime, out_mtime)
         if out_mtime is None:
             return True
 
-        dep_mtime = 0
-        for deps in [self.inputs, self.implicit_deps]:
-            for dep in deps:
-                try:
-                    mtime = os.path.getmtime(dep)
-                    dep_mtime = max(dep_mtime, mtime)
-                except FileNotFoundError:
-                    pass
-        return dep_mtime > out_mtime
+        for dep in [*self.inputs, *self.implicit_deps]:
+            try:
+                if os.path.getmtime(dep) > out_mtime:
+                    return True
+            except FileNotFoundError:
+                return True
+        return False
 
 
 class Rule(ABC):
@@ -216,9 +211,11 @@ class Makefile:
         :param rt: runtime of the run
         :raises StepFailed: a statement has failed
         """
-        counter = 0
+        rebuilt: Set[str] = set()
+        ran = False
         for statement in self.statements:
-            if not statement.run(rt):
-                counter += 1
-        if counter == len(self.statements):
+            if statement.run(rt, rebuilt):
+                ran = True
+                rebuilt.update(statement.outputs)
+        if not ran:
             print("-- Nothing to do", file=sys.stderr)
