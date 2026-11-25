@@ -4,6 +4,14 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+`0.38.2 <https://github.com/mzdun/proj-flow/compare/v0.38.1...v0.38.2>`_ (2026-11-25)
+=====================================================================================
+
+Bug Fixes
+---------
+
+- **api**: rebuild makefile statements downstream of rebuilt files (`1b8126f <https://github.com/mzdun/proj-flow/commit/1b8126f3f421868dfb20839c153f58c3968bcce4>`_)
+
 `0.38.1 <https://github.com/mzdun/proj-flow/compare/v0.38.0...v0.38.1>`_ (2026-11-24)
 =====================================================================================
 
